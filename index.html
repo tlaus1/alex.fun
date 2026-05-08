@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Alex | Portal</title>
+  <title>Alex.fun Games</title>
   <link rel="icon" type="image/png" href="./clever1.png" />
   <style>
     :root {
-      --brand: #2f5be7;
-      --brand-deep: #274bc0;
-      --bg: #f5f7fb;
-      --card: #ffffff;
-      --text: #243047;
-      --subtle: #6d7993;
-      --line: #dbe3f4;
+      --bg1: #0f1224;
+      --bg2: #1a1f3a;
+      --panel: rgba(255, 255, 255, 0.08);
+      --line: rgba(255, 255, 255, 0.16);
+      --text: #f4f7ff;
+      --muted: #b7c2f0;
+      --accent: #53e3ff;
+      --accent2: #8d6bff;
     }
 
     * { box-sizing: border-box; }
@@ -21,165 +22,91 @@
     html, body {
       margin: 0;
       min-height: 100%;
-      font-family: "Segoe UI", Arial, sans-serif;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
       color: var(--text);
-      background: var(--bg);
+      background: radial-gradient(circle at 10% 10%, #25306a, var(--bg1) 45%),
+                  radial-gradient(circle at 90% 90%, #2a155e, var(--bg2) 55%);
     }
 
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 5;
-      background: linear-gradient(90deg, var(--brand), #4e70ec);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    .hero {
+      padding: 28px 18px 22px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, rgba(83,227,255,0.15), rgba(141,107,255,0.15));
     }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.2px;
+    .hero h1 {
+      margin: 0;
+      font-size: 34px;
+      letter-spacing: 0.6px;
     }
 
-    .brand img {
-      width: 28px;
-      height: 28px;
-      object-fit: cover;
-      border-radius: 6px;
-      background: #fff;
-    }
-
-    .search {
-      border: 1px solid rgba(255, 255, 255, 0.45);
-      background: rgba(255, 255, 255, 0.18);
-      color: #fff;
-      border-radius: 8px;
-      padding: 9px 12px;
-      min-width: 190px;
-      outline: none;
-    }
-
-    .search::placeholder { color: rgba(255, 255, 255, 0.9); }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 250px 1fr;
-      min-height: calc(100vh - 60px);
-    }
-
-    .sidebar {
-      border-right: 1px solid var(--line);
-      padding: 18px 12px;
-      background: #eef2fb;
-    }
-
-    .nav-link {
-      display: block;
-      margin: 4px 0;
-      padding: 9px 10px;
-      border-radius: 8px;
-      color: var(--brand-deep);
-      text-decoration: none;
-      font-weight: 600;
+    .hero p {
+      margin: 8px 0 0;
+      color: var(--muted);
       font-size: 15px;
     }
 
-    .nav-link:hover { background: #dde7ff; }
-
-    .content {
-      padding: 26px 20px 40px;
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px 16px 50px;
     }
 
-    h1 {
-      margin: 0 0 8px;
-      font-size: 34px;
-    }
-
-    .sub {
-      margin: 0 0 26px;
-      color: var(--subtle);
-      font-size: 16px;
-      line-height: 1.45;
-    }
-
-    .section-title {
-      margin: 28px 0 12px;
+    .welcome {
       font-size: 24px;
-      color: #34405a;
+      margin: 8px 0 16px;
     }
 
-    .cards {
+    .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
       gap: 12px;
     }
 
-    .card {
-      background: var(--card);
+    .game {
+      background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px;
-      min-height: 100px;
+      border-radius: 14px;
+      padding: 14px;
+      backdrop-filter: blur(5px);
+      min-height: 120px;
     }
 
-    .card h3 {
+    .icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      margin-bottom: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #101538;
+    }
+
+    .game h3 {
       margin: 0 0 6px;
       font-size: 16px;
     }
 
-    .card p {
+    .game p {
       margin: 0;
       font-size: 13px;
-      color: var(--subtle);
+      color: var(--muted);
       line-height: 1.4;
     }
 
-    .game-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 12px;
-      margin-top: 12px;
+    .footer-space {
+      height: 280px;
     }
 
-    .game {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 14px 10px;
-      text-align: center;
-    }
-
-    .game-icon {
-      width: 52px;
-      height: 52px;
-      margin: 0 auto 8px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      font-size: 24px;
-      background: linear-gradient(135deg, #6f92ff, #9f7eff);
-      color: #fff;
-    }
-
-    .game-name {
-      margin: 0;
-      font-size: 14px;
-      font-weight: 600;
-      color: #38445f;
-    }
-
+    /* Idle overlay */
     #idlePhoto {
       position: fixed;
       inset: 0;
       z-index: 9999;
-      display: block;
+      display: block; /* show on load */
       background: #000;
     }
 
@@ -192,69 +119,41 @@
       display: block;
     }
 
-    @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; }
-      .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
-      .search { min-width: 130px; }
-      h1 { font-size: 28px; }
+    @media (max-width: 700px) {
+      .hero h1 { font-size: 28px; }
+      .welcome { font-size: 20px; }
     }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <img src="./clever1.png" alt="Portal icon" />
-      <span>Alex | Portal</span>
-    </div>
-    <input class="search" type="text" placeholder="Search" />
+  <header class="hero">
+    <h1>alex.fun</h1>
+    <p>Move, click, type, touch, or scroll to play. After 5 seconds idle, the image returns.</p>
   </header>
 
-  <main class="layout">
-    <aside class="sidebar">
-      <a class="nav-link" href="#">Favorite Resources</a>
-      <a class="nav-link" href="#">Student Online Accounts</a>
-      <a class="nav-link" href="#">Staff Resources</a>
-      <a class="nav-link" href="#">Help Resources</a>
-      <a class="nav-link" href="#games">Games</a>
-    </aside>
+  <main class="wrap">
+    <h2 class="welcome" id="welcome">Welcome</h2>
 
-    <section class="content">
-      <h1 id="welcome">Welcome</h1>
-      <p class="sub">
-        This is your alex.fun homepage. Any mouse movement, key press, click, touch, scroll,
-        or input hides the idle image. After 5 seconds of no input, the idle image appears again.
-      </p>
-
-      <h2 class="section-title">Student Tools</h2>
-      <div class="cards">
-        <article class="card"><h3>Math</h3><p>Launch assignments and practice resources.</p></article>
-        <article class="card"><h3>Science</h3><p>Open class links and lab materials quickly.</p></article>
-        <article class="card"><h3>Reading</h3><p>Pick up where you left off in reading apps.</p></article>
-        <article class="card"><h3>Writing</h3><p>Jump into docs, prompts, and revision tools.</p></article>
-      </div>
-
-      <h2 class="section-title">Daily Links</h2>
-      <div class="cards">
-        <article class="card"><h3>Schedule</h3><p>View classes, blocks, and reminders.</p></article>
-        <article class="card"><h3>Announcements</h3><p>Read latest updates from your teachers.</p></article>
-        <article class="card"><h3>Assignments</h3><p>Track due dates and completion status.</p></article>
-        <article class="card"><h3>Messages</h3><p>See school and class communication.</p></article>
-      </div>
-
-      <h2 class="section-title" id="games">Games</h2>
-      <div class="game-grid">
-        <article class="game"><div class="game-icon">A</div><p class="game-name">Game One</p></article>
-        <article class="game"><div class="game-icon">B</div><p class="game-name">Game Two</p></article>
-        <article class="game"><div class="game-icon">C</div><p class="game-name">Game Three</p></article>
-        <article class="game"><div class="game-icon">D</div><p class="game-name">Game Four</p></article>
-        <article class="game"><div class="game-icon">E</div><p class="game-name">Game Five</p></article>
-        <article class="game"><div class="game-icon">F</div><p class="game-name">Game Six</p></article>
-      </div>
+    <section class="grid">
+      <article class="game"><div class="icon">A</div><h3>Arcade Rush</h3><p>Fast reaction mini games.</p></article>
+      <article class="game"><div class="icon">B</div><h3>Block Dash</h3><p>Timing and precision challenge.</p></article>
+      <article class="game"><div class="icon">C</div><h3>Cosmic Clicker</h3><p>Idle builder with upgrades.</p></article>
+      <article class="game"><div class="icon">D</div><h3>Drift Loop</h3><p>Speed run with checkpoints.</p></article>
+      <article class="game"><div class="icon">E</div><h3>Echo Maze</h3><p>Puzzle rooms and paths.</p></article>
+      <article class="game"><div class="icon">F</div><h3>Fusion Grid</h3><p>Merge tiles to score big.</p></article>
+      <article class="game"><div class="icon">G</div><h3>Glow Jumper</h3><p>Platform runner challenge.</p></article>
+      <article class="game"><div class="icon">H</div><h3>Hex Arena</h3><p>Battle waves of bots.</p></article>
+      <article class="game"><div class="icon">I</div><h3>Ion Racer</h3><p>Neon track sprint mode.</p></article>
+      <article class="game"><div class="icon">J</div><h3>Jungle Quest</h3><p>Adventure with collectibles.</p></article>
+      <article class="game"><div class="icon">K</div><h3>Knight Trials</h3><p>Boss fights and upgrades.</p></article>
+      <article class="game"><div class="icon">L</div><h3>Laser Lab</h3><p>Physics puzzles with mirrors.</p></article>
     </section>
+
+    <div class="footer-space"></div>
   </main>
 
   <div id="idlePhoto" aria-hidden="true">
-    <img src="./cleverpage.png" alt="Idle screen" />
+    <img src="./cleverpage.png" alt="Idle screen">
   </div>
 
   <script>
@@ -267,8 +166,7 @@
     function setDisplayName() {
       let name = localStorage.getItem(NAME_KEY);
       if (!name) {
-        const input = prompt("What name should we display?");
-        name = (input || "Student").trim() || "Student";
+        name = (prompt("What name should we display?") || "Player").trim() || "Player";
         localStorage.setItem(NAME_KEY, name);
       }
       welcome.textContent = "Welcome, " + name;
@@ -288,26 +186,15 @@
       idleTimer = setTimeout(showPhoto, IDLE_MS);
     }
 
-    function init() {
-      setDisplayName();
-      showPhoto();
+    setDisplayName();
+    showPhoto(); // visible on load
 
-      const events = [
-        "mousemove",
-        "mousedown",
-        "keydown",
-        "scroll",
-        "touchstart",
-        "click",
-        "input"
-      ];
-
-      events.forEach((eventName) => {
-        window.addEventListener(eventName, resetIdleTimer, { passive: true });
-      });
-    }
-
-    init();
+    [
+      "mousemove", "mousedown", "keydown",
+      "scroll", "touchstart", "click", "input"
+    ].forEach((evt) => {
+      window.addEventListener(evt, resetIdleTimer, { passive: true });
+    });
   </script>
 </body>
 </html>
