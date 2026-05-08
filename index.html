@@ -60,12 +60,6 @@
       color: var(--muted);
     }
 
-    .welcome {
-      text-align: center;
-      margin: 0 0 20px;
-      font-size: 24px;
-    }
-
     .grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -102,9 +96,46 @@
       font-size: clamp(24px, 3.5vw, 56px);
       line-height: 1;
       font-weight: 700;
+      z-index: 2;
     }
 
-    .theme-1 { background: linear-gradient(125deg, #8ac926, #1982c4); }
+    .card-67 img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      position: absolute;
+      inset: 0;
+    }
+
+    .cursor-click {
+      position: absolute;
+      right: 30px;
+      top: 28px;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.92);
+      display: grid;
+      place-items: center;
+      font-size: 30px;
+      z-index: 3;
+    }
+
+    .cursor-click::after {
+      content: "";
+      position: absolute;
+      inset: -8px;
+      border: 3px solid rgba(255,255,255,0.85);
+      border-radius: 50%;
+      animation: pulse 1.1s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.8); opacity: 0.9; }
+      100% { transform: scale(1.35); opacity: 0; }
+    }
+
     .theme-2 { background: linear-gradient(125deg, #141e30, #243b55); }
     .theme-3 { background: linear-gradient(125deg, #ff006e, #8338ec); }
     .theme-4 { background: linear-gradient(125deg, #06d6a0, #118ab2); }
@@ -117,7 +148,7 @@
       position: fixed;
       inset: 0;
       z-index: 9999;
-      display: block; /* visible on load */
+      display: block;
       background: #000;
     }
 
@@ -148,10 +179,13 @@
       <p>games and stuff</p>
     </header>
 
-    <h2 id="welcome" class="welcome">Welcome</h2>
-
     <main class="grid">
-      <article class="card theme-1"><h3 class="card-title">Cursor Camp</h3></article>
+      <article class="card card-67">
+        <img src="./67.png" alt="67 clicker preview">
+        <div class="cursor-click">🖱️</div>
+        <h3 class="card-title">67 clicker</h3>
+      </article>
+
       <article class="card theme-2"><h3 class="card-title">Sandboxe1s</h3></article>
       <article class="card theme-3"><h3 class="card-title">Constellation Draw</h3></article>
       <article class="card theme-4"><h3 class="card-title">Size of Life</h3></article>
@@ -168,9 +202,7 @@
 
   <script>
     const IDLE_MS = 5000;
-    const NAME_KEY = "display_name";
     const idlePhoto = document.getElementById("idlePhoto");
-    const welcome = document.getElementById("welcome");
     let idleTimer = null;
 
     function showIdle() {
@@ -184,16 +216,6 @@
       idleTimer = setTimeout(showIdle, IDLE_MS);
     }
 
-    function setDisplayName() {
-      let name = localStorage.getItem(NAME_KEY);
-      if (!name) {
-        name = (prompt("What name should we display?") || "Player").trim() || "Player";
-        localStorage.setItem(NAME_KEY, name);
-      }
-      welcome.textContent = "Welcome, " + name;
-    }
-
-    setDisplayName();
     showIdle();
 
     const events = ["mousemove", "mousedown", "scroll", "touchstart", "click", "input", "wheel"];
