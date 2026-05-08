@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="./clever1.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Paytone+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -16,13 +16,12 @@
     }
 
     body {
-      font-family: "Nunito", "Arial Rounded MT Bold", "Trebuchet MS", Arial, sans-serif;
+      font-family: "Nunito", "Arial Rounded MT Bold", Arial, sans-serif;
       background: #fff;
       color: #1a1a1a;
       min-height: 100vh;
     }
 
-    /* ── Utility ── */
     .hidden { display: none !important; }
 
     /* ══════════════════════════════════════════════
@@ -31,49 +30,34 @@
     #dashboard {
       max-width: 1060px;
       margin: 0 auto;
-      padding: 36px 20px 80px;
+      padding: 36px 24px 80px;
     }
 
     /* ── Header ── */
     .site-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 40px;
+      position: relative;
+      text-align: center;
+      margin-bottom: 44px;
     }
 
-    .brand {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .brand-name {
-      font-size: 22px;
-      font-weight: 900;
-      color: #1a1a1a;
-      letter-spacing: -0.3px;
-    }
-
-    .brand-tag {
-      font-size: 13px;
-      color: #999;
-      font-weight: 700;
-    }
-
-    /* "Get new posts" pill */
+    /* "Get new posts" floated to top-right, like neal.fun */
     .pill {
-      font-family: inherit;
+      position: absolute;
+      top: 0;
+      right: 0;
+      font-family: "Nunito", Arial, sans-serif;
       font-size: 13px;
       font-weight: 800;
       color: #1a1a1a;
       background: #fff;
-      border: 2px solid #ddd;
+      border: 1.5px solid #d4d4d4;
       border-radius: 100px;
       padding: 8px 18px;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       transition: background 0.15s, border-color 0.15s, transform 0.15s;
-      white-space: nowrap;
     }
 
     .pill:hover {
@@ -84,60 +68,79 @@
 
     .pill:active { transform: translateY(0); }
 
-    /* ── Card grid — 3 columns like neal.fun ── */
+    /* Big chunky site name */
+    .brand-name {
+      font-family: "Paytone One", "Arial Rounded MT Bold", Arial, sans-serif;
+      font-size: clamp(52px, 9vw, 96px);
+      font-weight: 400; /* Paytone One is already bold */
+      color: #1a1a1a;
+      line-height: 1;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .brand-tag {
+      font-size: 17px;
+      color: #888;
+      font-weight: 700;
+      display: block;
+    }
+
+    /* ── 2-column card grid — matching neal.fun ── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 16px;
     }
 
     /* ── Cards ── */
     .card {
       position: relative;
-      border-radius: 18px;
+      border-radius: 14px;
       overflow: hidden;
-      aspect-ratio: 1 / 1;
+      aspect-ratio: 2.35 / 1;
       cursor: pointer;
       background: linear-gradient(130deg, #6dd5fa, #2980b9);
-      transition: transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                  box-shadow 0.22s ease;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      border: 1.5px solid #e0e0e0;
+      transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                  box-shadow 0.2s ease;
     }
 
     .card:hover {
-      transform: translateY(-5px) scale(1.015);
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.14);
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.13);
     }
 
     .card:active {
-      transform: scale(0.98);
+      transform: scale(0.99);
       transition-duration: 0.08s;
     }
 
-    /* Gradient scrim so title is always readable */
+    /* Gradient scrim for title readability */
     .card::after {
       content: "";
       position: absolute;
       inset: 0;
       background: linear-gradient(
         to top,
-        rgba(0, 0, 0, 0.55) 0%,
-        rgba(0, 0, 0, 0.08) 45%,
-        transparent 70%
+        rgba(0, 0, 0, 0.52) 0%,
+        rgba(0, 0, 0, 0.06) 40%,
+        transparent 65%
       );
       pointer-events: none;
     }
 
     .card-title {
       position: absolute;
-      left: 16px;
-      bottom: 14px;
+      left: 18px;
+      bottom: 15px;
       color: #fff;
-      font-size: clamp(15px, 2vw, 22px);
+      font-size: clamp(18px, 2.6vw, 34px);
       font-weight: 900;
-      line-height: 1.15;
+      line-height: 1.1;
       z-index: 2;
-      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
     }
 
     /* ── 67 Clicker card ── */
@@ -156,7 +159,7 @@
 
     .cursor-click {
       position: absolute;
-      right: 14px;
+      right: 16px;
       top: 14px;
       width: 42px;
       height: 42px;
@@ -212,7 +215,7 @@
     #game67 {
       max-width: 1060px;
       margin: 0 auto;
-      padding: 24px 20px 60px;
+      padding: 24px 24px 60px;
     }
 
     .game-top {
@@ -223,12 +226,12 @@
     }
 
     .btn {
-      font-family: inherit;
+      font-family: "Nunito", Arial, sans-serif;
       font-size: 13px;
       font-weight: 800;
       color: #1a1a1a;
       background: #fff;
-      border: 2px solid #ddd;
+      border: 1.5px solid #d4d4d4;
       border-radius: 100px;
       padding: 8px 18px;
       cursor: pointer;
@@ -243,17 +246,15 @@
 
     .btn:active { transform: translateY(0); }
 
-    /* Game layout */
     .game-wrap {
       display: grid;
       grid-template-columns: 1fr 340px;
       gap: 16px;
     }
 
-    /* Play area */
     .play-area {
-      border: 2px solid #ebebeb;
-      border-radius: 20px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 18px;
       background: #fafafa;
       min-height: 68vh;
       display: grid;
@@ -284,7 +285,6 @@
 
     .rate-row strong { color: #555; }
 
-    /* The big 67 button */
     #big67 {
       width: min(260px, 62vw);
       height: min(260px, 62vw);
@@ -292,8 +292,9 @@
       border: 3px solid rgba(0, 0, 0, 0.07);
       background: radial-gradient(circle at 32% 28%, #ffe27a, #ff9f1c 58%, #c96a00);
       color: #1a0800;
+      font-family: "Paytone One", Arial, sans-serif;
       font-size: clamp(62px, 10vw, 118px);
-      font-weight: 900;
+      font-weight: 400;
       cursor: pointer;
       transition: transform 0.07s ease, box-shadow 0.14s ease;
       user-select: none;
@@ -302,16 +303,9 @@
       box-shadow: 0 6px 28px rgba(201, 106, 0, 0.3);
     }
 
-    #big67:hover {
-      box-shadow: 0 10px 44px rgba(201, 106, 0, 0.45);
-    }
+    #big67:hover { box-shadow: 0 10px 44px rgba(201, 106, 0, 0.45); }
+    #big67:active { transform: scale(0.92); }
 
-    #big67:active {
-      transform: scale(0.92);
-      box-shadow: 0 3px 12px rgba(201, 106, 0, 0.2);
-    }
-
-    /* Floating +N click text */
     .float-text {
       position: absolute;
       pointer-events: none;
@@ -328,10 +322,9 @@
       100% { opacity: 0; transform: translateY(-88px) scale(0.8); }
     }
 
-    /* Shop */
     .shop {
-      border: 2px solid #ebebeb;
-      border-radius: 20px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 18px;
       background: #fafafa;
       padding: 16px;
       max-height: 80vh;
@@ -341,10 +334,7 @@
     }
 
     .shop::-webkit-scrollbar { width: 4px; }
-    .shop::-webkit-scrollbar-thumb {
-      background: #ddd;
-      border-radius: 4px;
-    }
+    .shop::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
 
     .shop-label {
       display: block;
@@ -356,10 +346,9 @@
       margin-bottom: 12px;
     }
 
-    /* Upgrade rows */
     .upgrade {
-      border: 2px solid #ebebeb;
-      border-radius: 14px;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 12px;
       background: #fff;
       padding: 11px 13px;
       margin-bottom: 8px;
@@ -368,7 +357,7 @@
 
     .upgrade.affordable {
       border-color: #ffc107;
-      box-shadow: 0 2px 12px rgba(255, 193, 7, 0.18);
+      box-shadow: 0 2px 10px rgba(255, 193, 7, 0.18);
     }
 
     .upgrade:hover { transform: translateX(2px); }
@@ -389,7 +378,6 @@
       background: #f2f2f2;
       padding: 2px 7px;
       border-radius: 20px;
-      flex-shrink: 0;
     }
 
     .upgrade-desc {
@@ -401,23 +389,19 @@
 
     .buy {
       width: 100%;
-      border: 2px solid #1a1a1a;
+      border: 1.5px solid #1a1a1a;
       background: #1a1a1a;
       color: #fff;
       border-radius: 10px;
       padding: 7px;
-      font-family: inherit;
+      font-family: "Nunito", Arial, sans-serif;
       font-weight: 800;
       font-size: 11px;
       cursor: pointer;
-      transition: background 0.14s, border-color 0.14s, transform 0.1s;
+      transition: background 0.14s, transform 0.1s;
     }
 
-    .buy:hover:not(:disabled) {
-      background: #333;
-      transform: translateY(-1px);
-    }
-
+    .buy:hover:not(:disabled) { background: #333; transform: translateY(-1px); }
     .buy:active:not(:disabled) { transform: translateY(0); }
 
     .buy:disabled {
@@ -427,7 +411,6 @@
       cursor: not-allowed;
     }
 
-    /* Affordable state — golden buy button */
     .upgrade.affordable .buy:not(:disabled) {
       background: #ffc107;
       border-color: #ffc107;
@@ -452,14 +435,8 @@
       transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    #idlePhoto.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    #idlePhoto.no-transition {
-      transition: none !important;
-    }
+    #idlePhoto.hidden { opacity: 0; pointer-events: none; }
+    #idlePhoto.no-transition { transition: none !important; }
 
     #idlePhoto img {
       width: 100%;
@@ -472,14 +449,11 @@
     /* ══════════════════════════════════════════════
        RESPONSIVE
     ══════════════════════════════════════════════ */
-    @media (max-width: 860px) {
-      .grid { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    @media (max-width: 560px) {
+    @media (max-width: 640px) {
       .grid { grid-template-columns: 1fr; }
       .game-wrap { grid-template-columns: 1fr; }
       .shop { max-height: none; }
+      .pill { font-size: 12px; padding: 6px 13px; }
     }
   </style>
 </head>
@@ -489,11 +463,12 @@
   <div id="dashboard">
 
     <header class="site-header">
-      <div class="brand">
-        <span class="brand-name">Clever | Portal</span>
-        <span class="brand-tag">games and stuff</span>
-      </div>
-      <button class="pill" type="button">✉ Get new posts</button>
+      <button class="pill" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+        Get new posts
+      </button>
+      <span class="brand-name">alex.fun</span>
+      <span class="brand-tag">games and stuff</span>
     </header>
 
     <main class="grid">
@@ -562,7 +537,6 @@
 
       <aside class="shop">
         <span class="shop-label">Upgrades</span>
-        <!-- populated by JS -->
       </aside>
 
     </div>
@@ -625,94 +599,25 @@
 
     // ── Upgrade definitions ───────────────────────────────────────
     const upgradeConfig = [
-      {
-        key: "multi",      icon: "🖱️",
-        name: "Multiple Clickers",
-        desc: "+1 point per click",
-        cost: 25,          scale: 1.4,
-        onBuy: () => { clickPower += 1; }
-      },
-      {
-        key: "auto",       icon: "🤖",
-        name: "Autoclicker",
-        desc: "+1 point/sec",
-        cost: 50,          scale: 1.6,
-        onBuy: () => { perSec += 1; }
-      },
-      {
-        key: "factory",    icon: "🏭",
-        name: "67 Factory",
-        desc: "+8 points/sec",
-        cost: 400,         scale: 1.7,
-        onBuy: () => { perSec += 8; }
-      },
-      {
-        key: "mine",       icon: "⛏️",
-        name: "67 Mine",
-        desc: "+47 points/sec",
-        cost: 4_000,       scale: 1.8,
-        onBuy: () => { perSec += 47; }
-      },
-      {
-        key: "lab",        icon: "🔬",
-        name: "67 Laboratory",
-        desc: "+260 points/sec",
-        cost: 40_000,      scale: 1.85,
-        onBuy: () => { perSec += 260; }
-      },
-      {
-        key: "powerclick", icon: "⚡",
-        name: "Power Click",
-        desc: "+10 points per click",
-        cost: 100_000,     scale: 1.9,
-        onBuy: () => { clickPower += 10; }
-      },
-      {
-        key: "dimension",  icon: "🌀",
-        name: "67 Dimension",
-        desc: "+1,600 points/sec",
-        cost: 500_000,     scale: 1.9,
-        onBuy: () => { perSec += 1_600; }
-      },
-      {
-        key: "empire",     icon: "👑",
-        name: "67 Empire",
-        desc: "+10,000 points/sec",
-        cost: 7_000_000,   scale: 2.0,
-        onBuy: () => { perSec += 10_000; }
-      },
-      {
-        key: "galaxy",     icon: "🌌",
-        name: "67 Galaxy",
-        desc: "+65,000 points/sec",
-        cost: 100_000_000, scale: 2.1,
-        onBuy: () => { perSec += 65_000; }
-      },
-      {
-        key: "mason",      icon: "🧱",
-        name: "Mason 67",
-        desc: "+400,000 points/sec",
-        cost: 1_000_000_000, scale: 2.2,
-        onBuy: () => { perSec += 400_000; }
-      },
-      {
-        key: "god",        icon: "✨",
-        name: "67 God",
-        desc: "+2,500,000 points/sec",
-        cost: 1_000_000_000_000, scale: 2.5,
-        onBuy: () => { perSec += 2_500_000; }
-      }
+      { key:"multi",      icon:"🖱️",  name:"Multiple Clickers", desc:"+1 point per click",       cost:25,              scale:1.4,  onBuy:()=>{ clickPower+=1; } },
+      { key:"auto",       icon:"🤖",  name:"Autoclicker",        desc:"+1 point/sec",              cost:50,              scale:1.6,  onBuy:()=>{ perSec+=1; } },
+      { key:"factory",    icon:"🏭",  name:"67 Factory",         desc:"+8 points/sec",             cost:400,             scale:1.7,  onBuy:()=>{ perSec+=8; } },
+      { key:"mine",       icon:"⛏️",  name:"67 Mine",            desc:"+47 points/sec",            cost:4_000,           scale:1.8,  onBuy:()=>{ perSec+=47; } },
+      { key:"lab",        icon:"🔬",  name:"67 Laboratory",      desc:"+260 points/sec",           cost:40_000,          scale:1.85, onBuy:()=>{ perSec+=260; } },
+      { key:"powerclick", icon:"⚡",  name:"Power Click",        desc:"+10 points per click",      cost:100_000,         scale:1.9,  onBuy:()=>{ clickPower+=10; } },
+      { key:"dimension",  icon:"🌀",  name:"67 Dimension",       desc:"+1,600 points/sec",         cost:500_000,         scale:1.9,  onBuy:()=>{ perSec+=1_600; } },
+      { key:"empire",     icon:"👑",  name:"67 Empire",          desc:"+10,000 points/sec",        cost:7_000_000,       scale:2.0,  onBuy:()=>{ perSec+=10_000; } },
+      { key:"galaxy",     icon:"🌌",  name:"67 Galaxy",          desc:"+65,000 points/sec",        cost:100_000_000,     scale:2.1,  onBuy:()=>{ perSec+=65_000; } },
+      { key:"mason",      icon:"🧱",  name:"Mason 67",           desc:"+400,000 points/sec",       cost:1_000_000_000,   scale:2.2,  onBuy:()=>{ perSec+=400_000; } },
+      { key:"god",        icon:"✨",  name:"67 God",             desc:"+2,500,000 points/sec",     cost:1_000_000_000_000, scale:2.5, onBuy:()=>{ perSec+=2_500_000; } }
     ];
 
-    // Runtime state
     let points     = 0;
     let clickPower = 1;
     let perSec     = 0;
 
     const state = {};
-    upgradeConfig.forEach(cfg => {
-      state[cfg.key] = { count: 0, cost: cfg.cost };
-    });
+    upgradeConfig.forEach(cfg => { state[cfg.key] = { count:0, cost:cfg.cost }; });
 
     // ── Build shop DOM ────────────────────────────────────────────
     const shopEl = document.querySelector(".shop");
@@ -733,32 +638,28 @@
       shopEl.appendChild(div);
     });
 
-    // ── Number formatting ─────────────────────────────────────────
     function formatNum(n) {
-      if (n >= 1e12) return (n / 1e12).toFixed(2) + "T";
-      if (n >= 1e9)  return (n / 1e9 ).toFixed(2) + "B";
-      if (n >= 1e6)  return (n / 1e6 ).toFixed(2) + "M";
-      if (n >= 1e3)  return (n / 1e3 ).toFixed(1) + "K";
+      if (n >= 1e12) return (n/1e12).toFixed(2)+"T";
+      if (n >= 1e9)  return (n/1e9 ).toFixed(2)+"B";
+      if (n >= 1e6)  return (n/1e6 ).toFixed(2)+"M";
+      if (n >= 1e3)  return (n/1e3 ).toFixed(1)+"K";
       return Math.floor(n).toString();
     }
 
-    // ── UI update ─────────────────────────────────────────────────
     function updateUI() {
       document.getElementById("points").textContent   = formatNum(points);
       document.getElementById("perClick").textContent = formatNum(clickPower);
       document.getElementById("perSec").textContent   = formatNum(perSec);
-
       upgradeConfig.forEach(cfg => {
-        const u      = state[cfg.key];
+        const u = state[cfg.key];
         const canBuy = points >= u.cost;
-        document.getElementById("count_" + cfg.key).textContent = u.count;
-        document.getElementById("cost_"  + cfg.key).textContent = formatNum(u.cost);
-        document.getElementById("buy_"   + cfg.key).disabled    = !canBuy;
-        document.getElementById("upg_"   + cfg.key).classList.toggle("affordable", canBuy);
+        document.getElementById("count_"+cfg.key).textContent = u.count;
+        document.getElementById("cost_" +cfg.key).textContent = formatNum(u.cost);
+        document.getElementById("buy_"  +cfg.key).disabled    = !canBuy;
+        document.getElementById("upg_"  +cfg.key).classList.toggle("affordable", canBuy);
       });
     }
 
-    // ── Buy upgrade ───────────────────────────────────────────────
     function buyUpgrade(key) {
       const cfg = upgradeConfig.find(c => c.key === key);
       const u   = state[key];
@@ -771,63 +672,41 @@
     }
 
     upgradeConfig.forEach(cfg => {
-      document.getElementById("buy_" + cfg.key)
-        .addEventListener("click", () => buyUpgrade(cfg.key));
+      document.getElementById("buy_"+cfg.key).addEventListener("click", () => buyUpgrade(cfg.key));
     });
 
-    // ── Click handler ─────────────────────────────────────────────
     const big67    = document.getElementById("big67");
     const playArea = document.getElementById("playArea");
 
     big67.addEventListener("click", e => {
       points += clickPower;
       updateUI();
-      spawnFloat(e, "+" + formatNum(clickPower));
-    });
-
-    function spawnFloat(e, text) {
       const rect = playArea.getBoundingClientRect();
       const span = document.createElement("span");
       span.className   = "float-text";
-      span.textContent = text;
-      span.style.left  = (e.clientX - rect.left + (Math.random() * 36 - 18)) + "px";
+      span.textContent = "+" + formatNum(clickPower);
+      span.style.left  = (e.clientX - rect.left + (Math.random()*36-18)) + "px";
       span.style.top   = (e.clientY - rect.top  - 8) + "px";
       playArea.appendChild(span);
       span.addEventListener("animationend", () => span.remove());
-    }
+    });
 
-    // ── Reset ─────────────────────────────────────────────────────
     document.getElementById("resetGame").addEventListener("click", () => {
       if (!confirm("Reset all progress?")) return;
-      points     = 0;
-      clickPower = 1;
-      perSec     = 0;
-      upgradeConfig.forEach(cfg => {
-        state[cfg.key].count = 0;
-        state[cfg.key].cost  = cfg.cost;
-      });
+      points=0; clickPower=1; perSec=0;
+      upgradeConfig.forEach(cfg => { state[cfg.key].count=0; state[cfg.key].cost=cfg.cost; });
       updateUI();
     });
 
-    // ── Fullscreen ────────────────────────────────────────────────
     document.getElementById("fullscreenBtn").addEventListener("click", async () => {
       try {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
-        } else {
-          await document.exitFullscreen();
-        }
-      } catch (err) {
-        console.log("Fullscreen blocked:", err);
-      }
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+        else await document.exitFullscreen();
+      } catch(e) { console.log("Fullscreen blocked:", e); }
     });
 
-    // ── Passive income ────────────────────────────────────────────
     setInterval(() => {
-      if (perSec > 0) {
-        points += perSec / 10;
-        updateUI();
-      }
+      if (perSec > 0) { points += perSec/10; updateUI(); }
     }, 100);
 
     updateUI();
