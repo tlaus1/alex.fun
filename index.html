@@ -7,106 +7,117 @@
   <link rel="icon" type="image/png" href="./clever1.png" />
   <style>
     :root {
-      --bg1: #0f1224;
-      --bg2: #1a1f3a;
-      --panel: rgba(255, 255, 255, 0.08);
-      --line: rgba(255, 255, 255, 0.16);
-      --text: #f4f7ff;
-      --muted: #b7c2f0;
-      --accent: #53e3ff;
-      --accent2: #8d6bff;
+      --bg: #e9e9e9;
+      --card-border: #202020;
+      --text: #121212;
+      --muted: #3e3e3e;
     }
 
     * { box-sizing: border-box; }
 
-    html, body {
+    body {
       margin: 0;
-      min-height: 100%;
-      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      font-family: "Arial Rounded MT Bold", "Trebuchet MS", Arial, sans-serif;
+      background: var(--bg);
       color: var(--text);
-      background: radial-gradient(circle at 10% 10%, #25306a, var(--bg1) 45%),
-                  radial-gradient(circle at 90% 90%, #2a155e, var(--bg2) 55%);
+    }
+
+    .page {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 16px 16px 40px;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 6px;
+    }
+
+    .pill {
+      border: 2px solid #8d8d8d;
+      background: #efefef;
+      border-radius: 18px;
+      padding: 12px 22px;
+      font-size: 20px;
     }
 
     .hero {
-      padding: 28px 18px 22px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(90deg, rgba(83,227,255,0.15), rgba(141,107,255,0.15));
+      text-align: center;
+      margin: 8px 0 18px;
     }
 
     .hero h1 {
       margin: 0;
-      font-size: 34px;
-      letter-spacing: 0.6px;
+      font-size: clamp(46px, 7vw, 96px);
+      letter-spacing: 1px;
+      text-transform: lowercase;
     }
 
     .hero p {
-      margin: 8px 0 0;
+      margin: 4px 0 0;
+      font-size: clamp(24px, 3vw, 44px);
       color: var(--muted);
-      font-size: 15px;
-    }
-
-    .wrap {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 20px 16px 50px;
     }
 
     .welcome {
+      text-align: center;
+      margin: 0 0 20px;
       font-size: 24px;
-      margin: 8px 0 16px;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
     }
 
-    .game {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px;
-      backdrop-filter: blur(5px);
-      min-height: 120px;
+    .card {
+      position: relative;
+      border: 4px solid var(--card-border);
+      border-radius: 26px;
+      overflow: hidden;
+      aspect-ratio: 2.3 / 1;
+      background: linear-gradient(130deg, #6dd5fa, #2980b9);
+      cursor: pointer;
     }
 
-    .icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
-      margin-bottom: 10px;
-      display: grid;
-      place-items: center;
-      font-size: 24px;
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #101538;
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 15%, rgba(255,255,255,0.35), transparent 28%),
+        radial-gradient(circle at 82% 80%, rgba(255,255,255,0.25), transparent 26%);
+      pointer-events: none;
     }
 
-    .game h3 {
-      margin: 0 0 6px;
-      font-size: 16px;
-    }
-
-    .game p {
+    .card-title {
+      position: absolute;
+      left: 20px;
+      bottom: 16px;
       margin: 0;
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.4;
+      color: #fff;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      font-size: clamp(24px, 3.5vw, 56px);
+      line-height: 1;
+      font-weight: 700;
     }
 
-    .footer-space {
-      height: 280px;
-    }
+    .theme-1 { background: linear-gradient(125deg, #8ac926, #1982c4); }
+    .theme-2 { background: linear-gradient(125deg, #141e30, #243b55); }
+    .theme-3 { background: linear-gradient(125deg, #ff006e, #8338ec); }
+    .theme-4 { background: linear-gradient(125deg, #06d6a0, #118ab2); }
+    .theme-5 { background: linear-gradient(125deg, #fb8500, #d62828); }
+    .theme-6 { background: linear-gradient(125deg, #3a0ca3, #4cc9f0); }
+    .theme-7 { background: linear-gradient(125deg, #588157, #344e41); }
+    .theme-8 { background: linear-gradient(125deg, #c1121f, #003049); }
 
-    /* Idle overlay */
     #idlePhoto {
       position: fixed;
       inset: 0;
       z-index: 9999;
-      display: block; /* show on load */
+      display: block; /* visible on load */
       background: #000;
     }
 
@@ -116,44 +127,43 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: top center; /* show top, crop bottom */
       display: block;
     }
 
-    @media (max-width: 700px) {
-      .hero h1 { font-size: 28px; }
-      .welcome { font-size: 20px; }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .pill { font-size: 18px; padding: 10px 16px; }
     }
   </style>
 </head>
 <body>
-  <header class="hero">
-    <h1>alex.fun</h1>
-    <p>Move, click, type, touch, or scroll to play. After 5 seconds idle, the image returns.</p>
-  </header>
+  <div class="page">
+    <div class="top-row">
+      <button class="pill" type="button">Get new posts</button>
+    </div>
 
-  <main class="wrap">
-    <h2 class="welcome" id="welcome">Welcome</h2>
+    <header class="hero">
+      <h1>alex.fun</h1>
+      <p>games and stuff</p>
+    </header>
 
-    <section class="grid">
-      <article class="game"><div class="icon">A</div><h3>Arcade Rush</h3><p>Fast reaction mini games.</p></article>
-      <article class="game"><div class="icon">B</div><h3>Block Dash</h3><p>Timing and precision challenge.</p></article>
-      <article class="game"><div class="icon">C</div><h3>Cosmic Clicker</h3><p>Idle builder with upgrades.</p></article>
-      <article class="game"><div class="icon">D</div><h3>Drift Loop</h3><p>Speed run with checkpoints.</p></article>
-      <article class="game"><div class="icon">E</div><h3>Echo Maze</h3><p>Puzzle rooms and paths.</p></article>
-      <article class="game"><div class="icon">F</div><h3>Fusion Grid</h3><p>Merge tiles to score big.</p></article>
-      <article class="game"><div class="icon">G</div><h3>Glow Jumper</h3><p>Platform runner challenge.</p></article>
-      <article class="game"><div class="icon">H</div><h3>Hex Arena</h3><p>Battle waves of bots.</p></article>
-      <article class="game"><div class="icon">I</div><h3>Ion Racer</h3><p>Neon track sprint mode.</p></article>
-      <article class="game"><div class="icon">J</div><h3>Jungle Quest</h3><p>Adventure with collectibles.</p></article>
-      <article class="game"><div class="icon">K</div><h3>Knight Trials</h3><p>Boss fights and upgrades.</p></article>
-      <article class="game"><div class="icon">L</div><h3>Laser Lab</h3><p>Physics puzzles with mirrors.</p></article>
-    </section>
+    <h2 id="welcome" class="welcome">Welcome</h2>
 
-    <div class="footer-space"></div>
-  </main>
+    <main class="grid">
+      <article class="card theme-1"><h3 class="card-title">Cursor Camp</h3></article>
+      <article class="card theme-2"><h3 class="card-title">Sandboxe1s</h3></article>
+      <article class="card theme-3"><h3 class="card-title">Constellation Draw</h3></article>
+      <article class="card theme-4"><h3 class="card-title">Size of Life</h3></article>
+      <article class="card theme-5"><h3 class="card-title">Internet Roadtrip</h3></article>
+      <article class="card theme-6"><h3 class="card-title">Infinite Craft</h3></article>
+      <article class="card theme-7"><h3 class="card-title">Internet Artifacts</h3></article>
+      <article class="card theme-8"><h3 class="card-title">The Puzzle Game</h3></article>
+    </main>
+  </div>
 
   <div id="idlePhoto" aria-hidden="true">
-    <img src="./cleverpage.png" alt="Idle screen">
+    <img src="./cleverpage.png" alt="Idle screen" />
   </div>
 
   <script>
@@ -162,6 +172,17 @@
     const idlePhoto = document.getElementById("idlePhoto");
     const welcome = document.getElementById("welcome");
     let idleTimer = null;
+
+    function showIdle() {
+      idlePhoto.classList.remove("hidden");
+      clearTimeout(idleTimer);
+    }
+
+    function hideIdleAndArmTimer() {
+      idlePhoto.classList.add("hidden");
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(showIdle, IDLE_MS);
+    }
 
     function setDisplayName() {
       let name = localStorage.getItem(NAME_KEY);
@@ -172,28 +193,20 @@
       welcome.textContent = "Welcome, " + name;
     }
 
-    function showPhoto() {
-      idlePhoto.classList.remove("hidden");
-    }
-
-    function hidePhoto() {
-      idlePhoto.classList.add("hidden");
-    }
-
-    function resetIdleTimer() {
-      hidePhoto();
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(showPhoto, IDLE_MS);
-    }
-
     setDisplayName();
-    showPhoto(); // visible on load
+    showIdle();
 
-    [
-      "mousemove", "mousedown", "keydown",
-      "scroll", "touchstart", "click", "input"
-    ].forEach((evt) => {
-      window.addEventListener(evt, resetIdleTimer, { passive: true });
+    const events = ["mousemove", "mousedown", "scroll", "touchstart", "click", "input", "wheel"];
+    events.forEach((evt) => {
+      window.addEventListener(evt, hideIdleAndArmTimer, { passive: true });
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace") {
+        showIdle(); // instant snap to photo on backspace
+        return;
+      }
+      hideIdleAndArmTimer();
     });
   </script>
 </body>
