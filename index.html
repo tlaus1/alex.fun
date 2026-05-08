@@ -5,117 +5,184 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clever | Portal</title>
   <link rel="icon" type="image/png" href="./clever1.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
   <style>
-    :root {
-      --bg: #e9e9e9;
-      --card-border: #202020;
-      --text: #121212;
-      --muted: #3e3e3e;
-      --panel: #f6f6f6;
-      --blue: #2553ff;
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-
-    * { box-sizing: border-box; }
 
     body {
-      margin: 0;
-      font-family: "Arial Rounded MT Bold", "Trebuchet MS", Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: "Nunito", "Arial Rounded MT Bold", "Trebuchet MS", Arial, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      min-height: 100vh;
     }
 
+    /* ── Utility ── */
     .hidden { display: none !important; }
 
-    .page {
-      max-width: 1160px;
+    /* ══════════════════════════════════════════════
+       DASHBOARD
+    ══════════════════════════════════════════════ */
+    #dashboard {
+      max-width: 1060px;
       margin: 0 auto;
-      padding: 16px 16px 40px;
+      padding: 36px 20px 80px;
     }
 
-    .top-row {
+    /* ── Header ── */
+    .site-header {
       display: flex;
-      justify-content: flex-end;
-      margin-bottom: 6px;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 40px;
     }
 
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-name {
+      font-size: 22px;
+      font-weight: 900;
+      color: #1a1a1a;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-tag {
+      font-size: 13px;
+      color: #999;
+      font-weight: 700;
+    }
+
+    /* "Get new posts" pill */
     .pill {
-      border: 2px solid #8d8d8d;
-      background: #efefef;
-      border-radius: 18px;
-      padding: 10px 18px;
-      font-size: 18px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      color: #1a1a1a;
+      background: #fff;
+      border: 2px solid #ddd;
+      border-radius: 100px;
+      padding: 8px 18px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+      white-space: nowrap;
     }
 
-    .hero {
-      text-align: center;
-      margin: 8px 0 18px;
+    .pill:hover {
+      background: #f5f5f5;
+      border-color: #bbb;
+      transform: translateY(-1px);
     }
 
-    .hero h1 {
-      margin: 0;
-      font-size: clamp(46px, 7vw, 96px);
-      letter-spacing: 1px;
-      text-transform: lowercase;
-    }
+    .pill:active { transform: translateY(0); }
 
-    .hero p {
-      margin: 4px 0 0;
-      font-size: clamp(24px, 3vw, 44px);
-      color: var(--muted);
-    }
-
+    /* ── Card grid — 3 columns like neal.fun ── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 16px;
     }
 
+    /* ── Cards ── */
     .card {
       position: relative;
-      border: 4px solid var(--card-border);
-      border-radius: 26px;
+      border-radius: 18px;
       overflow: hidden;
-      aspect-ratio: 2.3 / 1;
-      background: linear-gradient(130deg, #6dd5fa, #2980b9);
+      aspect-ratio: 1 / 1;
       cursor: pointer;
+      background: linear-gradient(130deg, #6dd5fa, #2980b9);
+      transition: transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                  box-shadow 0.22s ease;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .card:hover {
+      transform: translateY(-5px) scale(1.015);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.14);
+    }
+
+    .card:active {
+      transform: scale(0.98);
+      transition-duration: 0.08s;
+    }
+
+    /* Gradient scrim so title is always readable */
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.55) 0%,
+        rgba(0, 0, 0, 0.08) 45%,
+        transparent 70%
+      );
+      pointer-events: none;
     }
 
     .card-title {
       position: absolute;
-      left: 20px;
-      bottom: 16px;
-      margin: 0;
+      left: 16px;
+      bottom: 14px;
       color: #fff;
-      text-shadow: 0 2px 6px rgba(0,0,0,0.35);
-      font-size: clamp(24px, 3.5vw, 56px);
-      line-height: 1;
-      font-weight: 700;
+      font-size: clamp(15px, 2vw, 22px);
+      font-weight: 900;
+      line-height: 1.15;
       z-index: 2;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ── 67 Clicker card ── */
+    .card-67 {
+      background: linear-gradient(130deg, #1a1020, #2e1e50);
     }
 
     .card-67 img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: block;
       position: absolute;
       inset: 0;
+      display: block;
     }
 
     .cursor-click {
       position: absolute;
-      right: 30px;
-      top: 28px;
-      width: 54px;
-      height: 54px;
+      right: 14px;
+      top: 14px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.92);
+      background: rgba(255, 255, 255, 0.92);
       display: grid;
       place-items: center;
-      font-size: 30px;
+      font-size: 20px;
       z-index: 3;
     }
 
+    .cursor-click::after {
+      content: "";
+      position: absolute;
+      inset: -7px;
+      border: 2.5px solid rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      animation: pulse 1.1s ease-out infinite;
+    }
+
+    @keyframes pulse {
+      0%   { transform: scale(0.8); opacity: 0.9; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    /* ── Card themes ── */
     .theme-2 { background: linear-gradient(125deg, #141e30, #243b55); }
     .theme-3 { background: linear-gradient(125deg, #ff006e, #8338ec); }
     .theme-4 { background: linear-gradient(125deg, #06d6a0, #118ab2); }
@@ -124,129 +191,275 @@
     .theme-7 { background: linear-gradient(125deg, #588157, #344e41); }
     .theme-8 { background: linear-gradient(125deg, #c1121f, #003049); }
 
-    /* Game screen */
+    /* ── Staggered card entrance ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card:nth-child(1) { animation: fadeUp 0.35s ease 0.04s both; }
+    .card:nth-child(2) { animation: fadeUp 0.35s ease 0.09s both; }
+    .card:nth-child(3) { animation: fadeUp 0.35s ease 0.14s both; }
+    .card:nth-child(4) { animation: fadeUp 0.35s ease 0.19s both; }
+    .card:nth-child(5) { animation: fadeUp 0.35s ease 0.24s both; }
+    .card:nth-child(6) { animation: fadeUp 0.35s ease 0.29s both; }
+    .card:nth-child(7) { animation: fadeUp 0.35s ease 0.34s both; }
+    .card:nth-child(8) { animation: fadeUp 0.35s ease 0.39s both; }
+
+    /* ══════════════════════════════════════════════
+       GAME SCREEN
+    ══════════════════════════════════════════════ */
     #game67 {
-      min-height: 100vh;
-      padding: 14px;
-      background: linear-gradient(180deg, #f1f4ff, #edf1fb);
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 24px 20px 60px;
     }
 
     .game-top {
       display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 8px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
     }
 
     .btn {
-      border: 2px solid #444;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      color: #1a1a1a;
       background: #fff;
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-size: 15px;
+      border: 2px solid #ddd;
+      border-radius: 100px;
+      padding: 8px 18px;
       cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.12s;
     }
 
+    .btn:hover {
+      background: #f5f5f5;
+      border-color: #bbb;
+      transform: translateY(-1px);
+    }
+
+    .btn:active { transform: translateY(0); }
+
+    /* Game layout */
     .game-wrap {
       display: grid;
-      grid-template-columns: 1fr 360px;
-      gap: 14px;
-      max-width: 1200px;
-      margin: 0 auto;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
     }
 
+    /* Play area */
     .play-area {
-      border: 3px solid #1d1d1d;
+      border: 2px solid #ebebeb;
       border-radius: 20px;
-      background: #fff;
-      min-height: 72vh;
+      background: #fafafa;
+      min-height: 68vh;
       display: grid;
       place-items: center;
       text-align: center;
-      padding: 20px;
+      padding: 30px;
+      position: relative;
+      overflow: hidden;
     }
 
-    .stats {
-      margin-bottom: 14px;
-      font-size: clamp(20px, 3vw, 34px);
-      line-height: 1.3;
+    .stats { margin-bottom: 26px; }
+
+    .points-display {
+      font-size: clamp(26px, 4vw, 48px);
+      font-weight: 900;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+      line-height: 1;
     }
 
+    .points-display span { color: #e67e00; }
+
+    .rate-row {
+      font-size: 14px;
+      color: #aaa;
+      font-weight: 700;
+    }
+
+    .rate-row strong { color: #555; }
+
+    /* The big 67 button */
     #big67 {
-      width: min(350px, 78vw);
-      height: min(350px, 78vw);
+      width: min(260px, 62vw);
+      height: min(260px, 62vw);
       border-radius: 50%;
-      border: 5px solid #111;
-      background: radial-gradient(circle at 30% 30%, #ffe27a, #ff9f1c 65%, #d96f00);
-      color: #111;
-      font-size: clamp(80px, 13vw, 140px);
+      border: 3px solid rgba(0, 0, 0, 0.07);
+      background: radial-gradient(circle at 32% 28%, #ffe27a, #ff9f1c 58%, #c96a00);
+      color: #1a0800;
+      font-size: clamp(62px, 10vw, 118px);
       font-weight: 900;
       cursor: pointer;
-      transition: transform 0.06s ease;
+      transition: transform 0.07s ease, box-shadow 0.14s ease;
       user-select: none;
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 6px 28px rgba(201, 106, 0, 0.3);
     }
 
-    #big67:active { transform: scale(0.96); }
+    #big67:hover {
+      box-shadow: 0 10px 44px rgba(201, 106, 0, 0.45);
+    }
 
+    #big67:active {
+      transform: scale(0.92);
+      box-shadow: 0 3px 12px rgba(201, 106, 0, 0.2);
+    }
+
+    /* Floating +N click text */
+    .float-text {
+      position: absolute;
+      pointer-events: none;
+      font-size: 21px;
+      font-weight: 900;
+      color: #e67e00;
+      z-index: 10;
+      animation: floatUp 0.8s ease forwards;
+    }
+
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      50%  { opacity: 1; transform: translateY(-48px) scale(1.12); }
+      100% { opacity: 0; transform: translateY(-88px) scale(0.8); }
+    }
+
+    /* Shop */
     .shop {
-      border: 3px solid #1d1d1d;
+      border: 2px solid #ebebeb;
       border-radius: 20px;
-      background: var(--panel);
-      padding: 12px;
-      max-height: 82vh;
-      overflow: auto;
+      background: #fafafa;
+      padding: 16px;
+      max-height: 80vh;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #ddd transparent;
     }
 
-    .shop h3 {
-      margin: 4px 0 10px;
-      font-size: 24px;
+    .shop::-webkit-scrollbar { width: 4px; }
+    .shop::-webkit-scrollbar-thumb {
+      background: #ddd;
+      border-radius: 4px;
     }
 
-    .upgrade {
-      border: 2px solid #222;
-      border-radius: 12px;
-      background: #fff;
-      padding: 10px;
-      margin-bottom: 10px;
-    }
-
-    .upgrade-title {
-      font-size: 18px;
-      margin-bottom: 6px;
-    }
-
-    .upgrade small {
+    .shop-label {
       display: block;
-      color: #444;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: #ccc;
+      margin-bottom: 12px;
+    }
+
+    /* Upgrade rows */
+    .upgrade {
+      border: 2px solid #ebebeb;
+      border-radius: 14px;
+      background: #fff;
+      padding: 11px 13px;
       margin-bottom: 8px;
-      font-size: 13px;
+      transition: border-color 0.18s, box-shadow 0.18s, transform 0.14s;
+    }
+
+    .upgrade.affordable {
+      border-color: #ffc107;
+      box-shadow: 0 2px 12px rgba(255, 193, 7, 0.18);
+    }
+
+    .upgrade:hover { transform: translateX(2px); }
+
+    .upgrade-header {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 3px;
+    }
+
+    .upgrade-icon { font-size: 16px; flex-shrink: 0; }
+    .upgrade-name { font-size: 13px; font-weight: 800; color: #1a1a1a; flex: 1; }
+    .upgrade-count {
+      font-size: 10px;
+      font-weight: 700;
+      color: #bbb;
+      background: #f2f2f2;
+      padding: 2px 7px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+
+    .upgrade-desc {
+      font-size: 11px;
+      color: #bbb;
+      font-weight: 700;
+      margin-bottom: 9px;
     }
 
     .buy {
       width: 100%;
-      border: 2px solid #1c2f78;
-      background: #2f5be7;
+      border: 2px solid #1a1a1a;
+      background: #1a1a1a;
       color: #fff;
       border-radius: 10px;
-      padding: 9px;
-      font-weight: 700;
+      padding: 7px;
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 11px;
       cursor: pointer;
+      transition: background 0.14s, border-color 0.14s, transform 0.1s;
     }
 
+    .buy:hover:not(:disabled) {
+      background: #333;
+      transform: translateY(-1px);
+    }
+
+    .buy:active:not(:disabled) { transform: translateY(0); }
+
     .buy:disabled {
-      opacity: 0.55;
+      background: #f0f0f0;
+      border-color: #e8e8e8;
+      color: #ccc;
       cursor: not-allowed;
     }
 
+    /* Affordable state — golden buy button */
+    .upgrade.affordable .buy:not(:disabled) {
+      background: #ffc107;
+      border-color: #ffc107;
+      color: #1a0800;
+    }
+
+    .upgrade.affordable .buy:hover:not(:disabled) {
+      background: #e6ac00;
+      border-color: #e6ac00;
+    }
+
+    /* ══════════════════════════════════════════════
+       IDLE OVERLAY
+    ══════════════════════════════════════════════ */
     #idlePhoto {
       position: fixed;
       inset: 0;
       z-index: 9999;
-      display: block;
       background: #000;
+      opacity: 1;
+      pointer-events: auto;
+      transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    #idlePhoto.hidden { display: none; }
+    #idlePhoto.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #idlePhoto.no-transition {
+      transition: none !important;
+    }
 
     #idlePhoto img {
       width: 100%;
@@ -256,7 +469,14 @@
       display: block;
     }
 
-    @media (max-width: 960px) {
+    /* ══════════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════════ */
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 560px) {
       .grid { grid-template-columns: 1fr; }
       .game-wrap { grid-template-columns: 1fr; }
       .shop { max-height: none; }
@@ -264,192 +484,332 @@
   </style>
 </head>
 <body>
-  <!-- Dashboard -->
-  <div id="dashboard" class="page">
-    <div class="top-row">
-      <button class="pill" type="button">Get new posts</button>
-    </div>
 
-    <header class="hero">
-      <h1>alex.fun</h1>
-      <p>games and stuff</p>
+  <!-- ══ Dashboard ══════════════════════════════════════════════ -->
+  <div id="dashboard">
+
+    <header class="site-header">
+      <div class="brand">
+        <span class="brand-name">Clever | Portal</span>
+        <span class="brand-tag">games and stuff</span>
+      </div>
+      <button class="pill" type="button">✉ Get new posts</button>
     </header>
 
     <main class="grid">
+
       <article class="card card-67" id="open67">
-        <img src="./67.png" alt="67 clicker preview">
+        <img src="./67.png" alt="67 Clicker preview" onerror="this.style.display='none'">
         <div class="cursor-click">🖱️</div>
-        <h3 class="card-title">67 clicker</h3>
+        <h3 class="card-title">67 Clicker</h3>
       </article>
-      <article class="card theme-2"><h3 class="card-title">Sandboxe1s</h3></article>
-      <article class="card theme-3"><h3 class="card-title">Constellation Draw</h3></article>
-      <article class="card theme-4"><h3 class="card-title">Size of Life</h3></article>
-      <article class="card theme-5"><h3 class="card-title">Internet Roadtrip</h3></article>
-      <article class="card theme-6"><h3 class="card-title">Infinite Craft</h3></article>
-      <article class="card theme-7"><h3 class="card-title">Internet Artifacts</h3></article>
-      <article class="card theme-8"><h3 class="card-title">The Puzzle Game</h3></article>
+
+      <article class="card theme-2">
+        <h3 class="card-title">Sandboxe1s</h3>
+      </article>
+
+      <article class="card theme-3">
+        <h3 class="card-title">Constellation Draw</h3>
+      </article>
+
+      <article class="card theme-4">
+        <h3 class="card-title">Size of Life</h3>
+      </article>
+
+      <article class="card theme-5">
+        <h3 class="card-title">Internet Roadtrip</h3>
+      </article>
+
+      <article class="card theme-6">
+        <h3 class="card-title">Infinite Craft</h3>
+      </article>
+
+      <article class="card theme-7">
+        <h3 class="card-title">Internet Artifacts</h3>
+      </article>
+
+      <article class="card theme-8">
+        <h3 class="card-title">The Puzzle Game</h3>
+      </article>
+
     </main>
   </div>
 
-  <!-- 67 Clicker game -->
+  <!-- ══ 67 Clicker ═════════════════════════════════════════════ -->
   <section id="game67" class="hidden">
+
     <div class="game-top">
-      <button id="backToDash" class="btn" type="button">Back to dashboard</button>
+      <button id="backToDash"    class="btn" type="button">← Back</button>
       <button id="fullscreenBtn" class="btn" type="button">Fullscreen</button>
-      <button id="resetGame" class="btn" type="button">Reset game</button>
+      <button id="resetGame"     class="btn" type="button">Reset Game</button>
     </div>
 
     <div class="game-wrap">
-      <div class="play-area">
+
+      <div class="play-area" id="playArea">
         <div>
           <div class="stats">
-            <div><strong id="points">0</strong> points</div>
-            <div><strong id="perClick">1</strong> per click | <strong id="perSec">0</strong>/sec</div>
+            <div class="points-display"><span id="points">0</span> pts</div>
+            <div class="rate-row">
+              <strong id="perClick">1</strong> per click
+              &nbsp;·&nbsp;
+              <strong id="perSec">0</strong>/sec
+            </div>
           </div>
           <button id="big67" type="button">67</button>
         </div>
       </div>
 
       <aside class="shop">
-        <h3>Upgrades</h3>
-
-        <div class="upgrade">
-          <div class="upgrade-title">Multiple Clickers (<span id="count_multi">0</span>)</div>
-          <small>+1 point per click</small>
-          <button id="buy_multi" class="buy" type="button">Buy - <span id="cost_multi">25</span></button>
-        </div>
-
-        <div class="upgrade">
-          <div class="upgrade-title">Autoclickers (<span id="count_auto">0</span>)</div>
-          <small>+1 point/sec</small>
-          <button id="buy_auto" class="buy" type="button">Buy - <span id="cost_auto">50</span></button>
-        </div>
-
-        <div class="upgrade">
-          <div class="upgrade-title">67 Factories (<span id="count_factory">0</span>)</div>
-          <small>+8 points/sec</small>
-          <button id="buy_factory" class="buy" type="button">Buy - <span id="cost_factory">400</span></button>
-        </div>
-
-        <div class="upgrade">
-          <div class="upgrade-title">67 God (<span id="count_god">0</span>)</div>
-          <small>+40 points/sec</small>
-          <button id="buy_god" class="buy" type="button">Buy - <span id="cost_god">2500</span></button>
-        </div>
+        <span class="shop-label">Upgrades</span>
+        <!-- populated by JS -->
       </aside>
+
     </div>
   </section>
 
-  <!-- Idle photo -->
+  <!-- ══ Idle photo ═════════════════════════════════════════════ -->
   <div id="idlePhoto" aria-hidden="true">
     <img src="./cleverpage.png" alt="Idle screen" />
   </div>
 
   <script>
-    const IDLE_MS = 5000;
+    // ── Idle logic ────────────────────────────────────────────────
+    const IDLE_MS   = 5000;
     const idlePhoto = document.getElementById("idlePhoto");
-    let idleTimer = null;
+    let   idleTimer = null;
 
-    function showIdle() {
-      idlePhoto.classList.remove("hidden");
+    function showIdle(instant) {
+      if (instant) {
+        idlePhoto.classList.add("no-transition");
+        idlePhoto.classList.remove("hidden");
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          idlePhoto.classList.remove("no-transition");
+        }));
+      } else {
+        idlePhoto.classList.remove("hidden");
+      }
       clearTimeout(idleTimer);
     }
 
     function hideIdleAndArmTimer() {
       idlePhoto.classList.add("hidden");
       clearTimeout(idleTimer);
-      idleTimer = setTimeout(showIdle, IDLE_MS);
+      idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
     }
 
-    showIdle();
+    showIdle(true);
 
-    ["mousemove", "mousedown", "scroll", "touchstart", "click", "input", "wheel"].forEach((evt) => {
+    ["mousemove", "mousedown", "scroll", "touchstart", "click", "input", "wheel"].forEach(evt => {
       window.addEventListener(evt, hideIdleAndArmTimer, { passive: true });
     });
 
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Backspace") {
-        showIdle();
-        return;
-      }
+    window.addEventListener("keydown", e => {
+      if (e.key === "Backspace") { showIdle(true); return; }
       hideIdleAndArmTimer();
     });
 
-    // Screen switching
+    // ── Screen switching ──────────────────────────────────────────
     const dashboard = document.getElementById("dashboard");
-    const game67 = document.getElementById("game67");
+    const game67El  = document.getElementById("game67");
+
     document.getElementById("open67").addEventListener("click", () => {
       dashboard.classList.add("hidden");
-      game67.classList.remove("hidden");
+      game67El.classList.remove("hidden");
     });
+
     document.getElementById("backToDash").addEventListener("click", () => {
-      game67.classList.add("hidden");
+      game67El.classList.add("hidden");
       dashboard.classList.remove("hidden");
     });
 
-    // Game state
-    let points = 0;
+    // ── Upgrade definitions ───────────────────────────────────────
+    const upgradeConfig = [
+      {
+        key: "multi",      icon: "🖱️",
+        name: "Multiple Clickers",
+        desc: "+1 point per click",
+        cost: 25,          scale: 1.4,
+        onBuy: () => { clickPower += 1; }
+      },
+      {
+        key: "auto",       icon: "🤖",
+        name: "Autoclicker",
+        desc: "+1 point/sec",
+        cost: 50,          scale: 1.6,
+        onBuy: () => { perSec += 1; }
+      },
+      {
+        key: "factory",    icon: "🏭",
+        name: "67 Factory",
+        desc: "+8 points/sec",
+        cost: 400,         scale: 1.7,
+        onBuy: () => { perSec += 8; }
+      },
+      {
+        key: "mine",       icon: "⛏️",
+        name: "67 Mine",
+        desc: "+47 points/sec",
+        cost: 4_000,       scale: 1.8,
+        onBuy: () => { perSec += 47; }
+      },
+      {
+        key: "lab",        icon: "🔬",
+        name: "67 Laboratory",
+        desc: "+260 points/sec",
+        cost: 40_000,      scale: 1.85,
+        onBuy: () => { perSec += 260; }
+      },
+      {
+        key: "powerclick", icon: "⚡",
+        name: "Power Click",
+        desc: "+10 points per click",
+        cost: 100_000,     scale: 1.9,
+        onBuy: () => { clickPower += 10; }
+      },
+      {
+        key: "dimension",  icon: "🌀",
+        name: "67 Dimension",
+        desc: "+1,600 points/sec",
+        cost: 500_000,     scale: 1.9,
+        onBuy: () => { perSec += 1_600; }
+      },
+      {
+        key: "empire",     icon: "👑",
+        name: "67 Empire",
+        desc: "+10,000 points/sec",
+        cost: 7_000_000,   scale: 2.0,
+        onBuy: () => { perSec += 10_000; }
+      },
+      {
+        key: "galaxy",     icon: "🌌",
+        name: "67 Galaxy",
+        desc: "+65,000 points/sec",
+        cost: 100_000_000, scale: 2.1,
+        onBuy: () => { perSec += 65_000; }
+      },
+      {
+        key: "mason",      icon: "🧱",
+        name: "Mason 67",
+        desc: "+400,000 points/sec",
+        cost: 1_000_000_000, scale: 2.2,
+        onBuy: () => { perSec += 400_000; }
+      },
+      {
+        key: "god",        icon: "✨",
+        name: "67 God",
+        desc: "+2,500,000 points/sec",
+        cost: 1_000_000_000_000, scale: 2.5,
+        onBuy: () => { perSec += 2_500_000; }
+      }
+    ];
+
+    // Runtime state
+    let points     = 0;
     let clickPower = 1;
-    let perSec = 0;
+    let perSec     = 0;
 
-    const upgrades = {
-      multi:   { cost: 25,   scale: 1.4, count: 0, onBuy: () => { clickPower += 1; } },
-      auto:    { cost: 50,   scale: 1.6, count: 0, onBuy: () => { perSec += 1; } },
-      factory: { cost: 400,  scale: 1.7, count: 0, onBuy: () => { perSec += 8; } },
-      god:     { cost: 2500, scale: 2.0, count: 0, onBuy: () => { perSec += 40; } }
-    };
+    const state = {};
+    upgradeConfig.forEach(cfg => {
+      state[cfg.key] = { count: 0, cost: cfg.cost };
+    });
 
+    // ── Build shop DOM ────────────────────────────────────────────
+    const shopEl = document.querySelector(".shop");
+    upgradeConfig.forEach(cfg => {
+      const div = document.createElement("div");
+      div.className = "upgrade";
+      div.id = "upg_" + cfg.key;
+      div.innerHTML = `
+        <div class="upgrade-header">
+          <span class="upgrade-icon">${cfg.icon}</span>
+          <span class="upgrade-name">${cfg.name}</span>
+          <span class="upgrade-count" id="count_${cfg.key}">0</span>
+        </div>
+        <div class="upgrade-desc">${cfg.desc}</div>
+        <button class="buy" id="buy_${cfg.key}" type="button">
+          Buy — <span id="cost_${cfg.key}">${formatNum(cfg.cost)}</span>
+        </button>`;
+      shopEl.appendChild(div);
+    });
+
+    // ── Number formatting ─────────────────────────────────────────
     function formatNum(n) {
-      if (n >= 1e9) return (n / 1e9).toFixed(2) + "B";
-      if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
-      if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+      if (n >= 1e12) return (n / 1e12).toFixed(2) + "T";
+      if (n >= 1e9)  return (n / 1e9 ).toFixed(2) + "B";
+      if (n >= 1e6)  return (n / 1e6 ).toFixed(2) + "M";
+      if (n >= 1e3)  return (n / 1e3 ).toFixed(1) + "K";
       return Math.floor(n).toString();
     }
 
+    // ── UI update ─────────────────────────────────────────────────
     function updateUI() {
-      document.getElementById("points").textContent = formatNum(points);
-      document.getElementById("perClick").textContent = clickPower;
-      document.getElementById("perSec").textContent = perSec;
+      document.getElementById("points").textContent   = formatNum(points);
+      document.getElementById("perClick").textContent = formatNum(clickPower);
+      document.getElementById("perSec").textContent   = formatNum(perSec);
 
-      for (const key of Object.keys(upgrades)) {
-        document.getElementById("count_" + key).textContent = upgrades[key].count;
-        document.getElementById("cost_" + key).textContent = formatNum(upgrades[key].cost);
-        document.getElementById("buy_" + key).disabled = points < upgrades[key].cost;
-      }
+      upgradeConfig.forEach(cfg => {
+        const u      = state[cfg.key];
+        const canBuy = points >= u.cost;
+        document.getElementById("count_" + cfg.key).textContent = u.count;
+        document.getElementById("cost_"  + cfg.key).textContent = formatNum(u.cost);
+        document.getElementById("buy_"   + cfg.key).disabled    = !canBuy;
+        document.getElementById("upg_"   + cfg.key).classList.toggle("affordable", canBuy);
+      });
     }
 
+    // ── Buy upgrade ───────────────────────────────────────────────
     function buyUpgrade(key) {
-      const u = upgrades[key];
+      const cfg = upgradeConfig.find(c => c.key === key);
+      const u   = state[key];
       if (points < u.cost) return;
-      points -= u.cost;
+      points  -= u.cost;
       u.count += 1;
-      u.onBuy();
-      u.cost = Math.ceil(u.cost * u.scale);
+      cfg.onBuy();
+      u.cost = Math.ceil(u.cost * cfg.scale);
       updateUI();
     }
 
-    document.getElementById("big67").addEventListener("click", () => {
+    upgradeConfig.forEach(cfg => {
+      document.getElementById("buy_" + cfg.key)
+        .addEventListener("click", () => buyUpgrade(cfg.key));
+    });
+
+    // ── Click handler ─────────────────────────────────────────────
+    const big67    = document.getElementById("big67");
+    const playArea = document.getElementById("playArea");
+
+    big67.addEventListener("click", e => {
       points += clickPower;
       updateUI();
+      spawnFloat(e, "+" + formatNum(clickPower));
     });
 
-    document.getElementById("buy_multi").addEventListener("click", () => buyUpgrade("multi"));
-    document.getElementById("buy_auto").addEventListener("click", () => buyUpgrade("auto"));
-    document.getElementById("buy_factory").addEventListener("click", () => buyUpgrade("factory"));
-    document.getElementById("buy_god").addEventListener("click", () => buyUpgrade("god"));
+    function spawnFloat(e, text) {
+      const rect = playArea.getBoundingClientRect();
+      const span = document.createElement("span");
+      span.className   = "float-text";
+      span.textContent = text;
+      span.style.left  = (e.clientX - rect.left + (Math.random() * 36 - 18)) + "px";
+      span.style.top   = (e.clientY - rect.top  - 8) + "px";
+      playArea.appendChild(span);
+      span.addEventListener("animationend", () => span.remove());
+    }
 
+    // ── Reset ─────────────────────────────────────────────────────
     document.getElementById("resetGame").addEventListener("click", () => {
-      points = 0;
+      if (!confirm("Reset all progress?")) return;
+      points     = 0;
       clickPower = 1;
-      perSec = 0;
-      for (const key of Object.keys(upgrades)) upgrades[key].count = 0;
-      upgrades.multi.cost = 25;
-      upgrades.auto.cost = 50;
-      upgrades.factory.cost = 400;
-      upgrades.god.cost = 2500;
+      perSec     = 0;
+      upgradeConfig.forEach(cfg => {
+        state[cfg.key].count = 0;
+        state[cfg.key].cost  = cfg.cost;
+      });
       updateUI();
     });
 
+    // ── Fullscreen ────────────────────────────────────────────────
     document.getElementById("fullscreenBtn").addEventListener("click", async () => {
       try {
         if (!document.fullscreenElement) {
@@ -462,12 +822,16 @@
       }
     });
 
+    // ── Passive income ────────────────────────────────────────────
     setInterval(() => {
-      points += perSec / 10;
-      updateUI();
+      if (perSec > 0) {
+        points += perSec / 10;
+        updateUI();
+      }
     }, 100);
 
     updateUI();
   </script>
+
 </body>
 </html>
