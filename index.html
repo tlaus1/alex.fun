@@ -11,6 +11,8 @@
       --card-border: #202020;
       --text: #121212;
       --muted: #3e3e3e;
+      --panel: #f6f6f6;
+      --blue: #2553ff;
     }
 
     * { box-sizing: border-box; }
@@ -21,6 +23,8 @@
       background: var(--bg);
       color: var(--text);
     }
+
+    .hidden { display: none !important; }
 
     .page {
       max-width: 1160px;
@@ -38,8 +42,8 @@
       border: 2px solid #8d8d8d;
       background: #efefef;
       border-radius: 18px;
-      padding: 12px 22px;
-      font-size: 20px;
+      padding: 10px 18px;
+      font-size: 18px;
     }
 
     .hero {
@@ -74,16 +78,6 @@
       aspect-ratio: 2.3 / 1;
       background: linear-gradient(130deg, #6dd5fa, #2980b9);
       cursor: pointer;
-    }
-
-    .card::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle at 20% 15%, rgba(255,255,255,0.35), transparent 28%),
-        radial-gradient(circle at 82% 80%, rgba(255,255,255,0.25), transparent 26%);
-      pointer-events: none;
     }
 
     .card-title {
@@ -122,20 +116,6 @@
       z-index: 3;
     }
 
-    .cursor-click::after {
-      content: "";
-      position: absolute;
-      inset: -8px;
-      border: 3px solid rgba(255,255,255,0.85);
-      border-radius: 50%;
-      animation: pulse 1.1s infinite;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(0.8); opacity: 0.9; }
-      100% { transform: scale(1.35); opacity: 0; }
-    }
-
     .theme-2 { background: linear-gradient(125deg, #141e30, #243b55); }
     .theme-3 { background: linear-gradient(125deg, #ff006e, #8338ec); }
     .theme-4 { background: linear-gradient(125deg, #06d6a0, #118ab2); }
@@ -143,6 +123,120 @@
     .theme-6 { background: linear-gradient(125deg, #3a0ca3, #4cc9f0); }
     .theme-7 { background: linear-gradient(125deg, #588157, #344e41); }
     .theme-8 { background: linear-gradient(125deg, #c1121f, #003049); }
+
+    /* Game screen */
+    #game67 {
+      min-height: 100vh;
+      padding: 14px;
+      background: linear-gradient(180deg, #f1f4ff, #edf1fb);
+    }
+
+    .game-top {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 2px solid #444;
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .game-wrap {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 14px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .play-area {
+      border: 3px solid #1d1d1d;
+      border-radius: 20px;
+      background: #fff;
+      min-height: 72vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .stats {
+      margin-bottom: 14px;
+      font-size: clamp(20px, 3vw, 34px);
+      line-height: 1.3;
+    }
+
+    #big67 {
+      width: min(350px, 78vw);
+      height: min(350px, 78vw);
+      border-radius: 50%;
+      border: 5px solid #111;
+      background: radial-gradient(circle at 30% 30%, #ffe27a, #ff9f1c 65%, #d96f00);
+      color: #111;
+      font-size: clamp(80px, 13vw, 140px);
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.06s ease;
+      user-select: none;
+    }
+
+    #big67:active { transform: scale(0.96); }
+
+    .shop {
+      border: 3px solid #1d1d1d;
+      border-radius: 20px;
+      background: var(--panel);
+      padding: 12px;
+      max-height: 82vh;
+      overflow: auto;
+    }
+
+    .shop h3 {
+      margin: 4px 0 10px;
+      font-size: 24px;
+    }
+
+    .upgrade {
+      border: 2px solid #222;
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .upgrade-title {
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .upgrade small {
+      display: block;
+      color: #444;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .buy {
+      width: 100%;
+      border: 2px solid #1c2f78;
+      background: #2f5be7;
+      color: #fff;
+      border-radius: 10px;
+      padding: 9px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .buy:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
 
     #idlePhoto {
       position: fixed;
@@ -158,18 +252,20 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: top center; /* show top, crop bottom */
+      object-position: top center;
       display: block;
     }
 
-    @media (max-width: 860px) {
+    @media (max-width: 960px) {
       .grid { grid-template-columns: 1fr; }
-      .pill { font-size: 18px; padding: 10px 16px; }
+      .game-wrap { grid-template-columns: 1fr; }
+      .shop { max-height: none; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
+  <!-- Dashboard -->
+  <div id="dashboard" class="page">
     <div class="top-row">
       <button class="pill" type="button">Get new posts</button>
     </div>
@@ -180,12 +276,11 @@
     </header>
 
     <main class="grid">
-      <article class="card card-67">
+      <article class="card card-67" id="open67">
         <img src="./67.png" alt="67 clicker preview">
         <div class="cursor-click">🖱️</div>
         <h3 class="card-title">67 clicker</h3>
       </article>
-
       <article class="card theme-2"><h3 class="card-title">Sandboxe1s</h3></article>
       <article class="card theme-3"><h3 class="card-title">Constellation Draw</h3></article>
       <article class="card theme-4"><h3 class="card-title">Size of Life</h3></article>
@@ -196,6 +291,56 @@
     </main>
   </div>
 
+  <!-- 67 Clicker game -->
+  <section id="game67" class="hidden">
+    <div class="game-top">
+      <button id="backToDash" class="btn" type="button">Back to dashboard</button>
+      <button id="fullscreenBtn" class="btn" type="button">Fullscreen</button>
+      <button id="resetGame" class="btn" type="button">Reset game</button>
+    </div>
+
+    <div class="game-wrap">
+      <div class="play-area">
+        <div>
+          <div class="stats">
+            <div><strong id="points">0</strong> points</div>
+            <div><strong id="perClick">1</strong> per click | <strong id="perSec">0</strong>/sec</div>
+          </div>
+          <button id="big67" type="button">67</button>
+        </div>
+      </div>
+
+      <aside class="shop">
+        <h3>Upgrades</h3>
+
+        <div class="upgrade">
+          <div class="upgrade-title">Multiple Clickers (<span id="count_multi">0</span>)</div>
+          <small>+1 point per click</small>
+          <button id="buy_multi" class="buy" type="button">Buy - <span id="cost_multi">25</span></button>
+        </div>
+
+        <div class="upgrade">
+          <div class="upgrade-title">Autoclickers (<span id="count_auto">0</span>)</div>
+          <small>+1 point/sec</small>
+          <button id="buy_auto" class="buy" type="button">Buy - <span id="cost_auto">50</span></button>
+        </div>
+
+        <div class="upgrade">
+          <div class="upgrade-title">67 Factories (<span id="count_factory">0</span>)</div>
+          <small>+8 points/sec</small>
+          <button id="buy_factory" class="buy" type="button">Buy - <span id="cost_factory">400</span></button>
+        </div>
+
+        <div class="upgrade">
+          <div class="upgrade-title">67 God (<span id="count_god">0</span>)</div>
+          <small>+40 points/sec</small>
+          <button id="buy_god" class="buy" type="button">Buy - <span id="cost_god">2500</span></button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Idle photo -->
   <div id="idlePhoto" aria-hidden="true">
     <img src="./cleverpage.png" alt="Idle screen" />
   </div>
@@ -218,18 +363,111 @@
 
     showIdle();
 
-    const events = ["mousemove", "mousedown", "scroll", "touchstart", "click", "input", "wheel"];
-    events.forEach((evt) => {
+    ["mousemove", "mousedown", "scroll", "touchstart", "click", "input", "wheel"].forEach((evt) => {
       window.addEventListener(evt, hideIdleAndArmTimer, { passive: true });
     });
 
     window.addEventListener("keydown", (e) => {
       if (e.key === "Backspace") {
-        showIdle(); // instant snap to photo on backspace
+        showIdle();
         return;
       }
       hideIdleAndArmTimer();
     });
+
+    // Screen switching
+    const dashboard = document.getElementById("dashboard");
+    const game67 = document.getElementById("game67");
+    document.getElementById("open67").addEventListener("click", () => {
+      dashboard.classList.add("hidden");
+      game67.classList.remove("hidden");
+    });
+    document.getElementById("backToDash").addEventListener("click", () => {
+      game67.classList.add("hidden");
+      dashboard.classList.remove("hidden");
+    });
+
+    // Game state
+    let points = 0;
+    let clickPower = 1;
+    let perSec = 0;
+
+    const upgrades = {
+      multi:   { cost: 25,   scale: 1.4, count: 0, onBuy: () => { clickPower += 1; } },
+      auto:    { cost: 50,   scale: 1.6, count: 0, onBuy: () => { perSec += 1; } },
+      factory: { cost: 400,  scale: 1.7, count: 0, onBuy: () => { perSec += 8; } },
+      god:     { cost: 2500, scale: 2.0, count: 0, onBuy: () => { perSec += 40; } }
+    };
+
+    function formatNum(n) {
+      if (n >= 1e9) return (n / 1e9).toFixed(2) + "B";
+      if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+      return Math.floor(n).toString();
+    }
+
+    function updateUI() {
+      document.getElementById("points").textContent = formatNum(points);
+      document.getElementById("perClick").textContent = clickPower;
+      document.getElementById("perSec").textContent = perSec;
+
+      for (const key of Object.keys(upgrades)) {
+        document.getElementById("count_" + key).textContent = upgrades[key].count;
+        document.getElementById("cost_" + key).textContent = formatNum(upgrades[key].cost);
+        document.getElementById("buy_" + key).disabled = points < upgrades[key].cost;
+      }
+    }
+
+    function buyUpgrade(key) {
+      const u = upgrades[key];
+      if (points < u.cost) return;
+      points -= u.cost;
+      u.count += 1;
+      u.onBuy();
+      u.cost = Math.ceil(u.cost * u.scale);
+      updateUI();
+    }
+
+    document.getElementById("big67").addEventListener("click", () => {
+      points += clickPower;
+      updateUI();
+    });
+
+    document.getElementById("buy_multi").addEventListener("click", () => buyUpgrade("multi"));
+    document.getElementById("buy_auto").addEventListener("click", () => buyUpgrade("auto"));
+    document.getElementById("buy_factory").addEventListener("click", () => buyUpgrade("factory"));
+    document.getElementById("buy_god").addEventListener("click", () => buyUpgrade("god"));
+
+    document.getElementById("resetGame").addEventListener("click", () => {
+      points = 0;
+      clickPower = 1;
+      perSec = 0;
+      for (const key of Object.keys(upgrades)) upgrades[key].count = 0;
+      upgrades.multi.cost = 25;
+      upgrades.auto.cost = 50;
+      upgrades.factory.cost = 400;
+      upgrades.god.cost = 2500;
+      updateUI();
+    });
+
+    document.getElementById("fullscreenBtn").addEventListener("click", async () => {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
+      } catch (err) {
+        console.log("Fullscreen blocked:", err);
+      }
+    });
+
+    setInterval(() => {
+      points += perSec / 10;
+      updateUI();
+    }, 100);
+
+    updateUI();
   </script>
 </body>
 </html>
