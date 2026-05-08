@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Idle Photo Site</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #f4f6fb; }
+    .topbar { background: #2f5be7; color: #fff; padding: 14px 18px; font-size: 20px; font-weight: 700; }
+    .content { padding: 24px; }
+    #welcome { margin: 0 0 10px; }
+
+    /* Full-screen photo overlay */
+    #idlePhoto {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: block; /* visible on load */
+      background: #000;
+    }
+    #idlePhoto.hidden { display: none; }
+    #idlePhoto img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">Student Dashboard</div>
+
+  <div class="content">
+    <h1 id="welcome">Welcome</h1>
+    <p>Any input hides the photo. After 5 seconds of no input, it appears again.</p>
+  </div>
+
+  <div id="idlePhoto" aria-hidden="true">
+    <img src="https://drive.google.com/thumbnail?id=1M2k-DRz7GEtCMHPoleXx-bJT-XR2cAcU&sz=w2000" alt="Idle screen">
+  </div>
+
+  <script>
+    const IDLE_MS = 5000;
+    const NAME_KEY = "display_name";
+    const idlePhoto = document.getElementById("idlePhoto");
+    const welcome = document.getElementById("welcome");
+    let idleTimer;
+
+    function setDisplayName() {
+      let name = localStorage.getItem(NAME_KEY);
+      if (!name) {
+        name = (prompt("What name should we display?") || "Student").trim() || "Student";
+        localStorage.setItem(NAME_KEY, name);
+      }
+      welcome.textContent = "Welcome, " + name;
+    }
+
+    function showPhoto() { idlePhoto.classList.remove("hidden"); }
+    function hidePhoto() { idlePhoto.classList.add("hidden"); }
+
+    function resetIdleTimer() {
+      hidePhoto();                    // hide immediately on any input
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(showPhoto, IDLE_MS); // show after 5s idle
+    }
+
+    setDisplayName();
+    showPhoto(); // visible on page load until first input
+
+    [
+      "mousemove", "mousedown", "keydown",
+      "scroll", "touchstart", "click", "input"
+    ].forEach((evt) => {
+      window.addEventListener(evt, resetIdleTimer, { passive: true });
+    });
+  </script>
+</body>
+</html>
