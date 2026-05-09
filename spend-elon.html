@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Clever | Portal</title>
+  <title>Spend Elon's Money — alex.fun</title>
   <link rel="icon" type="image/png" href="./clever1.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -182,6 +182,23 @@
       .grid{grid-template-columns:repeat(2,1fr);gap:10px;padding:10px;}
       .item-photo{height:110px;}
     }
+
+    /* ── Status bar ── */
+    #statusBar{
+      position:fixed;bottom:0;left:0;right:0;height:26px;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 14px;background:#111;border-top:1px solid #222;
+      font-size:11px;font-weight:800;color:#555;z-index:200;
+      font-family:"Martel Sans",Arial,sans-serif;
+    }
+    #statusBar .sb-cover{cursor:pointer;}
+    #statusBar .sb-cover:hover{color:#aaa;}
+
+    /* ── Cover overlay ── */
+    #coverOverlay{
+      display:none;position:fixed;inset:0;z-index:9998;cursor:pointer;
+    }
+    #coverOverlay img{width:100%;height:100%;object-fit:cover;display:block;}
   </style>
 </head>
 <body>
@@ -216,6 +233,15 @@
 </div>
 
 <div class="grid" id="itemGrid"></div>
+
+<div id="statusBar">
+  <span class="sb-cover" onclick="showCover()">⌫ Cover Image</span>
+  <span>v1.0.0</span>
+</div>
+
+<div id="coverOverlay" onclick="hideCover()">
+  <img src="./cleverpage.png" alt="Cover"/>
+</div>
 
 <div id="winBanner">
   <div class="win-emoji">🎉</div>
@@ -292,7 +318,7 @@ const ITEMS = [
   // ── Cars ──────────────────────────────────────────────────────────────────
   {
     id:'civic', emoji:'🚗', name:'Honda Civic', price:25_000, cat:'Cars',
-    img:'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b5/2022_Honda_Civic_Touring_in_Lunar_Silver_Metallic%2C_Front_Left%2C_05-10-2022.jpg'
   },
   {
     id:'lambo', emoji:'🏎️', name:'Lamborghini Urus', price:250_000, cat:'Cars',
@@ -308,11 +334,11 @@ const ITEMS = [
   },
   {
     id:'bugatti', emoji:'🏎️', name:'Bugatti Chiron', price:3_000_000, cat:'Cars',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/2017_Bugatti_Chiron.jpg/640px-2017_Bugatti_Chiron.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/6/6b/2017_Bugatti_Chiron.jpg'
   },
   {
     id:'koenigsegg', emoji:'🏎️', name:'Koenigsegg Agera RS', price:10_000_000, cat:'Cars',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Koenigsegg_Agera_RS_Geneva_2015.jpg/640px-Koenigsegg_Agera_RS_Geneva_2015.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/6/65/Koenigsegg_Agera_RST_2.jpg'
   },
   {
     id:'rolsroyce', emoji:'🚘', name:'Rolls-Royce Boat Tail', price:28_000_000, cat:'Cars',
@@ -368,33 +394,33 @@ const ITEMS = [
   },
   {
     id:'palace', emoji:'🏰', name:'Buckingham Palace (est.)', price:5_000_000_000, cat:'Real Estate',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Buckingham_Palace%2C_London_-_April_2009.jpg/640px-Buckingham_Palace%2C_London_-_April_2009.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Buckingham_Palace%2C_London_-_April_2009.jpg'
   },
 
   // ── Athletes ──────────────────────────────────────────────────────────────
   {
     id:'messi', emoji:'⚽', name:'Lionel Messi (1 yr salary)', price:135_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg/480px-Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg'
   },
   {
     id:'ronaldo', emoji:'⚽', name:'Cristiano Ronaldo (1 yr)', price:200_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Cristiano_Ronaldo_2018.jpg/480px-Cristiano_Ronaldo_2018.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg'
   },
   {
     id:'mbappe', emoji:'⚽', name:'Kylian Mbappé (1 yr)', price:180_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Kylian_Mbapp%C3%A9_in_2023.jpg/480px-Kylian_Mbapp%C3%A9_in_2023.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/7/7e/Kylian_Mbapp%C3%A9_in_2023.jpg'
   },
   {
     id:'lebron', emoji:'🏀', name:'LeBron James (1 yr)', price:128_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/LeBron_James_crop.jpg/480px-LeBron_James_crop.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/c/cf/LeBron_James_crop.jpg'
   },
   {
     id:'curry', emoji:'🏀', name:'Stephen Curry (1 yr)', price:55_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Stephen_Curry_2022.jpg/480px-Stephen_Curry_2022.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b6/Stephen_Curry_shooting.jpg'
   },
   {
     id:'taylor', emoji:'🎤', name:'Taylor Swift (1 yr tour)', price:1_000_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/191125_Taylor_Swift_at_the_2019_American_Music_Awards_%28cropped%29.png/480px-191125_Taylor_Swift_at_the_2019_American_Music_Awards_%28cropped%29.png'
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b5/191125_Taylor_Swift_at_the_2019_American_Music_Awards_%28cropped%29.png'
   },
 
   // ── Sports Teams ──────────────────────────────────────────────────────────
@@ -434,7 +460,7 @@ const ITEMS = [
   },
   {
     id:'monalisa', emoji:'🎨', name:'Mona Lisa (est. value)', price:860_000_000, cat:'Wild',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/400px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/640px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg'
   },
   {
     id:'carrier', emoji:'⚓', name:'Aircraft Carrier', price:13_000_000_000, cat:'Wild',
@@ -628,6 +654,22 @@ document.getElementById('resetBtn').addEventListener('click', resetGame);
 // ─────────────────────────────────────────────
 renderGrid();
 updateHUD();
+
+// ─────────────────────────────────────────────
+//  Cover overlay
+// ─────────────────────────────────────────────
+function showCover(){
+  document.getElementById('coverOverlay').style.display='block';
+}
+function hideCover(){
+  document.getElementById('coverOverlay').style.display='none';
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Backspace'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){
+    e.preventDefault();
+    showCover();
+  }
+});
 </script>
 </body>
 </html>
