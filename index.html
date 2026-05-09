@@ -277,14 +277,35 @@
       100% { transform: scale(1.4); opacity: 0; }
     }
 
-    /* ── Card themes ── */
-    .theme-2 { background: linear-gradient(125deg, #141e30, #243b55); }
-    .theme-3 { background: linear-gradient(125deg, #ff006e, #8338ec); }
-    .theme-4 { background: linear-gradient(125deg, #06d6a0, #118ab2); }
-    .theme-5 { background: linear-gradient(125deg, #fb8500, #d62828); }
-    .theme-6 { background: linear-gradient(125deg, #3a0ca3, #4cc9f0); }
-    .theme-7 { background: linear-gradient(125deg, #588157, #344e41); }
-    .theme-8 { background: linear-gradient(125deg, #c1121f, #003049); }
+    /* ── Infinite Craft card ── */
+    .card-ic {
+      background: #f0ede8;
+    }
+    .card-ic img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      position: absolute; inset: 0;
+      display: block; z-index: 0;
+    }
+    .card-ic.card::after {
+      background: linear-gradient(to top, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.04) 40%, transparent 65%);
+    }
+    .card-ic .card-title { color: #1a1a1a; text-shadow: 0 1px 6px rgba(255,255,255,0.6); }
+
+    /* ── Password Game card ── */
+    .card-pw {
+      background: #fff8f0;
+    }
+    .card-pw img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      position: absolute; inset: 0;
+      display: block; z-index: 0;
+    }
+    .card-pw.card::after {
+      background: linear-gradient(to top, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.03) 40%, transparent 65%);
+    }
+    .card-pw .card-title { color: #1a1a1a; text-shadow: 0 1px 6px rgba(255,255,255,0.6); }
 
     /* ── Staggered card entrance ── */
     @keyframes fadeUp {
@@ -293,13 +314,8 @@
     }
 
     .card:nth-child(1) { animation: fadeUp 0.35s ease 0.04s both; }
-    .card:nth-child(2) { animation: fadeUp 0.35s ease 0.09s both; }
-    .card:nth-child(3) { animation: fadeUp 0.35s ease 0.14s both; }
-    .card:nth-child(4) { animation: fadeUp 0.35s ease 0.19s both; }
-    .card:nth-child(5) { animation: fadeUp 0.35s ease 0.24s both; }
-    .card:nth-child(6) { animation: fadeUp 0.35s ease 0.29s both; }
-    .card:nth-child(7) { animation: fadeUp 0.35s ease 0.34s both; }
-    .card:nth-child(8) { animation: fadeUp 0.35s ease 0.39s both; }
+    .card:nth-child(2) { animation: fadeUp 0.35s ease 0.12s both; }
+    .card:nth-child(3) { animation: fadeUp 0.35s ease 0.20s both; }
 
     /* ══════════════════════════════════════════════
        GAME SCREEN
@@ -571,32 +587,14 @@
         <h3 class="card-title">67 Clicker</h3>
       </article>
 
-      <article class="card theme-2">
-        <h3 class="card-title">Sandboxe1s</h3>
-      </article>
-
-      <article class="card theme-3">
-        <h3 class="card-title">Constellation Draw</h3>
-      </article>
-
-      <article class="card theme-4">
-        <h3 class="card-title">Size of Life</h3>
-      </article>
-
-      <article class="card theme-5">
-        <h3 class="card-title">Internet Roadtrip</h3>
-      </article>
-
-      <article class="card theme-6" onclick="location.href='./infinite-craft.html'" style="cursor:pointer">
+      <article class="card card-ic" onclick="location.href='./infinite-craft.html'" style="cursor:pointer">
+        <img src="./infinite-craft-icon.svg" alt="Infinite Craft preview">
         <h3 class="card-title">Infinite Craft</h3>
       </article>
 
-      <article class="card theme-7">
-        <h3 class="card-title">Internet Artifacts</h3>
-      </article>
-
-      <article class="card theme-8">
-        <h3 class="card-title">The Puzzle Game</h3>
+      <article class="card card-pw" onclick="location.href='./password-game.html'" style="cursor:pointer">
+        <img src="./password-icon.svg" alt="Password Game preview">
+        <h3 class="card-title">The Password Game</h3>
       </article>
 
     </main>
