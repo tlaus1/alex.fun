@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 400" width="940" height="400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#061206"/>
+      <stop offset="50%" stop-color="#001a00"/>
+      <stop offset="100%" stop-color="#0a1200"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="rgba(46,204,113,0.15)"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="rgba(0,0,0,0.5)"/>
+    </filter>
+    <filter id="gf" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="20" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark background -->
+  <rect width="940" height="400" fill="url(#bg)"/>
+  <rect width="940" height="400" fill="url(#glow)"/>
+
+  <!-- Subtle money pattern -->
+  <text x="30"  y="60"  font-size="22" fill="rgba(46,204,113,0.06)" font-family="Arial">$</text>
+  <text x="120" y="35"  font-size="16" fill="rgba(46,204,113,0.05)" font-family="Arial">$</text>
+  <text x="840" y="55"  font-size="20" fill="rgba(46,204,113,0.06)" font-family="Arial">$</text>
+  <text x="880" y="340" font-size="22" fill="rgba(46,204,113,0.05)" font-family="Arial">$</text>
+  <text x="40"  y="360" font-size="18" fill="rgba(46,204,113,0.05)" font-family="Arial">$</text>
+  <text x="760" y="30"  font-size="14" fill="rgba(46,204,113,0.04)" font-family="Arial">$</text>
+
+  <!-- Center money amount text -->
+  <text x="470" y="155"
+    text-anchor="middle"
+    font-family="'Nunito','Arial Black',Arial,sans-serif"
+    font-size="13"
+    font-weight="900"
+    fill="rgba(46,204,113,0.5)"
+    letter-spacing="3">ELON MUSK'S NET WORTH</text>
+
+  <text x="470" y="228"
+    text-anchor="middle"
+    font-family="'Arial Black','Arial Rounded MT Bold',Arial,sans-serif"
+    font-size="72"
+    font-weight="900"
+    fill="#2ecc71"
+    filter="url(#gf)">$321.7B</text>
+
+  <!-- Progress bar mock -->
+  <rect x="220" y="252" width="500" height="8" rx="4" fill="rgba(255,255,255,0.07)"/>
+  <rect x="220" y="252" width="480" height="8" rx="4" fill="#27ae60" opacity="0.85"/>
+
+  <!-- Item emojis floating around -->
+  <!-- Mansion -->
+  <g filter="url(#sh)" opacity="0.85">
+    <rect x="68" y="110" width="90" height="70" rx="12" fill="#161616" stroke="#27ae60" stroke-width="1.5"/>
+    <text x="113" y="148" text-anchor="middle" font-size="28" font-family="Arial">🏡</text>
+    <text x="113" y="168" text-anchor="middle" font-size="10" font-weight="800" fill="#2ecc71" font-family="'Nunito',Arial">$100M</text>
+  </g>
+
+  <!-- Car -->
+  <g filter="url(#sh)" opacity="0.85">
+    <rect x="68" y="200" width="90" height="70" rx="12" fill="#161616" stroke="#1a3a1a" stroke-width="1.5"/>
+    <text x="113" y="238" text-anchor="middle" font-size="28" font-family="Arial">🏎️</text>
+    <text x="113" y="258" text-anchor="middle" font-size="10" font-weight="800" fill="#2ecc71" font-family="'Nunito',Arial">$10M</text>
+  </g>
+
+  <!-- Yacht -->
+  <g filter="url(#sh)" opacity="0.85">
+    <rect x="782" y="110" width="90" height="70" rx="12" fill="#161616" stroke="#27ae60" stroke-width="1.5"/>
+    <text x="827" y="148" text-anchor="middle" font-size="28" font-family="Arial">🛥️</text>
+    <text x="827" y="168" text-anchor="middle" font-size="10" font-weight="800" fill="#2ecc71" font-family="'Nunito',Arial">$300M</text>
+  </g>
+
+  <!-- NFL Team -->
+  <g filter="url(#sh)" opacity="0.85">
+    <rect x="782" y="200" width="90" height="70" rx="12" fill="#161616" stroke="#1a3a1a" stroke-width="1.5"/>
+    <text x="827" y="238" text-anchor="middle" font-size="28" font-family="Arial">🏈</text>
+    <text x="827" y="258" text-anchor="middle" font-size="10" font-weight="800" fill="#2ecc71" font-family="'Nunito',Arial">$4.7B</text>
+  </g>
+
+  <!-- Rocket small -->
+  <text x="196" y="310" font-size="22" font-family="Arial" opacity="0.4">🚀</text>
+  <text x="710" y="310" font-size="22" font-family="Arial" opacity="0.4">✈️</text>
+  <text x="152" y="130" font-size="18" font-family="Arial" opacity="0.3">🏀</text>
+  <text x="755" y="130" font-size="18" font-family="Arial" opacity="0.3">⚽</text>
+
+  <!-- Bottom label -->
+  <text x="470" y="350"
+    text-anchor="middle"
+    font-family="'Nunito','Arial',sans-serif"
+    font-size="14"
+    font-weight="900"
+    fill="rgba(46,204,113,0.4)"
+    letter-spacing="2">SPEND IT ALL</text>
+</svg>

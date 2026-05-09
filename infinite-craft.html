@@ -7,145 +7,176 @@
   <link rel="icon" type="image/png" href="./clever1.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{
-      font-family:"Nunito","Arial Rounded MT Bold",Arial,sans-serif;
-      background:#fff;color:#1a1a1a;min-height:100vh;
-      display:flex;flex-direction:column;overflow:hidden;height:100vh;
+      font-family:"Martel Sans",Arial,sans-serif;
+      background:#f0ede8;color:#1a1a1a;
+      height:100vh;display:flex;flex-direction:column;overflow:hidden;
     }
 
     /* ── Top bar ── */
     .top-bar{
       display:flex;align-items:center;gap:10px;
-      padding:12px 20px;
-      border-bottom:1.5px solid #ebebeb;
-      background:#fff;flex-shrink:0;
+      padding:10px 16px;background:#fff;
+      border-bottom:1.5px solid #e0ddd8;flex-shrink:0;
+      box-shadow:0 1px 4px rgba(0,0,0,.06);
     }
     .top-bar h1{
-      font-size:18px;font-weight:900;flex:1;
+      font-size:17px;font-weight:900;flex:1;
     }
-    .top-bar h1 span{color:#888;font-weight:700;font-size:14px;margin-left:8px;}
+    .top-bar h1 span{color:#999;font-weight:700;font-size:13px;margin-left:6px;}
     .btn{
       font-family:inherit;font-size:13px;font-weight:800;
-      color:#1a1a1a;background:#fff;border:1.5px solid #d4d4d4;
-      border-radius:100px;padding:7px 16px;cursor:pointer;
-      transition:background .15s,border-color .15s,transform .12s;
-      white-space:nowrap;
+      color:#1a1a1a;background:#fff;border:1.5px solid #d0d0d0;
+      border-radius:100px;padding:6px 14px;cursor:pointer;
+      transition:background .13s,border-color .13s,transform .1s;white-space:nowrap;
     }
     .btn:hover{background:#f5f5f5;border-color:#bbb;transform:translateY(-1px);}
     .btn:active{transform:translateY(0);}
     .btn-danger{border-color:#ffb3b3;color:#c00;}
     .btn-danger:hover{background:#fff5f5;border-color:#ff8080;}
 
-    /* ── Main layout: sidebar + workspace ── */
+    /* ── Layout ── */
     .layout{display:flex;flex:1;overflow:hidden;}
 
-    /* Left: scrollable element grid */
+    /* ── Sidebar ── */
     .sidebar{
-      width:300px;flex-shrink:0;
-      border-right:1.5px solid #ebebeb;
-      overflow-y:auto;padding:14px;
-      scrollbar-width:thin;scrollbar-color:#ddd transparent;
+      width:220px;flex-shrink:0;background:#fff;
+      border-right:1.5px solid #e0ddd8;
+      display:flex;flex-direction:column;overflow:hidden;
     }
-    .sidebar::-webkit-scrollbar{width:4px;}
-    .sidebar::-webkit-scrollbar-thumb{background:#ddd;border-radius:4px;}
-    .sidebar-label{
-      font-size:10px;font-weight:800;letter-spacing:2.5px;
-      text-transform:uppercase;color:#ccc;
-      margin-bottom:10px;display:block;
+    .sb-header{
+      font-size:11px;font-weight:900;letter-spacing:2px;
+      color:#bbb;padding:10px 14px 6px;text-transform:uppercase;flex-shrink:0;
+      border-bottom:1px solid #f0ede8;
     }
-    .elements{display:flex;flex-wrap:wrap;gap:6px;}
-    .el{
-      display:inline-flex;align-items:center;gap:5px;
-      background:#f7f7f7;border:1.5px solid #e8e8e8;
-      border-radius:100px;padding:5px 12px;
-      font-size:13px;font-weight:800;cursor:pointer;
-      transition:background .15s,border-color .15s,transform .1s;
-      user-select:none;
+    .sb-list{flex:1;overflow-y:auto;padding:8px;
+      scrollbar-width:thin;scrollbar-color:#ddd transparent;}
+    .sb-list::-webkit-scrollbar{width:4px;}
+    .sb-list::-webkit-scrollbar-thumb{background:#ddd;border-radius:4px;}
+    .sb-item{
+      display:flex;align-items:center;gap:7px;
+      padding:6px 10px;border-radius:10px;cursor:pointer;
+      font-size:13px;font-weight:800;
+      transition:background .12s,transform .1s;
+      border:1.5px solid transparent;user-select:none;
     }
-    .el:hover{background:#f0f0f0;border-color:#ccc;transform:translateY(-1px);}
-    .el.selected{
-      background:#1a1a1a;color:#fff;border-color:#1a1a1a;
+    .sb-item:hover{background:#f5f3f0;transform:translateX(2px);}
+    .sb-item:active{transform:translateX(0) scale(.97);}
+    .sb-item.sb-new{
+      background:#fffbea;border-color:#ffd700;
+      animation:sbPop .4s ease;
     }
-    .el.new-flash{animation:newFlash .6s ease both;}
-    @keyframes newFlash{
-      0%{transform:scale(0.7);opacity:0;}
-      60%{transform:scale(1.12);}
-      100%{transform:scale(1);opacity:1;}
-    }
+    @keyframes sbPop{0%{transform:scale(1.08)}50%{transform:scale(.97)}100%{transform:scale(1)}}
+    .sb-emoji{font-size:18px;line-height:1;}
+    .sb-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-    /* Right: workspace */
+    /* ── Workspace ── */
     .workspace{
-      flex:1;display:flex;flex-direction:column;
-      align-items:center;justify-content:center;
-      padding:30px;gap:20px;
+      flex:1;position:relative;overflow:hidden;
+      background:
+        radial-gradient(circle at 20% 30%,rgba(255,200,100,.07) 0%,transparent 60%),
+        radial-gradient(circle at 80% 70%,rgba(100,200,255,.06) 0%,transparent 60%),
+        #f0ede8;
     }
 
-    .combine-area{
-      display:flex;align-items:center;gap:16px;
+    /* Grid dots background */
+    .workspace::before{
+      content:'';position:absolute;inset:0;
+      background-image:radial-gradient(circle,#c8c4be 1px,transparent 1px);
+      background-size:28px 28px;opacity:.45;pointer-events:none;
     }
 
-    .slot{
-      width:130px;height:80px;
-      border:2px dashed #ddd;border-radius:16px;
-      display:flex;align-items:center;justify-content:center;
-      font-size:13px;font-weight:800;color:#ccc;
-      transition:border-color .2s,background .2s;
-      text-align:center;padding:8px;gap:4px;
-      flex-direction:column;
+    /* Hint text */
+    .ws-hint{
+      position:absolute;top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      text-align:center;color:#bbb;font-size:14px;font-weight:800;
+      pointer-events:none;line-height:1.7;max-width:280px;
+      transition:opacity .3s;
     }
-    .slot.filled{
-      border-style:solid;border-color:#e0e0e0;
-      background:#f7f7f7;color:#1a1a1a;
-    }
-    .slot .slot-emoji{font-size:26px;}
-    .slot .slot-name{font-size:12px;font-weight:800;}
+    .ws-hint .hint-icon{font-size:36px;display:block;margin-bottom:8px;}
 
-    .plus-sign{font-size:28px;color:#ccc;font-weight:900;}
+    /* ── Workspace tile ── */
+    .ws-tile{
+      position:absolute;
+      display:flex;align-items:center;gap:7px;
+      padding:7px 12px 7px 9px;
+      background:#fff;border:1.5px solid #e0ddd8;
+      border-radius:12px;
+      font-size:13px;font-weight:800;
+      cursor:grab;user-select:none;
+      box-shadow:0 2px 8px rgba(0,0,0,.08);
+      transition:box-shadow .15s,border-color .15s;
+      white-space:nowrap;
+      touch-action:none;
+    }
+    .ws-tile:hover{box-shadow:0 4px 14px rgba(0,0,0,.13);border-color:#ccc;}
+    .ws-tile.dragging{
+      cursor:grabbing;opacity:.92;
+      box-shadow:0 10px 32px rgba(0,0,0,.22);
+      border-color:#888;z-index:999;
+    }
+    .ws-tile.tile-pop{animation:tilePop .35s ease;}
+    @keyframes tilePop{
+      0%{transform:scale(.6);opacity:0}
+      70%{transform:scale(1.12)}
+      100%{transform:scale(1);opacity:1}
+    }
+    .ws-tile.tile-shake{animation:tileShake .5s ease;}
+    @keyframes tileShake{
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-6px)}
+      40%{transform:translateX(6px)}
+      60%{transform:translateX(-4px)}
+      80%{transform:translateX(4px)}
+    }
+    .ws-tile.tile-new{background:#fffbea;border-color:#ffd700;}
+    .tile-emoji{font-size:18px;line-height:1;}
+    .tile-remove{
+      font-size:10px;color:#ccc;margin-left:2px;cursor:pointer;
+      opacity:0;transition:opacity .15s;font-weight:900;
+    }
+    .ws-tile:hover .tile-remove{opacity:1;}
+    .tile-remove:hover{color:#f55;}
 
-    .result-box{
-      min-width:220px;height:80px;
-      border:2px solid #e0e0e0;border-radius:16px;
-      background:#fafafa;
-      display:flex;align-items:center;justify-content:center;
-      font-size:13px;font-weight:800;color:#aaa;
-      text-align:center;padding:12px;gap:8px;
-      flex-direction:column;
+    /* ── Combo flash (merge indicator) ── */
+    .combo-flash{
+      position:absolute;pointer-events:none;
+      font-size:22px;font-weight:900;color:#e67e00;
+      text-shadow:0 0 12px rgba(255,180,0,.6);
+      animation:floatUp 1s ease forwards;
+      z-index:1000;
     }
-    .result-box.has-result{
-      border-color:#1a1a1a;background:#fff;color:#1a1a1a;
-    }
-    .result-box.new-discovery{
-      border-color:#ffc107;background:#fffbea;
-    }
-    .result-box .res-emoji{font-size:30px;}
-    .result-box .res-name{font-size:14px;font-weight:900;}
-    .result-box .res-new{
-      font-size:10px;font-weight:800;letter-spacing:1.5px;
-      text-transform:uppercase;color:#ffa000;
+    @keyframes floatUp{
+      0%{opacity:1;transform:translateY(0) scale(1)}
+      80%{opacity:.8}
+      100%{opacity:0;transform:translateY(-50px) scale(.8)}
     }
 
-    .hint{
-      font-size:13px;color:#bbb;font-weight:700;
-      text-align:center;max-width:320px;line-height:1.5;
-    }
-
-    /* Toast */
+    /* ── Toast ── */
     #toast{
       position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
-      background:#1a1a1a;color:#fff;border-radius:100px;
-      padding:10px 22px;font-size:13px;font-weight:800;
-      opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;
-      white-space:nowrap;z-index:999;
+      background:#1a1a1a;color:#fff;font-size:14px;font-weight:800;
+      padding:10px 20px;border-radius:100px;
+      pointer-events:none;opacity:0;
+      transition:opacity .2s,transform .2s;z-index:9999;
+      white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.3);
     }
     #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-    @media(max-width:640px){
-      .sidebar{width:100%;max-height:40vh;border-right:none;border-bottom:1.5px solid #ebebeb;}
+    /* Mobile */
+    @media(max-width:600px){
+      .sidebar{width:160px;}
+      .sb-name{font-size:12px;}
+    }
+    @media(max-width:420px){
       .layout{flex-direction:column;}
-      .combine-area{flex-wrap:wrap;justify-content:center;}
+      .sidebar{width:100%;max-height:35vh;border-right:none;border-bottom:1.5px solid #e0ddd8;}
+      .sb-list{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:6px;}
+      .sb-item{flex-shrink:0;}
     }
   </style>
 </head>
@@ -153,33 +184,22 @@
 
 <div class="top-bar">
   <button class="btn" onclick="location.href='./index.html'">← Back</button>
-  <h1>Infinite Craft <span id="counter">4 / 1000+ discovered</span></h1>
+  <h1>Infinite Craft <span id="counter">4 discovered</span></h1>
+  <button class="btn" id="clearBoardBtn">Clear Board</button>
   <button class="btn btn-danger" id="resetBtn">Reset</button>
 </div>
 
 <div class="layout">
-  <!-- Discovered elements -->
   <div class="sidebar">
-    <span class="sidebar-label">Discovered elements</span>
-    <div class="elements" id="elementGrid"></div>
+    <div class="sb-header" id="sbHeader">4 discovered</div>
+    <div class="sb-list" id="sbList"></div>
   </div>
-
-  <!-- Workspace -->
-  <div class="workspace">
-    <div class="combine-area">
-      <div class="slot" id="slotA">
-        <span>Select an<br>element</span>
-      </div>
-      <div class="plus-sign">+</div>
-      <div class="slot" id="slotB">
-        <span>Select an<br>element</span>
-      </div>
-      <div style="display:flex;align-items:center;font-size:22px;color:#ccc;font-weight:900;">=</div>
-      <div class="result-box" id="resultBox">
-        <span>?</span>
-      </div>
+  <div class="workspace" id="workspace">
+    <div class="ws-hint" id="wsHint">
+      <span class="hint-icon">🔥💧🌍💨</span>
+      Click any element on the left to place it here.<br>
+      Then <b>drag</b> one element <b>onto another</b> to combine them!
     </div>
-    <p class="hint">Click any two elements to combine them.<br>Discover all the elements!</p>
   </div>
 </div>
 
@@ -187,11 +207,9 @@
 
 <script>
 // ─────────────────────────────────────────────
-//  RECIPES  [elemA, elemB, emoji, name]
-//  (elemA and elemB will be sorted before lookup)
+//  RECIPES  [a, b, emoji, name]
 // ─────────────────────────────────────────────
 const RECIPES = [
-// ── TIER 0×0: four base elements ──────────────
 ["Earth","Fire","🌋","Lava"],
 ["Earth","Water","🟫","Mud"],
 ["Earth","Wind","🌫️","Dust"],
@@ -202,73 +220,51 @@ const RECIPES = [
 ["Fire","Fire","🔥","Inferno"],
 ["Water","Water","🏞️","Lake"],
 ["Wind","Wind","⛈️","Storm"],
-
-// ── STEAM ──────────────────────────────────────
 ["Earth","Steam","♨️","Geyser"],
 ["Fire","Steam","⚙️","Engine"],
 ["Steam","Water","☁️","Cloud"],
 ["Steam","Wind","🌫️","Fog"],
 ["Steam","Steam","💨","Pressure"],
-
-// ── MUD ────────────────────────────────────────
 ["Earth","Mud","🏺","Clay"],
 ["Fire","Mud","🧱","Brick"],
 ["Mud","Water","🌿","Swamp"],
 ["Mud","Wind","🏜️","Quicksand"],
 ["Mud","Mud","🌿","Bog"],
-
-// ── WAVE / OCEAN ───────────────────────────────
 ["Earth","Wave","🏖️","Beach"],
 ["Fire","Wave","🌫️","Mist"],
 ["Wave","Wind","🌊","Tsunami"],
 ["Wave","Wave","🌊","Ocean"],
-
-// ── LAVA / ROCK ────────────────────────────────
 ["Earth","Lava","🪨","Rock"],
 ["Lava","Water","🖤","Obsidian"],
 ["Lava","Wind","🌑","Ash"],
 ["Lava","Lava","🌋","Volcano"],
-
-// ── SMOKE / COAL ───────────────────────────────
 ["Earth","Smoke","⬛","Coal"],
 ["Smoke","Water","🌫️","Smog"],
 ["Smoke","Wind","🌫️","Haze"],
 ["Smoke","Smoke","🌑","Darkness"],
-
-// ── DUST / SAND ────────────────────────────────
 ["Dust","Earth","🏜️","Desert"],
 ["Dust","Dust","🏖️","Sand"],
 ["Dust","Water","🟫","Silt"],
 ["Dust","Wind","🌪️","Sandstorm"],
 ["Dust","Fire","✨","Ember"],
-
-// ── MOUNTAIN ───────────────────────────────────
 ["Earth","Mountain","🏔️","Canyon"],
 ["Mountain","Water","💦","Waterfall"],
 ["Mountain","Fire","🌋","Volcano"],
 ["Mountain","Wind","❄️","Avalanche"],
 ["Mountain","Mountain","🏔️","Range"],
-
-// ── LAKE / RIVER ───────────────────────────────
 ["Earth","Lake","💧","Pond"],
 ["Lake","Wind","🏞️","River"],
 ["Lake","Fire","♨️","Hot Spring"],
 ["Lake","Mountain","💦","Waterfall"],
-
-// ── STORM ──────────────────────────────────────
 ["Earth","Storm","🌍","Earthquake"],
 ["Fire","Storm","⚡","Lightning"],
 ["Storm","Water","❄️","Ice"],
 ["Storm","Wave","🌀","Whirlpool"],
 ["Storm","Wind","🌀","Hurricane"],
 ["Storm","Storm","🌩️","Superstorm"],
-
-// ── INFERNO ────────────────────────────────────
 ["Earth","Inferno","🌑","Scorched Earth"],
 ["Inferno","Water","💨","Steam"],
 ["Inferno","Wind","🔥","Firestorm"],
-
-// ── CLOUD / FOG / MIST ─────────────────────────
 ["Cloud","Water","🌧️","Rain"],
 ["Cloud","Fire","🌈","Rainbow"],
 ["Cloud","Wind","🌪️","Tornado"],
@@ -276,8 +272,6 @@ const RECIPES = [
 ["Cloud","Cloud","☁️","Sky"],
 ["Cloud","Ice","🧊","Hail"],
 ["Cloud","Storm","⛈️","Thundercloud"],
-
-// ── ICE / SNOW ─────────────────────────────────
 ["Ice","Earth","🧊","Permafrost"],
 ["Ice","Fire","💧","Water"],
 ["Ice","Mountain","🧊","Glacier"],
@@ -286,15 +280,11 @@ const RECIPES = [
 ["Ice","Ice","❄️","Snowflake"],
 ["Ice","Cloud","🌨️","Snow"],
 ["Ice","Rain","🌨️","Sleet"],
-
-// ── SNOW ───────────────────────────────────────
 ["Snow","Earth","🌨️","Tundra"],
 ["Snow","Wind","❄️","Blizzard"],
 ["Snow","Mountain","⛷️","Ski Resort"],
 ["Snow","Fire","💧","Slush"],
 ["Snow","Human","⛄","Snowman"],
-
-// ── RAIN ───────────────────────────────────────
 ["Rain","Earth","🌊","Erosion"],
 ["Rain","Fire","🌈","Rainbow"],
 ["Rain","Sand","🌴","Oasis"],
@@ -304,14 +294,10 @@ const RECIPES = [
 ["Rain","Desert","🌴","Oasis"],
 ["Rain","Ice","🌨️","Sleet"],
 ["Rain","Snow","🌨️","Freezing Rain"],
-
-// ── SKY ────────────────────────────────────────
 ["Sky","Fire","☀️","Sun"],
 ["Sky","Earth","🌑","Night"],
 ["Sky","Water","🌈","Rainbow"],
 ["Sky","Wind","🌤️","Clear Sky"],
-
-// ── SUN / MOON / STAR ─────────────────────────
 ["Night","Sky","🌙","Moon"],
 ["Sun","Night","⭐","Star"],
 ["Sun","Earth","☀️","Day"],
@@ -331,8 +317,6 @@ const RECIPES = [
 ["Star","Life","👽","Alien"],
 ["Star","Death","🕳️","Black Hole"],
 ["Star","Dust","✨","Stardust"],
-
-// ── SAND / GLASS ──────────────────────────────
 ["Sand","Fire","🪟","Glass"],
 ["Sand","Water","🏜️","Quicksand"],
 ["Sand","Earth","🏖️","Beach"],
@@ -347,8 +331,6 @@ const RECIPES = [
 ["Glass","Human","🪟","Window"],
 ["Glass","Sand","⏳","Hourglass"],
 ["Glass","Metal","🔭","Telescope"],
-
-// ── ROCK / METAL ──────────────────────────────
 ["Rock","Fire","⚙️","Metal"],
 ["Rock","Water","🪨","Stone"],
 ["Rock","Wind","🪨","Pebble"],
@@ -367,8 +349,6 @@ const RECIPES = [
 ["Metal","Lightning","⚡","Electricity"],
 ["Metal","Rock","🔩","Alloy"],
 ["Metal","Magic","✨","Enchanted Metal"],
-
-// ── OBSIDIAN / COAL / ASH ─────────────────────
 ["Obsidian","Fire","🗡️","Blade"],
 ["Obsidian","Human","🗡️","Obsidian Sword"],
 ["Coal","Fire","💎","Diamond"],
@@ -378,8 +358,6 @@ const RECIPES = [
 ["Ash","Earth","🌱","Rich Soil"],
 ["Ash","Wind","🌫️","Dust"],
 ["Ash","Life","🌱","Rebirth"],
-
-// ── OCEAN / BEACH / ISLAND ────────────────────
 ["Ocean","Fire","🌋","Underwater Volcano"],
 ["Ocean","Wind","🌀","Typhoon"],
 ["Ocean","Earth","🏝️","Island"],
@@ -394,8 +372,6 @@ const RECIPES = [
 ["Beach","Wind","🏰","Sandcastle"],
 ["Island","Fire","🌋","Volcanic Island"],
 ["Island","Human","🏝️","Resort"],
-
-// ── DESERT / OASIS ───────────────────────────
 ["Desert","Fire","🌡️","Heat Wave"],
 ["Desert","Water","🌴","Oasis"],
 ["Desert","Wind","🌪️","Sandstorm"],
@@ -404,26 +380,18 @@ const RECIPES = [
 ["Desert","Ice","🌡️","Mirage"],
 ["Oasis","Life","🌴","Palm Tree"],
 ["Oasis","Human","🏕️","Camp"],
-
-// ── SWAMP / BOG ──────────────────────────────
 ["Swamp","Life","🐊","Alligator"],
 ["Swamp","Plant","🌿","Mangrove"],
 ["Swamp","Fire","🔥","Peat Fire"],
 ["Swamp","Human","🏚️","Shack"],
-
-// ── VOLCANO ───────────────────────────────────
 ["Volcano","Water","🏝️","Island"],
 ["Volcano","Wind","☁️","Ash Cloud"],
 ["Volcano","Ice","💨","Steam"],
-
-// ── GLACIER / ARCTIC ──────────────────────────
 ["Glacier","Fire","🌊","Flood"],
 ["Glacier","Earth","🏔️","Valley"],
 ["Glacier","Ocean","🧊","Iceberg"],
 ["Arctic","Life","🐻‍❄️","Polar Bear"],
 ["Arctic","Human","🧭","Explorer"],
-
-// ── LIGHTNING / ELECTRICITY ───────────────────
 ["Lightning","Metal","⚡","Electricity"],
 ["Lightning","Water","💀","Electrocution"],
 ["Lightning","Tree","🔥","Wildfire"],
@@ -435,18 +403,12 @@ const RECIPES = [
 ["Electricity","Sun","☀️","Solar Panel"],
 ["Electricity","Metal","🔌","Wire"],
 ["Electricity","Computer","💻","Power"],
-
-// ── LIGHT BULB / LIGHT ───────────────────────
 ["Light Bulb","Human","💡","Idea"],
 ["Light Bulb","Dark","🌓","Contrast"],
 ["Light Bulb","Magic","✨","Enchanted Light"],
-
-// ── PRIMORDIAL SOUP → LIFE ───────────────────
 ["Primordial Soup","Time","🌱","Life"],
 ["Primordial Soup","Heat","🌱","Life"],
 ["Primordial Soup","Lightning","🌱","Life"],
-
-// ── LIFE ─────────────────────────────────────
 ["Life","Earth","🌱","Plant"],
 ["Life","Fire","🐾","Animal"],
 ["Life","Water","🔬","Cell"],
@@ -460,8 +422,6 @@ const RECIPES = [
 ["Life","Star","👽","Alien"],
 ["Life","Time","🦕","Evolution"],
 ["Life","Lightning","🧟","Frankenstein"],
-
-// ── CELL / DNA ───────────────────────────────
 ["Cell","Cell","🔬","Organism"],
 ["Cell","Water","🩸","Blood"],
 ["Cell","Fire","🌡️","Fever"],
@@ -470,8 +430,6 @@ const RECIPES = [
 ["Bacteria","Bacteria","🦠","Virus"],
 ["Bacteria","Water","🦠","Plague"],
 ["Bacteria","Fire","💊","Antibiotic"],
-
-// ── PLANT ────────────────────────────────────
 ["Plant","Earth","🌲","Tree"],
 ["Plant","Water","🌸","Flower"],
 ["Plant","Wind","🌼","Dandelion"],
@@ -488,8 +446,6 @@ const RECIPES = [
 ["Plant","Time","🌳","Ancient Tree"],
 ["Plant","Swamp","🪷","Lily"],
 ["Plant","Desert","🌾","Tumbleweed"],
-
-// ── TREE ─────────────────────────────────────
 ["Tree","Earth","🌲","Forest"],
 ["Tree","Fire","🔥","Wildfire"],
 ["Tree","Wind","🍂","Fallen Leaves"],
@@ -500,8 +456,6 @@ const RECIPES = [
 ["Tree","Water","🌴","Mangrove"],
 ["Tree","Metal","🪓","Lumber"],
 ["Tree","Rain","🌳","Rainforest"],
-
-// ── FLOWER ───────────────────────────────────
 ["Flower","Water","🌸","Perfume"],
 ["Flower","Wind","🌸","Petal"],
 ["Flower","Earth","🌷","Garden"],
@@ -510,23 +464,17 @@ const RECIPES = [
 ["Flower","Sun","🌻","Sunflower"],
 ["Flower","Fire","🌸","Incense"],
 ["Flower","Moon","🌸","Night Bloom"],
-
-// ── FOREST ───────────────────────────────────
 ["Forest","Fire","🔥","Wildfire"],
 ["Forest","Water","🌿","Jungle"],
 ["Forest","Human","🌲","Lumberjack"],
 ["Forest","Animal","🐺","Wolf"],
 ["Forest","Rain","🌳","Amazon"],
 ["Forest","Magic","🧙","Enchanted Forest"],
-
-// ── MUSHROOM / MOSS ──────────────────────────
 ["Mushroom","Earth","🍄","Truffle"],
 ["Mushroom","Rain","🍄","Fungi"],
 ["Mushroom","Human","🍄","Poison"],
 ["Mushroom","Magic","🍄","Fairy Ring"],
 ["Mushroom","Fire","🍄","Smoked Mushroom"],
-
-// ── GRASS / WHEAT ────────────────────────────
 ["Grass","Wind","🌾","Prairie"],
 ["Grass","Earth","🌾","Plains"],
 ["Grass","Water","🌿","Lawn"],
@@ -538,20 +486,14 @@ const RECIPES = [
 ["Wheat","Water","🍞","Dough"],
 ["Wheat","Wind","⚙️","Windmill"],
 ["Wheat","Human","🌾","Harvest"],
-
-// ── CACTUS / PALM TREE ───────────────────────
 ["Cactus","Water","🌵","Blooming Cactus"],
 ["Cactus","Human","🤕","Sting"],
 ["Palm Tree","Ocean","🏝️","Beach Resort"],
 ["Palm Tree","Human","🌴","Tropical"],
-
-// ── SEAWEED / CORAL ──────────────────────────
 ["Seaweed","Rock","🪸","Coral"],
 ["Coral","Ocean","🐠","Reef"],
 ["Coral","Fish","🐠","Aquarium"],
 ["Coral","Human","🤿","Scuba Diving"],
-
-// ── ANIMAL ───────────────────────────────────
 ["Animal","Water","🐟","Fish"],
 ["Animal","Wind","🐦","Bird"],
 ["Animal","Earth","🦎","Reptile"],
@@ -566,8 +508,6 @@ const RECIPES = [
 ["Animal","Fire","🦎","Salamander"],
 ["Animal","Farm","🐄","Livestock"],
 ["Animal","Forest","🐺","Wolf"],
-
-// ── FISH ─────────────────────────────────────
 ["Fish","Fire","🍣","Grilled Fish"],
 ["Fish","Wind","🐟","Flying Fish"],
 ["Fish","Ocean","🦈","Shark"],
@@ -577,8 +517,6 @@ const RECIPES = [
 ["Fish","Magic","🧜","Mermaid"],
 ["Fish","Ice","🐟","Frozen Fish"],
 ["Fish","Shell","🦪","Oyster"],
-
-// ── BIRD ─────────────────────────────────────
 ["Bird","Water","🦆","Duck"],
 ["Bird","Fire","🔥","Phoenix"],
 ["Bird","Wind","🦅","Eagle"],
@@ -593,8 +531,6 @@ const RECIPES = [
 ["Bird","Lake","🦩","Flamingo"],
 ["Bird","Flower","🐦","Hummingbird"],
 ["Bird","Human","✍️","Feather Pen"],
-
-// ── REPTILE ──────────────────────────────────
 ["Reptile","Fire","🐉","Dragon"],
 ["Reptile","Water","🐊","Crocodile"],
 ["Reptile","Desert","🦎","Lizard"],
@@ -604,8 +540,6 @@ const RECIPES = [
 ["Reptile","Ancient","🦕","Dinosaur"],
 ["Reptile","Time","🦕","Dinosaur"],
 ["Reptile","Magic","🐉","Dragon"],
-
-// ── SPECIFIC ANIMALS ─────────────────────────
 ["Wolf","Forest","🐺","Wolf Pack"],
 ["Wolf","Moon","🐺","Werewolf"],
 ["Wolf","Ice","🐺","Arctic Wolf"],
@@ -656,8 +590,6 @@ const RECIPES = [
 ["Camel","Desert","🐪","Caravan"],
 ["Penguin","Ice","🐧","Antarctica"],
 ["Penguin","Ocean","🐧","Penguin Colony"],
-
-// ── DRAGON ───────────────────────────────────
 ["Dragon","Fire","🔥","Inferno Dragon"],
 ["Dragon","Water","🐉","Sea Dragon"],
 ["Dragon","Ice","🐉","Frost Dragon"],
@@ -666,21 +598,15 @@ const RECIPES = [
 ["Dragon","Magic","🐉","Arcane Dragon"],
 ["Dragon","Lightning","⚡","Thunder Dragon"],
 ["Dragon","Earth","🌍","Earth Dragon"],
-
-// ── PHOENIX ──────────────────────────────────
 ["Phoenix","Fire","🔥","Rebirth"],
 ["Phoenix","Ash","🔥","Rebirth"],
 ["Phoenix","Human","✨","Legend"],
 ["Phoenix","Ice","💧","Water"],
-
-// ── DINOSAUR ─────────────────────────────────
 ["Dinosaur","Earth","🦴","Fossil"],
 ["Dinosaur","Human","🦕","Museum"],
 ["Dinosaur","Meteor","☄️","Extinction"],
 ["Dinosaur","Fire","🔥","T-Rex"],
 ["Dinosaur","Ocean","🦕","Plesiosaur"],
-
-// ── HUMAN ────────────────────────────────────
 ["Human","Earth","🧑‍🌾","Farmer"],
 ["Human","Fire","🧑‍🍳","Cook"],
 ["Human","Water","🏊","Swimmer"],
@@ -711,8 +637,6 @@ const RECIPES = [
 ["Human","Dream","💭","Dreamer"],
 ["Human","Book","📚","Reader"],
 ["Human","Computer","💻","Programmer"],
-
-// ── WOOD / SHELTER / HOUSE ───────────────────
 ["Wood","Fire","🔥","Campfire"],
 ["Wood","Water","🪵","Driftwood"],
 ["Wood","Wind","🍂","Splinter"],
@@ -731,8 +655,6 @@ const RECIPES = [
 ["City","Future","🌃","Cyberpunk"],
 ["City","Magic","✨","Magical City"],
 ["City","Ruin","🏛️","Ancient City"],
-
-// ── CASTLE / KINGDOM ─────────────────────────
 ["Castle","King","👑","Kingdom"],
 ["Castle","Dragon","🏰","Dragon's Lair"],
 ["Castle","Siege","⚔️","Battle"],
@@ -741,8 +663,6 @@ const RECIPES = [
 ["Kingdom","Dragon","🐉","Dragon Kingdom"],
 ["King","Gold","💰","Treasury"],
 ["King","War","⚔️","Conqueror"],
-
-// ── TOOL / WEAPON ────────────────────────────
 ["Tool","Rock","🪓","Axe"],
 ["Tool","Metal","⚔️","Sword"],
 ["Tool","Wood","🔨","Hammer"],
@@ -758,8 +678,6 @@ const RECIPES = [
 ["Bow","Elf","🧝","Elven Archer"],
 ["Armor","Knight","⚔️","Paladin"],
 ["Arrow","Human","🏹","Ranger"],
-
-// ── FARM / FOOD ──────────────────────────────
 ["Farm","Water","💧","Irrigation"],
 ["Farm","Animal","🐄","Ranch"],
 ["Farm","Human","🧑‍🌾","Farmer"],
@@ -767,8 +685,6 @@ const RECIPES = [
 ["Farm","Magic","🌾","Enchanted Farm"],
 ["Farm","Robot","🤖","Robot Farm"],
 ["Farm","Wheat","⚙️","Windmill"],
-
-// ── COOKING / FOOD ───────────────────────────
 ["Meat","Fire","🥩","Grilled Meat"],
 ["Meat","Salt","🥩","Jerky"],
 ["Fish","Salt","🐟","Salted Fish"],
@@ -801,8 +717,6 @@ const RECIPES = [
 ["Beer","Grain","🍺","Brewery"],
 ["Pizza","Fire","🔥","Wood Fire Pizza"],
 ["Sugar","Plant","🌾","Sugar Cane"],
-
-// ── MATERIALS: GOLD / SILVER / DIAMOND ───────
 ["Coal","Pressure","💎","Diamond"],
 ["Diamond","Fire","💎","Brilliant"],
 ["Diamond","Human","💎","Jeweler"],
@@ -822,8 +736,6 @@ const RECIPES = [
 ["Crystal","Light","🌈","Prism"],
 ["Pearl","Ocean","🦪","Oyster"],
 ["Pearl","Human","💎","Necklace"],
-
-// ── SCIENCE / TECHNOLOGY ─────────────────────
 ["Engine","Metal","🚗","Car"],
 ["Engine","Water","🚢","Ship"],
 ["Engine","Wind","✈️","Airplane"],
@@ -860,8 +772,6 @@ const RECIPES = [
 ["AI","Art","🎨","Generative Art"],
 ["AI","War","🤖","Drone Warfare"],
 ["AI","Human","🤖","Singularity"],
-
-// ── SPACE ────────────────────────────────────
 ["Space","Earth","🪐","Planet"],
 ["Space","Ice","☄️","Comet"],
 ["Space","Rock","💫","Meteor"],
@@ -878,8 +788,6 @@ const RECIPES = [
 ["Alien","Technology","🛸","UFO"],
 ["Galaxy","Galaxy","🌌","Universe"],
 ["Supernova","Earth","💫","Stardust"],
-
-// ── MYTHOLOGY / FANTASY ──────────────────────
 ["Magic","Fire","🔥","Pyromancer"],
 ["Magic","Water","💧","Water Mage"],
 ["Magic","Wind","💨","Air Mage"],
@@ -945,8 +853,6 @@ const RECIPES = [
 ["Fairy","Human","🧚","Fairy Godmother"],
 ["Centaur","Bow","🏹","Centaur Archer"],
 ["Minotaur","Labyrinth","🐂","Legend"],
-
-// ── LEGENDS / CHARACTERS ─────────────────────
 ["Knight","Dragon","⚔️","Dragon Slayer"],
 ["Knight","Castle","⚔️","Guard"],
 ["Knight","Horse","🏇","Cavalry"],
@@ -963,12 +869,6 @@ const RECIPES = [
 ["Thor","Lightning","⚡","Mjolnir"],
 ["Excalibur","King","⚔️","King Arthur"],
 ["King Arthur","Magic","🧙","Camelot"],
-["Sherlock","Mystery","🔍","Detective"],
-["Robin Hood","Forest","🌲","Sherwood"],
-["Romeo","Love","❤️","Romance"],
-["Merlin","Dragon","🐉","Dragon Friend"],
-
-// ── ABSTRACT / EMOTIONAL ─────────────────────
 ["Death","Life","🧟","Undead"],
 ["Death","Magic","💀","Necromancer"],
 ["Death","Fire","🔥","Cremation"],
@@ -1005,8 +905,6 @@ const RECIPES = [
 ["Shadow","Fire","🕯️","Flickering"],
 ["Luck","Gold","💰","Jackpot"],
 ["Luck","Game","🎲","Win"],
-
-// ── SPORTS / ENTERTAINMENT ───────────────────
 ["Human","Ball","⚽","Sport"],
 ["Ball","Water","🏊","Swimming"],
 ["Ball","Fire","🔥","Flaming Ball"],
@@ -1024,8 +922,6 @@ const RECIPES = [
 ["Book","Knowledge","📚","Encyclopedia"],
 ["Stadium","Sport","🏟️","Arena"],
 ["Stadium","Fire","🔥","Torch Ceremony"],
-
-// ── PLACES / STRUCTURES ──────────────────────
 ["Library","Magic","📖","Restricted Section"],
 ["Library","Computer","💻","Digital Library"],
 ["School","Magic","🧙","Hogwarts"],
@@ -1059,8 +955,6 @@ const RECIPES = [
 ["Prison","Magic","🔓","Escape"],
 ["Harbor","Fish","🐟","Fishing Port"],
 ["Market","Magic","🪄","Magical Bazaar"],
-
-// ── MISC / FUN ───────────────────────────────
 ["Treasure","Pirate","☠️","Pirate Treasure"],
 ["Treasure","Ocean","💰","Sunken Treasure"],
 ["Treasure","Map","🗺️","Treasure Hunt"],
@@ -1085,8 +979,6 @@ const RECIPES = [
 ["Flag","War","🚩","Battle Flag"],
 ["Flag","Country","🌍","Nation"],
 ["Army","Dragon","🐉","Dragon Army"],
-["Army","Robot","🤖","Robot Army"],
-["Explosion","Metal","💥","Shrapnel"],
 ["Nuclear","Fire","💥","Nuclear Explosion"],
 ["Nuclear","Human","☢️","Nuclear Engineer"],
 ["Laser","Metal","💡","Cut Metal"],
@@ -1128,216 +1020,254 @@ const RECIPES = [
 //  Build lookup map
 // ─────────────────────────────────────────────
 const COMBO_MAP = {};
-RECIPES.forEach(([a, b, emoji, name]) => {
-  const key = [a, b].sort().join("|");
-  if (!COMBO_MAP[key]) COMBO_MAP[key] = { emoji, name };
+RECIPES.forEach(([a,b,emoji,name])=>{
+  const key = [a,b].sort().join('|');
+  if(!COMBO_MAP[key]) COMBO_MAP[key]={emoji,name};
 });
-
-function combine(a, b) {
-  return COMBO_MAP[[a, b].sort().join("|")] || null;
-}
+function combine(a,b){ return COMBO_MAP[[a,b].sort().join('|')]||null; }
 
 // ─────────────────────────────────────────────
 //  State
 // ─────────────────────────────────────────────
-const STARTERS = [
-  { emoji:"🌍", name:"Earth" },
-  { emoji:"🔥", name:"Fire" },
-  { emoji:"💧", name:"Water" },
-  { emoji:"💨", name:"Wind" },
-];
-const SAVE_KEY = "infinitecraft_discovered";
+const SAVE_KEY = 'infiniteCraft_v3';
+let discovered = [];
+let board = [];
+let nextId = 0;
+let dragging = null;
 
-function loadDiscovered() {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+const workspace = document.getElementById('workspace');
+
+// ─────────────────────────────────────────────
+//  Persistence
+// ─────────────────────────────────────────────
+function getStarters(){ return [{emoji:"🌍",name:"Earth"},{emoji:"🔥",name:"Fire"},{emoji:"💧",name:"Water"},{emoji:"💨",name:"Wind"}]; }
+
+function load(){
+  try{ const s=localStorage.getItem(SAVE_KEY); if(s) discovered=JSON.parse(s); else discovered=getStarters(); }
+  catch{ discovered=getStarters(); }
+}
+function save(){ localStorage.setItem(SAVE_KEY,JSON.stringify(discovered)); }
+
+// ─────────────────────────────────────────────
+//  Sidebar
+// ─────────────────────────────────────────────
+function renderSidebar(){
+  const list = document.getElementById('sbList');
+  const header = document.getElementById('sbHeader');
+  header.textContent = discovered.length + ' discovered';
+  document.getElementById('counter').textContent = discovered.length + ' discovered';
+
+  list.innerHTML = '';
+  for(const el of discovered){
+    const div = document.createElement('div');
+    div.className = 'sb-item' + (el.isNew ? ' sb-new' : '');
+    div.innerHTML = `<span class="sb-emoji">${el.emoji}</span><span class="sb-name">${el.name}</span>`;
+    div.title = `Add ${el.name} to the board`;
+    div.addEventListener('click', ()=>addToBoard(el.emoji, el.name));
+    list.appendChild(div);
+  }
 }
 
-function saveDiscovered(arr) {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(arr)); } catch {}
+// ─────────────────────────────────────────────
+//  Board — add tile
+// ─────────────────────────────────────────────
+function addToBoard(emoji, name){
+  const rect = workspace.getBoundingClientRect();
+  const tw = 140, th = 44;
+  const x = 30 + Math.random() * Math.max(40, rect.width  - tw - 60);
+  const y = 30 + Math.random() * Math.max(40, rect.height - th - 60);
+  const id = nextId++;
+  board.push({id,emoji,name,x,y});
+  spawnTile(id);
+  const hint = document.getElementById('wsHint');
+  if(hint) hint.style.opacity='0';
 }
 
-let discovered = []; // [{emoji, name, isNew}]
+function spawnTile(id, isNew=false){
+  const item = board.find(i=>i.id===id);
+  if(!item) return;
 
-function initDiscovered() {
-  const saved = loadDiscovered();
-  if (saved && saved.length >= 4) {
-    discovered = saved.map(d => ({ ...d, isNew: false }));
+  const div = document.createElement('div');
+  div.className = 'ws-tile' + (isNew?' tile-new':'');
+  div.id = 'tile-'+id;
+  div.dataset.id = id;
+  div.style.left = item.x+'px';
+  div.style.top  = item.y+'px';
+  div.innerHTML  = `<span class="tile-emoji">${item.emoji}</span><span>${item.name}</span><span class="tile-remove" title="Remove">✕</span>`;
+
+  div.querySelector('.tile-remove').addEventListener('click', e=>{
+    e.stopPropagation();
+    div.style.transition='opacity .2s';
+    div.style.opacity='0';
+    setTimeout(()=>{
+      div.remove();
+      board = board.filter(i=>i.id!==id);
+    },200);
+  });
+
+  if(isNew) setTimeout(()=>div.classList.remove('tile-new'), 2000);
+  workspace.appendChild(div);
+  div.classList.add('tile-pop');
+}
+
+// ─────────────────────────────────────────────
+//  Drag (pointer events)
+// ─────────────────────────────────────────────
+workspace.addEventListener('pointerdown', e=>{
+  const tile = e.target.closest('.ws-tile');
+  if(!tile || e.target.classList.contains('tile-remove')) return;
+
+  const id   = parseInt(tile.dataset.id);
+  const item = board.find(i=>i.id===id);
+  if(!item) return;
+
+  const wRect = workspace.getBoundingClientRect();
+  dragging = {
+    id, item, tile,
+    ox: e.clientX - wRect.left - item.x,
+    oy: e.clientY - wRect.top  - item.y
+  };
+  tile.classList.add('dragging');
+  tile.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+
+workspace.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  const wRect = workspace.getBoundingClientRect();
+  const nx = e.clientX - wRect.left - dragging.ox;
+  const ny = e.clientY - wRect.top  - dragging.oy;
+  dragging.item.x = Math.max(0, Math.min(wRect.width  - 140, nx));
+  dragging.item.y = Math.max(0, Math.min(wRect.height -  44, ny));
+  dragging.tile.style.left = dragging.item.x+'px';
+  dragging.tile.style.top  = dragging.item.y+'px';
+  e.preventDefault();
+},{passive:false});
+
+workspace.addEventListener('pointerup', e=>{
+  if(!dragging) return;
+  const {id, tile} = dragging;
+  tile.classList.remove('dragging');
+  dragging = null;
+
+  const otherId = findOverlap(id);
+  if(otherId !== null) tryCombine(id, otherId);
+});
+
+// ─────────────────────────────────────────────
+//  Overlap detection (centre-to-centre)
+// ─────────────────────────────────────────────
+function findOverlap(dragId){
+  const el1 = document.getElementById('tile-'+dragId);
+  if(!el1) return null;
+  const r1 = el1.getBoundingClientRect();
+  const cx1=(r1.left+r1.right)/2, cy1=(r1.top+r1.bottom)/2;
+
+  for(const item of board){
+    if(item.id===dragId) continue;
+    const el2 = document.getElementById('tile-'+item.id);
+    if(!el2) continue;
+    const r2=el2.getBoundingClientRect();
+    const cx2=(r2.left+r2.right)/2, cy2=(r2.top+r2.bottom)/2;
+    if(Math.sqrt((cx1-cx2)**2+(cy1-cy2)**2) < 80) return item.id;
+  }
+  return null;
+}
+
+// ─────────────────────────────────────────────
+//  Combine logic
+// ─────────────────────────────────────────────
+function tryCombine(idA, idB){
+  const iA = board.find(i=>i.id===idA);
+  const iB = board.find(i=>i.id===idB);
+  if(!iA||!iB) return;
+
+  const mx = (iA.x+iB.x)/2;
+  const my = (iA.y+iB.y)/2;
+
+  // Remove both from DOM + board
+  document.getElementById('tile-'+idA)?.remove();
+  document.getElementById('tile-'+idB)?.remove();
+  board = board.filter(i=>i.id!==idA&&i.id!==idB);
+
+  const result = combine(iA.name, iB.name);
+
+  if(result){
+    const newId = nextId++;
+    board.push({id:newId, emoji:result.emoji, name:result.name, x:mx, y:my});
+    spawnTile(newId);
+
+    // Flash combo indicator
+    const flash = document.createElement('div');
+    flash.className = 'combo-flash';
+    flash.textContent = result.emoji;
+    flash.style.left = (mx+50)+'px';
+    flash.style.top  = (my-10)+'px';
+    workspace.appendChild(flash);
+    flash.addEventListener('animationend',()=>flash.remove());
+
+    const isNew = addDiscovered(result.emoji, result.name);
+    if(isNew) showToast(`✦ New: ${result.emoji} ${result.name}!`);
   } else {
-    discovered = STARTERS.map(s => ({ ...s, isNew: false }));
-    saveDiscovered(discovered);
+    // No combo — put both back, shake
+    const nA = nextId++, nB = nextId++;
+    board.push({id:nA, emoji:iA.emoji, name:iA.name, x:iA.x+12, y:iA.y+12});
+    board.push({id:nB, emoji:iB.emoji, name:iB.name, x:iB.x-12, y:iB.y-12});
+    spawnTile(nA); spawnTile(nB);
+    const tA=document.getElementById('tile-'+nA), tB=document.getElementById('tile-'+nB);
+    tA?.classList.add('tile-shake'); tB?.classList.add('tile-shake');
+    setTimeout(()=>{ tA?.classList.remove('tile-shake'); tB?.classList.remove('tile-shake'); }, 550);
+    showToast('No recipe for those two 🤷');
   }
 }
 
-function hasElement(name) {
-  return discovered.some(d => d.name === name);
-}
-
-function addElement(emoji, name) {
-  if (hasElement(name)) return false;
-  discovered.push({ emoji, name, isNew: true });
-  saveDiscovered(discovered.map(({ emoji, name }) => ({ emoji, name })));
+function addDiscovered(emoji, name){
+  if(discovered.find(d=>d.name===name)) return false;
+  // Clear old "isNew" flags
+  discovered.forEach(d=>d.isNew=false);
+  discovered.push({emoji, name, isNew:true});
+  save();
+  renderSidebar();
   return true;
-}
-
-// ─────────────────────────────────────────────
-//  UI State
-// ─────────────────────────────────────────────
-let selectedA = null;
-
-// ─────────────────────────────────────────────
-//  Render
-// ─────────────────────────────────────────────
-function renderGrid() {
-  const grid = document.getElementById("elementGrid");
-  grid.innerHTML = "";
-  discovered.forEach(({ emoji, name, isNew }) => {
-    const el = document.createElement("button");
-    el.className = "el" + (isNew ? " new-flash" : "");
-    el.dataset.name = name;
-    el.innerHTML = `<span>${emoji}</span>${name}`;
-    el.addEventListener("click", () => onElementClick(name));
-    grid.appendChild(el);
-  });
-  updateCounter();
-  updateSlotHighlights();
-}
-
-function updateCounter() {
-  document.getElementById("counter").textContent =
-    `${discovered.length} discovered`;
-}
-
-function updateSlotHighlights() {
-  document.querySelectorAll(".el").forEach(el => {
-    el.classList.toggle("selected", el.dataset.name === selectedA);
-  });
-}
-
-// ─────────────────────────────────────────────
-//  Slot rendering
-// ─────────────────────────────────────────────
-function renderSlotA(name) {
-  const slot = document.getElementById("slotA");
-  if (!name) {
-    slot.className = "slot";
-    slot.innerHTML = "<span>Select an<br>element</span>";
-    return;
-  }
-  const el = discovered.find(d => d.name === name);
-  slot.className = "slot filled";
-  slot.innerHTML = `<span class="slot-emoji">${el.emoji}</span><span class="slot-name">${name}</span>`;
-}
-
-function clearResult() {
-  const rb = document.getElementById("resultBox");
-  rb.className = "result-box";
-  rb.innerHTML = "<span>?</span>";
-}
-
-function showResult(emoji, name, isNew) {
-  const rb = document.getElementById("resultBox");
-  rb.className = "result-box has-result" + (isNew ? " new-discovery" : "");
-  rb.innerHTML = `
-    <span class="res-emoji">${emoji}</span>
-    <span class="res-name">${name}</span>
-    ${isNew ? '<span class="res-new">✦ New discovery!</span>' : ""}
-  `;
-}
-
-function showNoResult() {
-  const rb = document.getElementById("resultBox");
-  rb.className = "result-box";
-  rb.innerHTML = `<span style="font-size:26px">🚫</span><span style="font-size:12px;color:#bbb">No combination</span>`;
 }
 
 // ─────────────────────────────────────────────
 //  Toast
 // ─────────────────────────────────────────────
-let toastTimer = null;
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
+let toastT=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='show';
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.className='',2600);
 }
 
 // ─────────────────────────────────────────────
-//  Core click logic
+//  Controls
 // ─────────────────────────────────────────────
-function onElementClick(name) {
-  if (!selectedA) {
-    // First selection
-    selectedA = name;
-    renderSlotA(name);
-    clearResult();
-    updateSlotHighlights();
-  } else if (selectedA === name) {
-    // Deselect
-    selectedA = null;
-    renderSlotA(null);
-    clearResult();
-    updateSlotHighlights();
-  } else {
-    // Combine!
-    const result = combine(selectedA, name);
-    const slotB = document.getElementById("slotB");
-    const elB = discovered.find(d => d.name === name);
+document.getElementById('clearBoardBtn').addEventListener('click',()=>{
+  board=[];
+  workspace.querySelectorAll('.ws-tile').forEach(t=>t.remove());
+  const hint=document.getElementById('wsHint');
+  if(hint) hint.style.opacity='1';
+});
 
-    slotB.className = "slot filled";
-    slotB.innerHTML = `<span class="slot-emoji">${elB.emoji}</span><span class="slot-name">${name}</span>`;
-
-    if (result) {
-      const isNew = addElement(result.emoji, result.name);
-      showResult(result.emoji, result.name, isNew);
-      if (isNew) {
-        showToast(`✦ Discovered: ${result.emoji} ${result.name}!`);
-        // Mark all as not-new except the newly added
-        discovered.forEach(d => { if (d.name !== result.name) d.isNew = false; });
-      } else {
-        discovered.forEach(d => { d.isNew = false; });
-      }
-      renderGrid();
-    } else {
-      showNoResult();
-      discovered.forEach(d => { d.isNew = false; });
-    }
-
-    // Reset for next combo (keep slot B visible briefly)
-    setTimeout(() => {
-      slotB.className = "slot";
-      slotB.innerHTML = "<span>Select an<br>element</span>";
-    }, 1200);
-
-    selectedA = null;
-    renderSlotA(null);
-    updateSlotHighlights();
-  }
-}
-
-// ─────────────────────────────────────────────
-//  Reset
-// ─────────────────────────────────────────────
-document.getElementById("resetBtn").addEventListener("click", () => {
-  if (!confirm("Reset all discoveries? You'll start over with just the 4 base elements.")) return;
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  if(!confirm('Reset ALL discoveries and start over?')) return;
   localStorage.removeItem(SAVE_KEY);
-  initDiscovered();
-  selectedA = null;
-  renderSlotA(null);
-  clearResult();
-  renderGrid();
-  document.getElementById("slotB").className = "slot";
-  document.getElementById("slotB").innerHTML = "<span>Select an<br>element</span>";
+  discovered=getStarters();
+  board=[]; nextId=0;
+  workspace.querySelectorAll('.ws-tile').forEach(t=>t.remove());
+  const hint=document.getElementById('wsHint');
+  if(hint) hint.style.opacity='1';
+  renderSidebar();
 });
 
 // ─────────────────────────────────────────────
 //  Init
 // ─────────────────────────────────────────────
-initDiscovered();
-renderGrid();
+load();
+renderSidebar();
 </script>
 </body>
 </html>
