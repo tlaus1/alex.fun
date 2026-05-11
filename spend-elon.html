@@ -209,10 +209,10 @@
   <button class="btn" id="resetBtn">Reset</button>
 </div>
 
-<div class="hero">
-  <div class="hero-label">Elon Musk's Net Worth</div>
-  <div class="hero-name">$321,700,000,000</div>
-  <div id="moneyDisplay">$321.7B</div>
+  <div class="hero">
+    <div class="hero-label">Elon Musk's Net Worth</div>
+  <div class="hero-name">$695,000,000,000</div>
+  <div id="moneyDisplay">$695B</div>
   <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
   <div class="hero-stats">
     <div class="stat">Spent: <span id="spentDisplay">$0</span></div>
@@ -246,12 +246,12 @@
 <div id="winBanner">
   <div class="win-emoji">🎉</div>
   <div class="win-title">Broke!</div>
-  <div class="win-sub">You spent every last cent of Elon Musk's $321.7 billion. Impressive shopping.</div>
+  <div class="win-sub">You spent every last cent of Elon Musk's $695 billion. Impressive shopping.</div>
   <button class="btn" onclick="resetGame()" style="font-size:15px;padding:12px 28px;border-color:#2ecc71;color:#2ecc71;">Spend Again</button>
 </div>
 
 <script>
-const TOTAL = 321_700_000_000;
+const TOTAL = 695_000_000_000;
 
 // Each item has: id, emoji (fallback), name, price, cat, img (real photo URL)
 const ITEMS = [
@@ -282,7 +282,7 @@ const ITEMS = [
   },
   {
     id:'superbowl', emoji:'🏆', name:'Super Bowl Ring', price:36_000, cat:'Everyday',
-    img:'https://images.unsplash.com/photo-1521566652839-697aa473761a?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Super_Bowl_rings_on_display.jpg'
   },
 
   // ── Tech ──────────────────────────────────────────────────────────────────
@@ -322,7 +322,7 @@ const ITEMS = [
   },
   {
     id:'lambo', emoji:'🏎️', name:'Lamborghini Urus', price:250_000, cat:'Cars',
-    img:'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://commons.wikimedia.org/wiki/Special:Redirect/file/A_Lamborghini_Urus.jpg'
   },
   {
     id:'ferrari', emoji:'🏎️', name:'Ferrari SF90 Stradale', price:525_000, cat:'Cars',
@@ -330,7 +330,7 @@ const ITEMS = [
   },
   {
     id:'mclaren', emoji:'🏎️', name:'McLaren P1', price:1_150_000, cat:'Cars',
-    img:'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://commons.wikimedia.org/wiki/Special:Redirect/file/McLaren_P1.jpg'
   },
   {
     id:'bugatti', emoji:'🏎️', name:'Bugatti Chiron', price:3_000_000, cat:'Cars',
@@ -491,7 +491,7 @@ let activeFilter = 'All';
 function fmt(n){
   if(n<0) return '-'+fmt(-n);
   if(n>=1e12) return '$'+(n/1e12).toFixed(2)+'T';
-  if(n>=1e9)  return '$'+(n/1e9).toFixed(2)+'B';
+  if(n>=1e9)  return '$'+(n/1e9).toFixed(2).replace(/\.00$/, '')+'B';
   if(n>=1e6)  return '$'+(n/1e6).toFixed(2)+'M';
   if(n>=1e3)  return '$'+(n/1e3).toFixed(1)+'K';
   return '$'+n.toLocaleString();

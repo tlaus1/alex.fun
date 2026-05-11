@@ -1103,6 +1103,42 @@ const RECIPES = [
 ["Future","Technology","💡","Innovation"],
 ["Past","Human","📚","Historian"],
 ["Past","Technology","🏛️","Archaeology"],
+
+// Neal.fun-style corrections and early-game recipes.
+["Lake","Lake","🌊","Ocean"],
+["Lake","Water","🌊","Ocean"],
+["Lake","Ocean","🌊","Sea"],
+["Ocean","Water","🐟","Fish"],
+["Earth","Dust","🪐","Planet"],
+["Planet","Planet","⭐","Star"],
+["Planet","Earth","🌙","Moon"],
+["Planet","Fire","☀️","Sun"],
+["Planet","Steam","⚙️","Steampunk"],
+["Planet","Wind","🌩️","Storm"],
+["Planet","Fog","♀️","Venus"],
+["Planet","Sandstorm","♂️","Mars"],
+["Dandelion","Planet","☀️","Sun"],
+["Dandelion","Dandelion","🌼","Dandelion Patch"],
+["Lava","Water","🪨","Stone"],
+["Lake","Stone","🗼","Lighthouse"],
+["Lighthouse","Fire","🗼","Beacon"],
+["Beacon","Lighthouse","💡","Light"],
+["Light","Earth","☀️","Sun"],
+["Fire","Steam","🚗","Engine"],
+["Engine","Earth","🚜","Tractor"],
+["Plant","Steam","🍵","Tea"],
+["Dust","Lake","💩","Mud"],
+["Lake","Earth","🐊","Swamp"],
+["Swamp","Fire","🐉","Dragon"],
+["Plant","Plant","🌳","Tree"],
+["Plant","Wind","🌼","Dandelion"],
+["Tree","Water","🌊","River"],
+["Dust","Fish","🐟","Starfish"],
+["Starfish","Fire","☀️","Sun"],
+["Sun","Fire","☀️","Solar"],
+["Sun","Ocean","🏖️","Beach"],
+["Sand","Water","🏖️","Beach"],
+["Sand","Fire","🥃","Glass"],
 ];
 
 // ─────────────────────────────────────────────
@@ -1111,7 +1147,7 @@ const RECIPES = [
 const COMBO_MAP = {};
 RECIPES.forEach(([a,b,emoji,name])=>{
   const key = [a,b].sort().join('|');
-  if(!COMBO_MAP[key]) COMBO_MAP[key]={emoji,name};
+  COMBO_MAP[key]={emoji,name};
 });
 function combine(a,b){ return COMBO_MAP[[a,b].sort().join('|')]||null; }
 

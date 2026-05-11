@@ -263,6 +263,128 @@
     .card-pw img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
     .card-pw.card::after { background:linear-gradient(to top,rgba(0,0,0,0.48) 0%,rgba(0,0,0,0.03) 40%,transparent 65%); }
     .card-pw .card-title { color:#1a1a1a;text-shadow:0 1px 6px rgba(255,255,255,0.6); }
+
+    /* ── Snake card ── */
+    .card-snake { background: linear-gradient(135deg, #d9f99d 0%, #65a30d 48%, #1f4d13 100%); }
+    .card-snake.card::after { background:linear-gradient(to top,rgba(15,55,8,0.68) 0%,rgba(15,55,8,0.08) 45%,transparent 68%); }
+    .snake-preview {
+      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;z-index:1;
+    }
+    .snake-dot,.snake-body,.snake-food {
+      width:32px;height:32px;border-radius:9px;box-shadow:0 4px 12px rgba(0,0,0,0.18);
+    }
+    .snake-dot { background:#166534;position:relative; }
+    .snake-dot::before {
+      content:"";position:absolute;right:6px;top:7px;width:6px;height:6px;border-radius:50%;background:#fefce8;
+      box-shadow:0 12px 0 #fefce8;
+    }
+    .snake-body { background:#22c55e; }
+    .snake-food { background:#ef4444;border-radius:50%;margin-left:16px; }
+
+    /* ── Slope card ── */
+    .card-slope {
+      background: linear-gradient(135deg, #06111f 0%, #12324f 42%, #1dd3b0 100%);
+    }
+    .card-slope.card::after {
+      background: linear-gradient(to top, rgba(2,6,23,0.68) 0%, rgba(2,6,23,0.08) 45%, transparent 70%);
+    }
+    .slope-preview {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      perspective: 360px;
+    }
+    .slope-road {
+      position: absolute;
+      left: 19%;
+      right: 19%;
+      top: 8%;
+      bottom: -18%;
+      background:
+        linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.65) 48%, rgba(255,255,255,0.65) 52%, transparent 53%),
+        linear-gradient(180deg, #26364a 0%, #070b13 100%);
+      clip-path: polygon(35% 0, 65% 0, 100% 100%, 0 100%);
+      transform: rotateX(58deg);
+      transform-origin: bottom center;
+      border-left: 4px solid rgba(45,212,191,0.95);
+      border-right: 4px solid rgba(45,212,191,0.95);
+      box-shadow: 0 0 42px rgba(45,212,191,0.35);
+    }
+    .slope-ball {
+      position: absolute;
+      left: 47%;
+      top: 40%;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 25%, #fff, #9ca3af 36%, #111827 78%);
+      box-shadow: 0 10px 18px rgba(0,0,0,0.35);
+    }
+    .slope-block {
+      position: absolute;
+      width: 30px;
+      height: 28px;
+      background: #ef4444;
+      transform: skewY(-14deg);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+    }
+    .slope-block.one { left: 34%; top: 48%; }
+    .slope-block.two { right: 30%; top: 27%; background: #f97316; }
+
+    /* ── Browser card ── */
+    .card-browser {
+      background: linear-gradient(135deg, #f5f7fb 0%, #b8c5d6 48%, #2f4057 100%);
+    }
+    .card-browser.card::after {
+      background: linear-gradient(to top, rgba(15,23,42,0.7) 0%, rgba(15,23,42,0.04) 46%, transparent 70%);
+    }
+    .browser-preview {
+      position: absolute;
+      inset: 10%;
+      z-index: 1;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f8fafc;
+      border: 2px solid rgba(15,23,42,0.35);
+      box-shadow: 0 12px 28px rgba(15,23,42,0.24);
+    }
+    .browser-preview-bar {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 9px;
+      background: #e2e8f0;
+    }
+    .browser-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    .browser-dot:nth-child(2) { background: #f59e0b; }
+    .browser-dot:nth-child(3) { background: #22c55e; }
+    .browser-url {
+      flex: 1;
+      height: 14px;
+      margin-left: 8px;
+      border-radius: 999px;
+      background: #fff;
+    }
+    .browser-page-lines {
+      display: grid;
+      gap: 8px;
+      padding: 15px;
+    }
+    .browser-line {
+      height: 10px;
+      border-radius: 999px;
+      background: #94a3b8;
+    }
+    .browser-line.short { width: 58%; }
+    .browser-line.mid { width: 78%; }
+
     /* ── Staggered card entrance ── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(18px); }
@@ -273,6 +395,9 @@
     .card:nth-child(3) { animation: fadeUp 0.35s ease 0.20s both; }
     .card:nth-child(4) { animation: fadeUp 0.35s ease 0.28s both; }
     .card:nth-child(5) { animation: fadeUp 0.35s ease 0.36s both; }
+    .card:nth-child(6) { animation: fadeUp 0.35s ease 0.44s both; }
+    .card:nth-child(7) { animation: fadeUp 0.35s ease 0.52s both; }
+    .card:nth-child(8) { animation: fadeUp 0.35s ease 0.60s both; }
 
     /* ══════════════════════════════════════════════
        GAME SCREEN
@@ -434,6 +559,48 @@
     }
 
     /* ══════════════════════════════════════════════
+       SNAKE SCREEN
+    ══════════════════════════════════════════════ */
+    #snakeGame {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px 18px 70px;
+      min-height: 100vh;
+    }
+
+    .snake-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .snake-title {
+      flex: 1;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--fg);
+    }
+
+    .snake-frame-wrap {
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--surface);
+      height: calc(100vh - 116px);
+      min-height: 560px;
+      transition: background 0.25s, border-color 0.25s;
+    }
+
+    .snake-frame-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #fff;
+    }
+
+    /* ══════════════════════════════════════════════
        IDLE OVERLAY
     ══════════════════════════════════════════════ */
     #idlePhoto {
@@ -456,6 +623,7 @@
       .game-wrap { grid-template-columns: 1fr; }
       .shop { max-height: none; }
       .pill { font-size: 12px; padding: 6px 13px; }
+      .snake-frame-wrap { height: 72vh; min-height: 420px; }
     }
   </style>
 </head>
@@ -496,6 +664,44 @@
         <img src="./spend-elon-icon.svg" alt="Spend Elon's Money preview">
         <h3 class="card-title" style="color:#2ecc71;text-shadow:0 1px 8px rgba(0,0,0,0.8);">Spend Elon's Money</h3>
       </article>
+
+      <article class="card card-snake" id="openSnake" style="cursor:pointer">
+        <div class="snake-preview">
+          <span class="snake-dot"></span>
+          <span class="snake-body"></span>
+          <span class="snake-body"></span>
+          <span class="snake-body"></span>
+          <span class="snake-food"></span>
+        </div>
+        <h3 class="card-title">Google Snake Mods</h3>
+      </article>
+
+      <article class="card card-slope" onclick="location.href='./slope.html'" style="cursor:pointer">
+        <div class="slope-preview" aria-hidden="true">
+          <span class="slope-road"></span>
+          <span class="slope-ball"></span>
+          <span class="slope-block one"></span>
+          <span class="slope-block two"></span>
+        </div>
+        <h3 class="card-title">Slope</h3>
+      </article>
+
+      <article class="card card-browser" onclick="location.href='./browser.html'" style="cursor:pointer">
+        <div class="browser-preview" aria-hidden="true">
+          <div class="browser-preview-bar">
+            <span class="browser-dot"></span>
+            <span class="browser-dot"></span>
+            <span class="browser-dot"></span>
+            <span class="browser-url"></span>
+          </div>
+          <div class="browser-page-lines">
+            <span class="browser-line"></span>
+            <span class="browser-line mid"></span>
+            <span class="browser-line short"></span>
+          </div>
+        </div>
+        <h3 class="card-title">Mini Browser</h3>
+      </article>
     </main>
   </div>
 
@@ -528,6 +734,24 @@
         <span class="shop-label">Upgrades</span>
       </aside>
 
+    </div>
+  </section>
+
+  <!-- ══ Snake ════════════════════════════════════════════════════ -->
+  <section id="snakeGame" class="hidden">
+    <div class="snake-top">
+      <button id="backFromSnake" class="btn" type="button">← Back</button>
+      <div class="snake-title">Google Snake Mods</div>
+    </div>
+    <div class="snake-frame-wrap">
+      <iframe
+        id="snakeFrame"
+        title="Google Snake Mods"
+        src="./snake/index.html"
+        loading="lazy"
+        allowfullscreen
+        referrerpolicy="no-referrer-when-downgrade">
+      </iframe>
     </div>
   </section>
 
@@ -575,9 +799,15 @@
       clearTimeout(idleTimer);
     }
 
+    function isEmbeddedGameActive() {
+      const snake = document.getElementById("snakeGame");
+      return snake && !snake.classList.contains("hidden");
+    }
+
     function hideIdleAndArmTimer() {
       idlePhoto.classList.add("hidden");
       clearTimeout(idleTimer);
+      if (isEmbeddedGameActive()) return;
       idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
     }
 
@@ -604,16 +834,34 @@
     });
 
     window.addEventListener("keydown", e => {
-      if (e.key === "Backspace") { showIdle(true); return; }
+      if (e.key === "Backspace") {
+        e.preventDefault();
+        showIdle(true);
+        return;
+      }
       hideIdleAndArmTimer();
+    });
+
+    window.addEventListener("message", e => {
+      if (!e.data || e.data.type !== "alex-fun-show-cover") return;
+      showIdle(true);
+    });
+
+    window.addEventListener("blur", () => {
+      if (!isEmbeddedGameActive()) return;
+      idlePhoto.classList.add("hidden");
+      clearTimeout(idleTimer);
     });
 
     // ── Screen switching ──────────────────────────────────────────
     const dashboard = document.getElementById("dashboard");
     const game67El  = document.getElementById("game67");
+    const snakeGame = document.getElementById("snakeGame");
+    const snakeFrame = document.getElementById("snakeFrame");
 
     document.getElementById("open67").addEventListener("click", () => {
       dashboard.classList.add("hidden");
+      snakeGame.classList.add("hidden");
       game67El.classList.remove("hidden");
     });
 
@@ -622,19 +870,54 @@
       dashboard.classList.remove("hidden");
     });
 
+    document.getElementById("openSnake").addEventListener("click", () => {
+      dashboard.classList.add("hidden");
+      game67El.classList.add("hidden");
+      snakeGame.classList.remove("hidden");
+      hideIdleAndArmTimer();
+    });
+
+    document.getElementById("backFromSnake").addEventListener("click", () => {
+      snakeGame.classList.add("hidden");
+      dashboard.classList.remove("hidden");
+      hideIdleAndArmTimer();
+    });
+
+    function installSnakeCoverHook() {
+      try {
+        const win = snakeFrame.contentWindow;
+        const doc = snakeFrame.contentDocument;
+        if (!win || !doc || win.__alexFunCoverHookInstalled) return;
+        win.__alexFunCoverHookInstalled = true;
+        const cover = e => {
+          if (e.key !== "Backspace") return;
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          showIdle(true);
+        };
+        win.addEventListener("keydown", cover, true);
+        doc.addEventListener("keydown", cover, true);
+        doc.documentElement.addEventListener("keydown", cover, true);
+      } catch(e) {
+        // The local iframe should be same-origin; this is here in case the browser blocks it.
+      }
+    }
+
+    snakeFrame.addEventListener("load", installSnakeCoverHook);
+
     // ── Upgrade definitions ───────────────────────────────────────
     const upgradeConfig = [
-      { key:"multi",      icon:"🖱️",  name:"Multiple Clickers", desc:"+1 point per click",       cost:25,              scale:1.4,  onBuy:()=>{ clickPower+=1; } },
-      { key:"auto",       icon:"🤖",  name:"Autoclicker",        desc:"+1 point/sec",              cost:50,              scale:1.6,  onBuy:()=>{ perSec+=1; } },
-      { key:"factory",    icon:"🏭",  name:"67 Factory",         desc:"+8 points/sec",             cost:400,             scale:1.7,  onBuy:()=>{ perSec+=8; } },
-      { key:"mine",       icon:"⛏️",  name:"67 Mine",            desc:"+47 points/sec",            cost:4_000,           scale:1.8,  onBuy:()=>{ perSec+=47; } },
-      { key:"lab",        icon:"🔬",  name:"67 Laboratory",      desc:"+260 points/sec",           cost:40_000,          scale:1.85, onBuy:()=>{ perSec+=260; } },
-      { key:"powerclick", icon:"⚡",  name:"Power Click",        desc:"+10 points per click",      cost:100_000,         scale:1.9,  onBuy:()=>{ clickPower+=10; } },
-      { key:"dimension",  icon:"🌀",  name:"67 Dimension",       desc:"+1,600 points/sec",         cost:500_000,         scale:1.9,  onBuy:()=>{ perSec+=1_600; } },
-      { key:"empire",     icon:"👑",  name:"67 Empire",          desc:"+10,000 points/sec",        cost:7_000_000,       scale:2.0,  onBuy:()=>{ perSec+=10_000; } },
-      { key:"galaxy",     icon:"🌌",  name:"67 Galaxy",          desc:"+65,000 points/sec",        cost:100_000_000,     scale:2.1,  onBuy:()=>{ perSec+=65_000; } },
-      { key:"mason",      icon:"🧱",  name:"Mason 67",           desc:"+400,000 points/sec",       cost:1_000_000_000,   scale:2.2,  onBuy:()=>{ perSec+=400_000; } },
-      { key:"god",        icon:"✨",  name:"67 God",             desc:"+2,500,000 points/sec",     cost:1_000_000_000_000, scale:2.5, onBuy:()=>{ perSec+=2_500_000; } }
+      { key:"multi",      icon:"🖱️",  name:"Multiple Clickers", desc:"+1 point per click",       cost:25,              scale:1.18, onBuy:()=>{ clickPower+=1; } },
+      { key:"auto",       icon:"🤖",  name:"Autoclicker",        desc:"+1 point/sec",              cost:50,              scale:1.22, onBuy:()=>{ perSec+=1; } },
+      { key:"factory",    icon:"🏭",  name:"67 Factory",         desc:"+8 points/sec",             cost:400,             scale:1.25, onBuy:()=>{ perSec+=8; } },
+      { key:"mine",       icon:"⛏️",  name:"67 Mine",            desc:"+47 points/sec",            cost:4_000,           scale:1.28, onBuy:()=>{ perSec+=47; } },
+      { key:"lab",        icon:"🔬",  name:"67 Laboratory",      desc:"+260 points/sec",           cost:40_000,          scale:1.3,  onBuy:()=>{ perSec+=260; } },
+      { key:"powerclick", icon:"⚡",  name:"Power Click",        desc:"+10 points per click",      cost:100_000,         scale:1.32, onBuy:()=>{ clickPower+=10; } },
+      { key:"dimension",  icon:"🌀",  name:"67 Dimension",       desc:"+1,600 points/sec",         cost:500_000,         scale:1.34, onBuy:()=>{ perSec+=1_600; } },
+      { key:"empire",     icon:"👑",  name:"67 Empire",          desc:"+10,000 points/sec",        cost:7_000_000,       scale:1.36, onBuy:()=>{ perSec+=10_000; } },
+      { key:"galaxy",     icon:"🌌",  name:"67 Galaxy",          desc:"+65,000 points/sec",        cost:100_000_000,     scale:1.38, onBuy:()=>{ perSec+=65_000; } },
+      { key:"mason",      icon:"🧱",  name:"Mason 67",           desc:"+400,000 points/sec",       cost:1_000_000_000,   scale:1.4,  onBuy:()=>{ perSec+=400_000; } },
+      { key:"god",        icon:"✨",  name:"67 God",             desc:"+2,500,000 points/sec",     cost:1_000_000_000_000, scale:1.45, onBuy:()=>{ perSec+=2_500_000; } }
     ];
 
     let points     = 0;
@@ -643,6 +926,55 @@
 
     const state = {};
     upgradeConfig.forEach(cfg => { state[cfg.key] = { count:0, cost:cfg.cost }; });
+
+    const SAVE_KEY = "alexFun67ClickerSaveV1";
+    let saveDirty = false;
+
+    function markSaveDirty() {
+      saveDirty = true;
+    }
+
+    function saveGame() {
+      try {
+        const upgrades = {};
+        upgradeConfig.forEach(cfg => {
+          upgrades[cfg.key] = {
+            count: state[cfg.key].count,
+            cost: state[cfg.key].cost
+          };
+        });
+        localStorage.setItem(SAVE_KEY, JSON.stringify({
+          points,
+          clickPower,
+          perSec,
+          upgrades
+        }));
+        saveDirty = false;
+      } catch(e) {
+        console.log("Could not save 67 Clicker:", e);
+      }
+    }
+
+    function loadGame() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (Number.isFinite(saved.points)) points = saved.points;
+        if (Number.isFinite(saved.clickPower)) clickPower = saved.clickPower;
+        if (Number.isFinite(saved.perSec)) perSec = saved.perSec;
+        upgradeConfig.forEach(cfg => {
+          const savedUpgrade = saved.upgrades && saved.upgrades[cfg.key];
+          if (!savedUpgrade) return;
+          if (Number.isFinite(savedUpgrade.count)) state[cfg.key].count = savedUpgrade.count;
+          if (Number.isFinite(savedUpgrade.cost)) state[cfg.key].cost = savedUpgrade.cost;
+        });
+      } catch(e) {
+        console.log("Could not load 67 Clicker save:", e);
+      }
+    }
+
+    loadGame();
 
     // ── Build shop DOM ────────────────────────────────────────────
     const shopEl = document.querySelector(".shop");
@@ -694,6 +1026,8 @@
       cfg.onBuy();
       u.cost = Math.ceil(u.cost * cfg.scale);
       updateUI();
+      markSaveDirty();
+      saveGame();
     }
 
     upgradeConfig.forEach(cfg => {
@@ -703,23 +1037,40 @@
     const big67    = document.getElementById("big67");
     const playArea = document.getElementById("playArea");
 
-    big67.addEventListener("click", e => {
+    function click67(clientX, clientY) {
       points += clickPower;
       updateUI();
+      markSaveDirty();
       const rect = playArea.getBoundingClientRect();
       const span = document.createElement("span");
       span.className   = "float-text";
       span.textContent = "+" + formatNum(clickPower);
-      span.style.left  = (e.clientX - rect.left + (Math.random()*36-18)) + "px";
-      span.style.top   = (e.clientY - rect.top  - 8) + "px";
+      span.style.left  = (clientX - rect.left + (Math.random()*36-18)) + "px";
+      span.style.top   = (clientY - rect.top  - 8) + "px";
       playArea.appendChild(span);
       span.addEventListener("animationend", () => span.remove());
+    }
+
+    big67.addEventListener("click", e => {
+      click67(e.clientX, e.clientY);
+    });
+
+    window.addEventListener("keydown", e => {
+      const tag = document.activeElement && document.activeElement.tagName;
+      const isTyping = ["INPUT", "TEXTAREA", "SELECT"].includes(tag);
+      if (e.code === "Space" && !game67El.classList.contains("hidden") && !isTyping) {
+        e.preventDefault();
+        const rect = big67.getBoundingClientRect();
+        click67(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      }
     });
 
     document.getElementById("resetGame").addEventListener("click", () => {
       if (!confirm("Reset all progress?")) return;
       points=0; clickPower=1; perSec=0;
       upgradeConfig.forEach(cfg => { state[cfg.key].count=0; state[cfg.key].cost=cfg.cost; });
+      localStorage.removeItem(SAVE_KEY);
+      saveDirty = false;
       updateUI();
     });
 
@@ -731,8 +1082,18 @@
     });
 
     setInterval(() => {
-      if (perSec > 0) { points += perSec/10; updateUI(); }
+      if (perSec > 0) {
+        points += perSec/10;
+        updateUI();
+        markSaveDirty();
+      }
     }, 100);
+
+    setInterval(() => {
+      if (saveDirty) saveGame();
+    }, 2000);
+
+    window.addEventListener("beforeunload", saveGame);
 
     updateUI();
   </script>
