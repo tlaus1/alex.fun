@@ -7,11 +7,11 @@
   <link rel="icon" type="image/png" href="./clever1.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{
-      font-family:"Nunito",Arial,sans-serif;
+      font-family:"Martel Sans",Arial,sans-serif;
       background:#0d0d0d;color:#f0f0f0;min-height:100vh;
       display:flex;flex-direction:column;
     }
@@ -182,6 +182,23 @@
       .grid{grid-template-columns:repeat(2,1fr);gap:10px;padding:10px;}
       .item-photo{height:110px;}
     }
+
+    /* ── Status bar ── */
+    #statusBar{
+      position:fixed;bottom:0;left:0;right:0;height:26px;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 14px;background:#111;border-top:1px solid #222;
+      font-size:11px;font-weight:800;color:#555;z-index:200;
+      font-family:"Martel Sans",Arial,sans-serif;
+    }
+    #statusBar .sb-cover{cursor:pointer;}
+    #statusBar .sb-cover:hover{color:#aaa;}
+
+    /* ── Cover overlay ── */
+    #coverOverlay{
+      display:none;position:fixed;inset:0;z-index:9998;cursor:pointer;
+    }
+    #coverOverlay img{width:100%;height:100%;object-fit:cover;display:block;}
   </style>
 </head>
 <body>
@@ -192,10 +209,10 @@
   <button class="btn" id="resetBtn">Reset</button>
 </div>
 
-<div class="hero">
-  <div class="hero-label">Elon Musk's Net Worth</div>
-  <div class="hero-name">$321,700,000,000</div>
-  <div id="moneyDisplay">$321.7B</div>
+  <div class="hero">
+    <div class="hero-label">Elon Musk's Net Worth</div>
+  <div class="hero-name">$695,000,000,000</div>
+  <div id="moneyDisplay">$695B</div>
   <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
   <div class="hero-stats">
     <div class="stat">Spent: <span id="spentDisplay">$0</span></div>
@@ -217,15 +234,24 @@
 
 <div class="grid" id="itemGrid"></div>
 
+<div id="statusBar">
+  <span class="sb-cover" onclick="showCover()">⌫ Cover Image</span>
+  <span>v1.0.0</span>
+</div>
+
+<div id="coverOverlay" onclick="hideCover()">
+  <img src="./cleverpage.png" alt="Cover"/>
+</div>
+
 <div id="winBanner">
   <div class="win-emoji">🎉</div>
   <div class="win-title">Broke!</div>
-  <div class="win-sub">You spent every last cent of Elon Musk's $321.7 billion. Impressive shopping.</div>
+  <div class="win-sub">You spent every last cent of Elon Musk's $695 billion. Impressive shopping.</div>
   <button class="btn" onclick="resetGame()" style="font-size:15px;padding:12px 28px;border-color:#2ecc71;color:#2ecc71;">Spend Again</button>
 </div>
 
 <script>
-const TOTAL = 321_700_000_000;
+const TOTAL = 695_000_000_000;
 
 // Each item has: id, emoji (fallback), name, price, cat, img (real photo URL)
 const ITEMS = [
@@ -256,13 +282,13 @@ const ITEMS = [
   },
   {
     id:'superbowl', emoji:'🏆', name:'Super Bowl Ring', price:36_000, cat:'Everyday',
-    img:'https://images.unsplash.com/photo-1521566652839-697aa473761a?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Super_Bowl_rings_on_display.jpg'
   },
 
   // ── Tech ──────────────────────────────────────────────────────────────────
   {
     id:'switch', emoji:'🎮', name:'Nintendo Switch', price:299, cat:'Tech',
-    img:'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Nintendo-Switch-Console-Docked-wJoyConRB.jpg/960px-Nintendo-Switch-Console-Docked-wJoyConRB.jpg'
   },
   {
     id:'ps5', emoji:'🕹️', name:'PlayStation 5', price:499, cat:'Tech',
@@ -270,7 +296,7 @@ const ITEMS = [
   },
   {
     id:'xbox', emoji:'🎮', name:'Xbox Series X', price:499, cat:'Tech',
-    img:'https://images.unsplash.com/photo-1601508536764-72f4fc920b10?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Xbox_Series_X_2.jpg/960px-Xbox_Series_X_2.jpg'
   },
   {
     id:'iphone', emoji:'📱', name:'iPhone 16 Pro Max', price:1_199, cat:'Tech',
@@ -278,7 +304,7 @@ const ITEMS = [
   },
   {
     id:'visionpro', emoji:'🥽', name:'Apple Vision Pro', price:3_499, cat:'Tech',
-    img:'https://images.unsplash.com/photo-1706901695000-41cc5e9ab720?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Apple_Vision_Pro_with_charger_%28cropped%29.jpg/960px-Apple_Vision_Pro_with_charger_%28cropped%29.jpg'
   },
   {
     id:'gaming_pc', emoji:'🖥️', name:'Gaming PC (RTX 4090)', price:4_500, cat:'Tech',
@@ -292,11 +318,11 @@ const ITEMS = [
   // ── Cars ──────────────────────────────────────────────────────────────────
   {
     id:'civic', emoji:'🚗', name:'Honda Civic', price:25_000, cat:'Cars',
-    img:'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b5/2022_Honda_Civic_Touring_in_Lunar_Silver_Metallic%2C_Front_Left%2C_05-10-2022.jpg'
   },
   {
     id:'lambo', emoji:'🏎️', name:'Lamborghini Urus', price:250_000, cat:'Cars',
-    img:'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://commons.wikimedia.org/wiki/Special:Redirect/file/A_Lamborghini_Urus.jpg'
   },
   {
     id:'ferrari', emoji:'🏎️', name:'Ferrari SF90 Stradale', price:525_000, cat:'Cars',
@@ -304,15 +330,15 @@ const ITEMS = [
   },
   {
     id:'mclaren', emoji:'🏎️', name:'McLaren P1', price:1_150_000, cat:'Cars',
-    img:'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://commons.wikimedia.org/wiki/Special:Redirect/file/McLaren_P1.jpg'
   },
   {
     id:'bugatti', emoji:'🏎️', name:'Bugatti Chiron', price:3_000_000, cat:'Cars',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/2017_Bugatti_Chiron.jpg/640px-2017_Bugatti_Chiron.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/6/6b/2017_Bugatti_Chiron.jpg'
   },
   {
     id:'koenigsegg', emoji:'🏎️', name:'Koenigsegg Agera RS', price:10_000_000, cat:'Cars',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Koenigsegg_Agera_RS_Geneva_2015.jpg/640px-Koenigsegg_Agera_RS_Geneva_2015.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/6/65/Koenigsegg_Agera_RST_2.jpg'
   },
   {
     id:'rolsroyce', emoji:'🚘', name:'Rolls-Royce Boat Tail', price:28_000_000, cat:'Cars',
@@ -320,17 +346,17 @@ const ITEMS = [
   },
   {
     id:'f1car', emoji:'🏁', name:'Formula 1 Car', price:15_000_000, cat:'Cars',
-    img:'https://images.unsplash.com/photo-1541889413457-4aec9b418977?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/2022_Formula_One_car_at_the_2021_British_Grand_Prix_%2851350002179%29.jpg/960px-2022_Formula_One_car_at_the_2021_British_Grand_Prix_%2851350002179%29.jpg'
   },
 
   // ── Air & Sea ─────────────────────────────────────────────────────────────
   {
     id:'helicopter', emoji:'🚁', name:'Private Helicopter', price:3_000_000, cat:'Air & Sea',
-    img:'https://images.unsplash.com/photo-1517956849285-234520247e6d?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/VH-SUF_Taking_Off.jpg/960px-VH-SUF_Taking_Off.jpg'
   },
   {
     id:'submarine', emoji:'🤿', name:'Personal Submarine', price:25_000_000, cat:'Air & Sea',
-    img:'https://images.unsplash.com/photo-1614726365952-510103b7b538?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/US_Navy_040730-N-1234E-002_PCU_Virginia_%28SSN_774%29_returns_to_the_General_Dynamics_Electric_Boat_shipyard.jpg/960px-US_Navy_040730-N-1234E-002_PCU_Virginia_%28SSN_774%29_returns_to_the_General_Dynamics_Electric_Boat_shipyard.jpg'
   },
   {
     id:'jet', emoji:'✈️', name:'Gulfstream G700 Jet', price:75_000_000, cat:'Air & Sea',
@@ -338,11 +364,11 @@ const ITEMS = [
   },
   {
     id:'yacht', emoji:'🛥️', name:'Superyacht (90m)', price:300_000_000, cat:'Air & Sea',
-    img:'https://images.unsplash.com/photo-1567416661576-659a0cc7b0e0?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Superyacht_Skat_at_Stenpiren_in_G%C3%B6teborg%2C_Sweden_2012%2C_1.jpg/960px-Superyacht_Skat_at_Stenpiren_in_G%C3%B6teborg%2C_Sweden_2012%2C_1.jpg'
   },
   {
     id:'cruiseship', emoji:'🚢', name:'Cruise Ship', price:1_500_000_000, cat:'Air & Sea',
-    img:'https://images.unsplash.com/photo-1548778943-5f970e2b2deb?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Icon_of_the_Seas_Puerto_Rico_2025_%28cropped%29.jpg/960px-Icon_of_the_Seas_Puerto_Rico_2025_%28cropped%29.jpg'
   },
 
   // ── Real Estate ───────────────────────────────────────────────────────────
@@ -368,33 +394,33 @@ const ITEMS = [
   },
   {
     id:'palace', emoji:'🏰', name:'Buckingham Palace (est.)', price:5_000_000_000, cat:'Real Estate',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Buckingham_Palace%2C_London_-_April_2009.jpg/640px-Buckingham_Palace%2C_London_-_April_2009.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Buckingham_Palace%2C_London_-_April_2009.jpg'
   },
 
   // ── Athletes ──────────────────────────────────────────────────────────────
   {
     id:'messi', emoji:'⚽', name:'Lionel Messi (1 yr salary)', price:135_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg/480px-Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg'
   },
   {
     id:'ronaldo', emoji:'⚽', name:'Cristiano Ronaldo (1 yr)', price:200_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Cristiano_Ronaldo_2018.jpg/480px-Cristiano_Ronaldo_2018.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg'
   },
   {
     id:'mbappe', emoji:'⚽', name:'Kylian Mbappé (1 yr)', price:180_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Kylian_Mbapp%C3%A9_in_2023.jpg/480px-Kylian_Mbapp%C3%A9_in_2023.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Kylian_Mbapp%C3%A9_%2846369981091%29.jpg/960px-Kylian_Mbapp%C3%A9_%2846369981091%29.jpg'
   },
   {
     id:'lebron', emoji:'🏀', name:'LeBron James (1 yr)', price:128_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/LeBron_James_crop.jpg/480px-LeBron_James_crop.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/c/cf/LeBron_James_crop.jpg'
   },
   {
     id:'curry', emoji:'🏀', name:'Stephen Curry (1 yr)', price:55_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Stephen_Curry_2022.jpg/480px-Stephen_Curry_2022.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b6/Stephen_Curry_shooting.jpg'
   },
   {
     id:'taylor', emoji:'🎤', name:'Taylor Swift (1 yr tour)', price:1_000_000_000, cat:'Athletes',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/191125_Taylor_Swift_at_the_2019_American_Music_Awards_%28cropped%29.png/480px-191125_Taylor_Swift_at_the_2019_American_Music_Awards_%28cropped%29.png'
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b5/191125_Taylor_Swift_at_the_2019_American_Music_Awards_%28cropped%29.png'
   },
 
   // ── Sports Teams ──────────────────────────────────────────────────────────
@@ -408,7 +434,7 @@ const ITEMS = [
   },
   {
     id:'premclub', emoji:'⚽', name:'Premier League Club', price:2_000_000_000, cat:'Sports Teams',
-    img:'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Wembley_Stadium_interior.jpg/960px-Wembley_Stadium_interior.jpg'
   },
   {
     id:'nbateam', emoji:'🏀', name:'NBA Team (avg)', price:3_850_000_000, cat:'Sports Teams',
@@ -430,11 +456,11 @@ const ITEMS = [
   },
   {
     id:'zoo', emoji:'🦁', name:'San Diego Zoo', price:500_000_000, cat:'Wild',
-    img:'https://images.unsplash.com/photo-1503256591740-ce91ceb16a7c?w=400&h=280&fit=crop&auto=format&q=80'
+    img:'https://upload.wikimedia.org/wikipedia/commons/c/c1/San_Diego_Zoo_11_2016-06-17.jpg'
   },
   {
     id:'monalisa', emoji:'🎨', name:'Mona Lisa (est. value)', price:860_000_000, cat:'Wild',
-    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/400px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg'
+    img:'https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg'
   },
   {
     id:'carrier', emoji:'⚓', name:'Aircraft Carrier', price:13_000_000_000, cat:'Wild',
@@ -465,7 +491,7 @@ let activeFilter = 'All';
 function fmt(n){
   if(n<0) return '-'+fmt(-n);
   if(n>=1e12) return '$'+(n/1e12).toFixed(2)+'T';
-  if(n>=1e9)  return '$'+(n/1e9).toFixed(2)+'B';
+  if(n>=1e9)  return '$'+(n/1e9).toFixed(2).replace(/\.00$/, '')+'B';
   if(n>=1e6)  return '$'+(n/1e6).toFixed(2)+'M';
   if(n>=1e3)  return '$'+(n/1e3).toFixed(1)+'K';
   return '$'+n.toLocaleString();
@@ -628,6 +654,22 @@ document.getElementById('resetBtn').addEventListener('click', resetGame);
 // ─────────────────────────────────────────────
 renderGrid();
 updateHUD();
+
+// ─────────────────────────────────────────────
+//  Cover overlay
+// ─────────────────────────────────────────────
+function showCover(){
+  document.getElementById('coverOverlay').style.display='block';
+}
+function hideCover(){
+  document.getElementById('coverOverlay').style.display='none';
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Backspace'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){
+    e.preventDefault();
+    showCover();
+  }
+});
 </script>
 </body>
 </html>

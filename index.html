@@ -7,8 +7,28 @@
   <link rel="icon" type="image/png" href="./clever1.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Paytone+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
+    /* ── Theme tokens ── */
+    :root {
+      --bg:       #fff;
+      --fg:       #1a1a1a;
+      --muted:    #888;
+      --border:   #e0e0e0;
+      --surface:  #fafafa;
+      --surface2: #fff;
+      --hover:    #f5f5f5;
+    }
+    [data-theme="dark"] {
+      --bg:       #111;
+      --fg:       #ececec;
+      --muted:    #666;
+      --border:   #282828;
+      --surface:  #181818;
+      --surface2: #1e1e1e;
+      --hover:    #222;
+    }
+
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -16,10 +36,11 @@
     }
 
     body {
-      font-family: "Nunito", "Arial Rounded MT Bold", Arial, sans-serif;
-      background: #fff;
-      color: #1a1a1a;
+      font-family: "Martel Sans", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
       min-height: 100vh;
+      transition: background 0.25s, color 0.25s;
     }
 
     .hidden { display: none !important; }
@@ -40,54 +61,59 @@
       margin-bottom: 44px;
     }
 
-    /* "Get new posts" floated to top-right, like neal.fun */
+    /* "Get new posts" pill — top-right */
     .pill {
       position: absolute;
       top: 0;
       right: 0;
-      font-family: "Nunito", Arial, sans-serif;
+      font-family: "Martel Sans", Arial, sans-serif;
       font-size: 13px;
-      font-weight: 800;
-      color: #1a1a1a;
-      background: #fff;
-      border: 1.5px solid #d4d4d4;
+      font-weight: 700;
+      color: var(--fg);
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
       border-radius: 100px;
       padding: 8px 18px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s, color 0.25s;
     }
-
-    .pill:hover {
-      background: #f5f5f5;
-      border-color: #bbb;
-      transform: translateY(-1px);
-    }
-
+    .pill:hover { background: var(--hover); transform: translateY(-1px); }
     .pill:active { transform: translateY(0); }
+
+    /* Dark mode toggle — top-left */
+    .pill-icon {
+      right: auto;
+      left: 0;
+      padding: 8px 13px;
+      font-size: 16px;
+      line-height: 1;
+    }
 
     /* Big chunky site name */
     .brand-name {
-      font-family: "Paytone One", "Arial Rounded MT Bold", Arial, sans-serif;
+      font-family: "Martel Sans", Arial, sans-serif;
       font-size: clamp(52px, 9vw, 96px);
-      font-weight: 400; /* Paytone One is already bold */
-      color: #1a1a1a;
+      font-weight: 900;
+      color: var(--fg);
       line-height: 1;
       letter-spacing: -1px;
       margin-bottom: 8px;
       display: block;
+      transition: color 0.25s;
     }
 
     .brand-tag {
       font-size: 17px;
-      color: #888;
-      font-weight: 700;
+      color: var(--muted);
+      font-weight: 600;
       display: block;
+      transition: color 0.25s;
     }
 
-    /* ── 2-column card grid — matching neal.fun ── */
+    /* ── 2-column card grid ── */
     .grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -102,32 +128,23 @@
       aspect-ratio: 2.35 / 1;
       cursor: pointer;
       background: linear-gradient(130deg, #6dd5fa, #2980b9);
-      border: 1.5px solid #e0e0e0;
+      border: 1.5px solid var(--border);
       transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                  box-shadow 0.2s ease;
+                  box-shadow 0.2s ease,
+                  border-color 0.25s;
     }
-
     .card:hover {
       transform: translateY(-4px) scale(1.01);
-      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.13);
+      box-shadow: 0 10px 32px rgba(0,0,0,0.13);
     }
-
-    .card:active {
-      transform: scale(0.99);
-      transition-duration: 0.08s;
-    }
+    .card:active { transform: scale(0.99); transition-duration: 0.08s; }
 
     /* Gradient scrim for title readability */
     .card::after {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(
-        to top,
-        rgba(0, 0, 0, 0.52) 0%,
-        rgba(0, 0, 0, 0.06) 40%,
-        transparent 65%
-      );
+      background: linear-gradient(to top, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.06) 40%, transparent 65%);
       pointer-events: none;
     }
 
@@ -140,15 +157,13 @@
       font-weight: 900;
       line-height: 1.1;
       z-index: 2;
-      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+      text-shadow: 0 1px 8px rgba(0,0,0,0.35);
     }
 
-    /* ── 67 Clicker card preview ── */
+    /* ── 67 Clicker card ── */
     .card-67 {
       background: linear-gradient(135deg, #0f0720 0%, #1e0e40 50%, #0f0720 100%);
     }
-
-    /* Starfield dots */
     .card-67::before {
       content: "";
       position: absolute;
@@ -165,83 +180,49 @@
       pointer-events: none;
       z-index: 0;
     }
-
     .card-67 img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      position: absolute;
-      inset: 0;
-      display: block;
-      z-index: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; position: absolute; inset: 0;
+      display: block; z-index: 0;
     }
-
-    /* Override the default card::after scrim with a lighter one for this card */
     .card-67.card::after {
-      background: linear-gradient(
-        to top,
-        rgba(0,0,0,0.65) 0%,
-        rgba(0,0,0,0.05) 45%,
-        transparent 65%
-      );
+      background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.05) 45%, transparent 65%);
     }
 
     .preview-67 {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1;
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center; z-index: 1;
     }
 
-    /* The orange 67 button replica */
     .preview-btn {
-      width: min(90px, 22vw);
-      height: min(90px, 22vw);
+      width: min(90px, 22vw); height: min(90px, 22vw);
       border-radius: 50%;
       background: radial-gradient(circle at 32% 28%, #ffe27a, #ff9f1c 58%, #c96a00);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: "Paytone One", "Arial Rounded MT Bold", Arial, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      font-family: "Martel Sans", Arial, sans-serif;
       font-size: min(38px, 9vw);
       color: #1a0800;
-      box-shadow:
-        0 0 30px rgba(255, 159, 28, 0.55),
-        0 4px 16px rgba(0, 0, 0, 0.5);
-      position: relative;
-      z-index: 2;
-      flex-shrink: 0;
+      box-shadow: 0 0 30px rgba(255,159,28,0.55), 0 4px 16px rgba(0,0,0,0.5);
+      position: relative; z-index: 2; flex-shrink: 0;
     }
-
-    /* Glow ring around button */
     .preview-btn::after {
       content: "";
-      position: absolute;
-      inset: -8px;
+      position: absolute; inset: -8px;
       border-radius: 50%;
-      border: 2px solid rgba(255, 200, 80, 0.25);
+      border: 2px solid rgba(255,200,80,0.25);
     }
 
-    /* Floating +1 texts */
     .preview-plus {
       position: absolute;
-      font-size: 15px;
-      font-weight: 900;
-      color: #ffe27a;
+      font-size: 15px; font-weight: 900; color: #ffe27a;
       text-shadow: 0 1px 6px rgba(0,0,0,0.6);
-      z-index: 2;
-      opacity: 0;
-      pointer-events: none;
+      z-index: 2; opacity: 0; pointer-events: none;
       animation: previewFloat 2.4s ease-in-out infinite;
     }
-
     .preview-plus:nth-child(2) { top: 18%; left: 58%; animation-delay: 0s; }
     .preview-plus:nth-child(3) { top: 28%; left: 70%; animation-delay: 0.8s; }
     .preview-plus:nth-child(4) { top: 12%; left: 48%; animation-delay: 1.6s; }
     .preview-plus:nth-child(5) { top: 22%; left: 34%; animation-delay: 2.0s; }
-
     @keyframes previewFloat {
       0%   { opacity: 0; transform: translateY(0) scale(0.8); }
       15%  { opacity: 1; transform: translateY(-8px) scale(1); }
@@ -250,87 +231,173 @@
     }
 
     .cursor-click {
-      position: absolute;
-      right: 16px;
-      top: 14px;
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.92);
-      display: grid;
-      place-items: center;
-      font-size: 20px;
-      z-index: 3;
+      position: absolute; right: 16px; top: 14px;
+      width: 42px; height: 42px; border-radius: 50%;
+      background: rgba(255,255,255,0.92);
+      display: grid; place-items: center; font-size: 20px; z-index: 3;
     }
-
     .cursor-click::after {
-      content: "";
-      position: absolute;
-      inset: -7px;
-      border: 2.5px solid rgba(255, 255, 255, 0.8);
+      content: ""; position: absolute; inset: -7px;
       border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,0.8);
       animation: pulse 1.1s ease-out infinite;
     }
-
     @keyframes pulse {
       0%   { transform: scale(0.8); opacity: 0.9; }
       100% { transform: scale(1.4); opacity: 0; }
     }
 
     /* ── Spend Elon card ── */
-    .card-elon {
-      background: #061206;
-    }
-    .card-elon img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      position: absolute; inset: 0;
-      display: block; z-index: 0;
-    }
-    .card-elon.card::after {
-      background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.05) 45%, transparent 65%);
-    }
+    .card-elon { background: #061206; }
+    .card-elon img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-elon.card::after { background:linear-gradient(to top,rgba(0,0,0,0.65) 0%,rgba(0,0,0,0.05) 45%,transparent 65%); }
 
     /* ── Infinite Craft card ── */
-    .card-ic {
-      background: #f0ede8;
-    }
-    .card-ic img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      position: absolute; inset: 0;
-      display: block; z-index: 0;
-    }
-    .card-ic.card::after {
-      background: linear-gradient(to top, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.04) 40%, transparent 65%);
-    }
-    .card-ic .card-title { color: #1a1a1a; text-shadow: 0 1px 6px rgba(255,255,255,0.6); }
+    .card-ic { background: #f0ede8; }
+    .card-ic img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-ic.card::after { background:linear-gradient(to top,rgba(0,0,0,0.52) 0%,rgba(0,0,0,0.04) 40%,transparent 65%); }
+    .card-ic .card-title { color:#1a1a1a;text-shadow:0 1px 6px rgba(255,255,255,0.6); }
 
     /* ── Password Game card ── */
-    .card-pw {
-      background: #fff8f0;
+    .card-pw { background: #fff8f0; }
+    .card-pw img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-pw.card::after { background:linear-gradient(to top,rgba(0,0,0,0.48) 0%,rgba(0,0,0,0.03) 40%,transparent 65%); }
+    .card-pw .card-title { color:#1a1a1a;text-shadow:0 1px 6px rgba(255,255,255,0.6); }
+
+    /* ── Snake card ── */
+    .card-snake { background: linear-gradient(135deg, #d9f99d 0%, #65a30d 48%, #1f4d13 100%); }
+    .card-snake.card::after { background:linear-gradient(to top,rgba(15,55,8,0.68) 0%,rgba(15,55,8,0.08) 45%,transparent 68%); }
+    .snake-preview {
+      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;z-index:1;
     }
-    .card-pw img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      position: absolute; inset: 0;
-      display: block; z-index: 0;
+    .snake-dot,.snake-body,.snake-food {
+      width:32px;height:32px;border-radius:9px;box-shadow:0 4px 12px rgba(0,0,0,0.18);
     }
-    .card-pw.card::after {
-      background: linear-gradient(to top, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.03) 40%, transparent 65%);
+    .snake-dot { background:#166534;position:relative; }
+    .snake-dot::before {
+      content:"";position:absolute;right:6px;top:7px;width:6px;height:6px;border-radius:50%;background:#fefce8;
+      box-shadow:0 12px 0 #fefce8;
     }
-    .card-pw .card-title { color: #1a1a1a; text-shadow: 0 1px 6px rgba(255,255,255,0.6); }
+    .snake-body { background:#22c55e; }
+    .snake-food { background:#ef4444;border-radius:50%;margin-left:16px; }
+
+    /* ── Slope card ── */
+    .card-slope {
+      background: linear-gradient(135deg, #06111f 0%, #12324f 42%, #1dd3b0 100%);
+    }
+    .card-slope.card::after {
+      background: linear-gradient(to top, rgba(2,6,23,0.68) 0%, rgba(2,6,23,0.08) 45%, transparent 70%);
+    }
+    .slope-preview {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      perspective: 360px;
+    }
+    .slope-road {
+      position: absolute;
+      left: 19%;
+      right: 19%;
+      top: 8%;
+      bottom: -18%;
+      background:
+        linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.65) 48%, rgba(255,255,255,0.65) 52%, transparent 53%),
+        linear-gradient(180deg, #26364a 0%, #070b13 100%);
+      clip-path: polygon(35% 0, 65% 0, 100% 100%, 0 100%);
+      transform: rotateX(58deg);
+      transform-origin: bottom center;
+      border-left: 4px solid rgba(45,212,191,0.95);
+      border-right: 4px solid rgba(45,212,191,0.95);
+      box-shadow: 0 0 42px rgba(45,212,191,0.35);
+    }
+    .slope-ball {
+      position: absolute;
+      left: 47%;
+      top: 40%;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 25%, #fff, #9ca3af 36%, #111827 78%);
+      box-shadow: 0 10px 18px rgba(0,0,0,0.35);
+    }
+    .slope-block {
+      position: absolute;
+      width: 30px;
+      height: 28px;
+      background: #ef4444;
+      transform: skewY(-14deg);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+    }
+    .slope-block.one { left: 34%; top: 48%; }
+    .slope-block.two { right: 30%; top: 27%; background: #f97316; }
+
+    /* ── Browser card ── */
+    .card-browser {
+      background: linear-gradient(135deg, #f5f7fb 0%, #b8c5d6 48%, #2f4057 100%);
+    }
+    .card-browser.card::after {
+      background: linear-gradient(to top, rgba(15,23,42,0.7) 0%, rgba(15,23,42,0.04) 46%, transparent 70%);
+    }
+    .browser-preview {
+      position: absolute;
+      inset: 10%;
+      z-index: 1;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f8fafc;
+      border: 2px solid rgba(15,23,42,0.35);
+      box-shadow: 0 12px 28px rgba(15,23,42,0.24);
+    }
+    .browser-preview-bar {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 9px;
+      background: #e2e8f0;
+    }
+    .browser-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    .browser-dot:nth-child(2) { background: #f59e0b; }
+    .browser-dot:nth-child(3) { background: #22c55e; }
+    .browser-url {
+      flex: 1;
+      height: 14px;
+      margin-left: 8px;
+      border-radius: 999px;
+      background: #fff;
+    }
+    .browser-page-lines {
+      display: grid;
+      gap: 8px;
+      padding: 15px;
+    }
+    .browser-line {
+      height: 10px;
+      border-radius: 999px;
+      background: #94a3b8;
+    }
+    .browser-line.short { width: 58%; }
+    .browser-line.mid { width: 78%; }
 
     /* ── Staggered card entrance ── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(18px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-
     .card:nth-child(1) { animation: fadeUp 0.35s ease 0.04s both; }
     .card:nth-child(2) { animation: fadeUp 0.35s ease 0.12s both; }
     .card:nth-child(3) { animation: fadeUp 0.35s ease 0.20s both; }
     .card:nth-child(4) { animation: fadeUp 0.35s ease 0.28s both; }
+    .card:nth-child(5) { animation: fadeUp 0.35s ease 0.36s both; }
+    .card:nth-child(6) { animation: fadeUp 0.35s ease 0.44s both; }
+    .card:nth-child(7) { animation: fadeUp 0.35s ease 0.52s both; }
+    .card:nth-child(8) { animation: fadeUp 0.35s ease 0.60s both; }
 
     /* ══════════════════════════════════════════════
        GAME SCREEN
@@ -342,31 +409,21 @@
     }
 
     .game-top {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
+      display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
     }
 
     .btn {
-      font-family: "Nunito", Arial, sans-serif;
-      font-size: 13px;
-      font-weight: 800;
-      color: #1a1a1a;
-      background: #fff;
-      border: 1.5px solid #d4d4d4;
+      font-family: "Martel Sans", Arial, sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--fg);
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
       border-radius: 100px;
       padding: 8px 18px;
       cursor: pointer;
-      transition: background 0.15s, border-color 0.15s, transform 0.12s;
+      transition: background 0.15s, border-color 0.15s, transform 0.12s, color 0.25s;
     }
-
-    .btn:hover {
-      background: #f5f5f5;
-      border-color: #bbb;
-      transform: translateY(-1px);
-    }
-
+    .btn:hover { background: var(--hover); transform: translateY(-1px); }
     .btn:active { transform: translateY(0); }
 
     .game-wrap {
@@ -376,16 +433,14 @@
     }
 
     .play-area {
-      border: 1.5px solid #e0e0e0;
+      border: 1.5px solid var(--border);
       border-radius: 18px;
-      background: #fafafa;
+      background: var(--surface);
       min-height: 68vh;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      padding: 30px;
-      position: relative;
-      overflow: hidden;
+      display: grid; place-items: center;
+      text-align: center; padding: 30px;
+      position: relative; overflow: hidden;
+      transition: background 0.25s, border-color 0.25s;
     }
 
     .stats { margin-bottom: 26px; }
@@ -393,52 +448,41 @@
     .points-display {
       font-size: clamp(26px, 4vw, 48px);
       font-weight: 900;
-      color: #1a1a1a;
-      margin-bottom: 6px;
-      line-height: 1;
+      color: var(--fg);
+      margin-bottom: 6px; line-height: 1;
+      transition: color 0.25s;
     }
-
     .points-display span { color: #e67e00; }
 
     .rate-row {
-      font-size: 14px;
-      color: #aaa;
-      font-weight: 700;
+      font-size: 14px; color: var(--muted); font-weight: 600;
+      transition: color 0.25s;
     }
-
-    .rate-row strong { color: #555; }
+    .rate-row strong { color: var(--fg); transition: color 0.25s; }
 
     #big67 {
-      width: min(260px, 62vw);
-      height: min(260px, 62vw);
+      width: min(260px, 62vw); height: min(260px, 62vw);
       border-radius: 50%;
-      border: 3px solid rgba(0, 0, 0, 0.07);
+      border: 3px solid rgba(0,0,0,0.07);
       background: radial-gradient(circle at 32% 28%, #ffe27a, #ff9f1c 58%, #c96a00);
       color: #1a0800;
-      font-family: "Paytone One", Arial, sans-serif;
+      font-family: "Martel Sans", Arial, sans-serif;
       font-size: clamp(62px, 10vw, 118px);
-      font-weight: 400;
+      font-weight: 900;
       cursor: pointer;
       transition: transform 0.07s ease, box-shadow 0.14s ease;
       user-select: none;
-      position: relative;
-      z-index: 1;
-      box-shadow: 0 6px 28px rgba(201, 106, 0, 0.3);
+      position: relative; z-index: 1;
+      box-shadow: 0 6px 28px rgba(201,106,0,0.3);
     }
-
-    #big67:hover { box-shadow: 0 10px 44px rgba(201, 106, 0, 0.45); }
+    #big67:hover { box-shadow: 0 10px 44px rgba(201,106,0,0.45); }
     #big67:active { transform: scale(0.92); }
 
     .float-text {
-      position: absolute;
-      pointer-events: none;
-      font-size: 21px;
-      font-weight: 900;
-      color: #e67e00;
-      z-index: 10;
-      animation: floatUp 0.8s ease forwards;
+      position: absolute; pointer-events: none;
+      font-size: 21px; font-weight: 900; color: #e67e00;
+      z-index: 10; animation: floatUp 0.8s ease forwards;
     }
-
     @keyframes floatUp {
       0%   { opacity: 1; transform: translateY(0) scale(1); }
       50%  { opacity: 1; transform: translateY(-48px) scale(1.12); }
@@ -446,127 +490,129 @@
     }
 
     .shop {
-      border: 1.5px solid #e0e0e0;
+      border: 1.5px solid var(--border);
       border-radius: 18px;
-      background: #fafafa;
-      padding: 16px;
-      max-height: 80vh;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: #ddd transparent;
+      background: var(--surface);
+      padding: 16px; max-height: 80vh;
+      overflow-y: auto; scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      transition: background 0.25s, border-color 0.25s;
     }
-
     .shop::-webkit-scrollbar { width: 4px; }
-    .shop::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+    .shop::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
     .shop-label {
-      display: block;
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      color: #ccc;
-      margin-bottom: 12px;
+      display: block; font-size: 10px; font-weight: 700;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 12px;
+      transition: color 0.25s;
     }
 
     .upgrade {
-      border: 1.5px solid #e8e8e8;
+      border: 1.5px solid var(--border);
       border-radius: 12px;
-      background: #fff;
-      padding: 11px 13px;
-      margin-bottom: 8px;
-      transition: border-color 0.18s, box-shadow 0.18s, transform 0.14s;
+      background: var(--surface2);
+      padding: 11px 13px; margin-bottom: 8px;
+      transition: border-color 0.18s, box-shadow 0.18s, transform 0.14s, background 0.25s;
     }
-
     .upgrade.affordable {
       border-color: #ffc107;
-      box-shadow: 0 2px 10px rgba(255, 193, 7, 0.18);
+      box-shadow: 0 2px 10px rgba(255,193,7,0.18);
     }
-
     .upgrade:hover { transform: translateX(2px); }
 
     .upgrade-header {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      margin-bottom: 3px;
+      display: flex; align-items: center; gap: 7px; margin-bottom: 3px;
     }
-
     .upgrade-icon { font-size: 16px; flex-shrink: 0; }
-    .upgrade-name { font-size: 13px; font-weight: 800; color: #1a1a1a; flex: 1; }
+    .upgrade-name { font-size: 13px; font-weight: 700; color: var(--fg); flex: 1; transition: color 0.25s; }
     .upgrade-count {
-      font-size: 10px;
-      font-weight: 700;
-      color: #bbb;
-      background: #f2f2f2;
-      padding: 2px 7px;
-      border-radius: 20px;
+      font-size: 10px; font-weight: 700;
+      color: var(--muted); background: var(--surface);
+      padding: 2px 7px; border-radius: 20px; transition: all 0.25s;
     }
-
-    .upgrade-desc {
-      font-size: 11px;
-      color: #bbb;
-      font-weight: 700;
-      margin-bottom: 9px;
-    }
+    .upgrade-desc { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 9px; transition: color 0.25s; }
 
     .buy {
       width: 100%;
-      border: 1.5px solid #1a1a1a;
-      background: #1a1a1a;
-      color: #fff;
-      border-radius: 10px;
-      padding: 7px;
-      font-family: "Nunito", Arial, sans-serif;
-      font-weight: 800;
-      font-size: 11px;
-      cursor: pointer;
-      transition: background 0.14s, transform 0.1s;
+      border: 1.5px solid var(--fg);
+      background: var(--fg);
+      color: var(--bg);
+      border-radius: 10px; padding: 7px;
+      font-family: "Martel Sans", Arial, sans-serif;
+      font-weight: 700; font-size: 11px; cursor: pointer;
+      transition: opacity 0.14s, transform 0.1s, background 0.25s, color 0.25s, border-color 0.25s;
     }
-
-    .buy:hover:not(:disabled) { background: #333; transform: translateY(-1px); }
+    .buy:hover:not(:disabled) { opacity: 0.82; transform: translateY(-1px); }
     .buy:active:not(:disabled) { transform: translateY(0); }
-
     .buy:disabled {
-      background: #f0f0f0;
-      border-color: #e8e8e8;
-      color: #ccc;
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--muted);
       cursor: not-allowed;
     }
-
     .upgrade.affordable .buy:not(:disabled) {
-      background: #ffc107;
-      border-color: #ffc107;
-      color: #1a0800;
+      background: #ffc107; border-color: #ffc107; color: #1a0800;
+    }
+    .upgrade.affordable .buy:hover:not(:disabled) {
+      background: #e6ac00; border-color: #e6ac00;
     }
 
-    .upgrade.affordable .buy:hover:not(:disabled) {
-      background: #e6ac00;
-      border-color: #e6ac00;
+    /* ══════════════════════════════════════════════
+       SNAKE SCREEN
+    ══════════════════════════════════════════════ */
+    #snakeGame {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px 18px 70px;
+      min-height: 100vh;
+    }
+
+    .snake-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .snake-title {
+      flex: 1;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--fg);
+    }
+
+    .snake-frame-wrap {
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--surface);
+      height: calc(100vh - 116px);
+      min-height: 560px;
+      transition: background 0.25s, border-color 0.25s;
+    }
+
+    .snake-frame-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #fff;
     }
 
     /* ══════════════════════════════════════════════
        IDLE OVERLAY
     ══════════════════════════════════════════════ */
     #idlePhoto {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      background: #000;
-      opacity: 1;
-      pointer-events: auto;
+      position: fixed; inset: 0; z-index: 9999;
+      background: #000; opacity: 1; pointer-events: auto;
       transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
     #idlePhoto.hidden { opacity: 0; pointer-events: none; }
     #idlePhoto.no-transition { transition: none !important; }
-
     #idlePhoto img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: top center;
-      display: block;
+      width: 100%; height: 100%; object-fit: cover;
+      object-position: top center; display: block;
     }
 
     /* ══════════════════════════════════════════════
@@ -577,6 +623,7 @@
       .game-wrap { grid-template-columns: 1fr; }
       .shop { max-height: none; }
       .pill { font-size: 12px; padding: 6px 13px; }
+      .snake-frame-wrap { height: 72vh; min-height: 420px; }
     }
   </style>
 </head>
@@ -586,6 +633,7 @@
   <div id="dashboard">
 
     <header class="site-header">
+      <button class="pill pill-icon" id="themeToggle" type="button" title="Toggle dark mode">🌙</button>
       <button class="pill" type="button">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
         Get new posts
@@ -617,6 +665,43 @@
         <h3 class="card-title" style="color:#2ecc71;text-shadow:0 1px 8px rgba(0,0,0,0.8);">Spend Elon's Money</h3>
       </article>
 
+      <article class="card card-snake" id="openSnake" style="cursor:pointer">
+        <div class="snake-preview">
+          <span class="snake-dot"></span>
+          <span class="snake-body"></span>
+          <span class="snake-body"></span>
+          <span class="snake-body"></span>
+          <span class="snake-food"></span>
+        </div>
+        <h3 class="card-title">Google Snake Mods</h3>
+      </article>
+
+      <article class="card card-slope" onclick="location.href='./slope.html'" style="cursor:pointer">
+        <div class="slope-preview" aria-hidden="true">
+          <span class="slope-road"></span>
+          <span class="slope-ball"></span>
+          <span class="slope-block one"></span>
+          <span class="slope-block two"></span>
+        </div>
+        <h3 class="card-title">Slope</h3>
+      </article>
+
+      <article class="card card-browser" onclick="location.href='./browser.html'" style="cursor:pointer">
+        <div class="browser-preview" aria-hidden="true">
+          <div class="browser-preview-bar">
+            <span class="browser-dot"></span>
+            <span class="browser-dot"></span>
+            <span class="browser-dot"></span>
+            <span class="browser-url"></span>
+          </div>
+          <div class="browser-page-lines">
+            <span class="browser-line"></span>
+            <span class="browser-line mid"></span>
+            <span class="browser-line short"></span>
+          </div>
+        </div>
+        <h3 class="card-title">Mini Browser</h3>
+      </article>
     </main>
   </div>
 
@@ -652,12 +737,50 @@
     </div>
   </section>
 
+  <!-- ══ Snake ════════════════════════════════════════════════════ -->
+  <section id="snakeGame" class="hidden">
+    <div class="snake-top">
+      <button id="backFromSnake" class="btn" type="button">← Back</button>
+      <div class="snake-title">Google Snake Mods</div>
+    </div>
+    <div class="snake-frame-wrap">
+      <iframe
+        id="snakeFrame"
+        title="Google Snake Mods"
+        src="./snake/index.html"
+        loading="lazy"
+        allowfullscreen
+        referrerpolicy="no-referrer-when-downgrade">
+      </iframe>
+    </div>
+  </section>
+
   <!-- ══ Idle photo ═════════════════════════════════════════════ -->
   <div id="idlePhoto" aria-hidden="true">
     <img src="./cleverpage.png" alt="Idle screen" />
   </div>
 
   <script>
+    // ── Dark mode ─────────────────────────────────────────────────
+    const themeToggle = document.getElementById('themeToggle');
+    const savedTheme  = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      themeToggle.textContent = '☀️';
+    }
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        themeToggle.textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        themeToggle.textContent = '☀️';
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+
     // ── Idle logic ────────────────────────────────────────────────
     const IDLE_MS   = 5000;
     const idlePhoto = document.getElementById("idlePhoto");
@@ -676,29 +799,69 @@
       clearTimeout(idleTimer);
     }
 
+    function isEmbeddedGameActive() {
+      const snake = document.getElementById("snakeGame");
+      return snake && !snake.classList.contains("hidden");
+    }
+
     function hideIdleAndArmTimer() {
       idlePhoto.classList.add("hidden");
       clearTimeout(idleTimer);
+      if (isEmbeddedGameActive()) return;
       idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
     }
 
-    showIdle(true);
+    // Show clever picture on fresh visits; skip it when coming back from a game
+    function isFromGame() {
+      if (!document.referrer) return false;
+      try {
+        const p = new URL(document.referrer).pathname;
+        return p.endsWith('.html') && !p.includes('index');
+      } catch(e) { return false; }
+    }
 
-    ["mousemove", "mousedown", "scroll", "touchstart", "click", "input", "wheel"].forEach(evt => {
+    if (isFromGame()) {
+      // Back from a game — go straight to dashboard, arm idle timer normally
+      idlePhoto.classList.add("hidden");
+      idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
+    } else {
+      // Fresh visit — show clever picture first
+      showIdle(true);
+    }
+
+    ["mousemove","mousedown","scroll","touchstart","click","input","wheel"].forEach(evt => {
       window.addEventListener(evt, hideIdleAndArmTimer, { passive: true });
     });
 
     window.addEventListener("keydown", e => {
-      if (e.key === "Backspace") { showIdle(true); return; }
+      if (e.key === "Backspace") {
+        e.preventDefault();
+        showIdle(true);
+        return;
+      }
       hideIdleAndArmTimer();
+    });
+
+    window.addEventListener("message", e => {
+      if (!e.data || e.data.type !== "alex-fun-show-cover") return;
+      showIdle(true);
+    });
+
+    window.addEventListener("blur", () => {
+      if (!isEmbeddedGameActive()) return;
+      idlePhoto.classList.add("hidden");
+      clearTimeout(idleTimer);
     });
 
     // ── Screen switching ──────────────────────────────────────────
     const dashboard = document.getElementById("dashboard");
     const game67El  = document.getElementById("game67");
+    const snakeGame = document.getElementById("snakeGame");
+    const snakeFrame = document.getElementById("snakeFrame");
 
     document.getElementById("open67").addEventListener("click", () => {
       dashboard.classList.add("hidden");
+      snakeGame.classList.add("hidden");
       game67El.classList.remove("hidden");
     });
 
@@ -707,19 +870,54 @@
       dashboard.classList.remove("hidden");
     });
 
+    document.getElementById("openSnake").addEventListener("click", () => {
+      dashboard.classList.add("hidden");
+      game67El.classList.add("hidden");
+      snakeGame.classList.remove("hidden");
+      hideIdleAndArmTimer();
+    });
+
+    document.getElementById("backFromSnake").addEventListener("click", () => {
+      snakeGame.classList.add("hidden");
+      dashboard.classList.remove("hidden");
+      hideIdleAndArmTimer();
+    });
+
+    function installSnakeCoverHook() {
+      try {
+        const win = snakeFrame.contentWindow;
+        const doc = snakeFrame.contentDocument;
+        if (!win || !doc || win.__alexFunCoverHookInstalled) return;
+        win.__alexFunCoverHookInstalled = true;
+        const cover = e => {
+          if (e.key !== "Backspace") return;
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          showIdle(true);
+        };
+        win.addEventListener("keydown", cover, true);
+        doc.addEventListener("keydown", cover, true);
+        doc.documentElement.addEventListener("keydown", cover, true);
+      } catch(e) {
+        // The local iframe should be same-origin; this is here in case the browser blocks it.
+      }
+    }
+
+    snakeFrame.addEventListener("load", installSnakeCoverHook);
+
     // ── Upgrade definitions ───────────────────────────────────────
     const upgradeConfig = [
-      { key:"multi",      icon:"🖱️",  name:"Multiple Clickers", desc:"+1 point per click",       cost:25,              scale:1.4,  onBuy:()=>{ clickPower+=1; } },
-      { key:"auto",       icon:"🤖",  name:"Autoclicker",        desc:"+1 point/sec",              cost:50,              scale:1.6,  onBuy:()=>{ perSec+=1; } },
-      { key:"factory",    icon:"🏭",  name:"67 Factory",         desc:"+8 points/sec",             cost:400,             scale:1.7,  onBuy:()=>{ perSec+=8; } },
-      { key:"mine",       icon:"⛏️",  name:"67 Mine",            desc:"+47 points/sec",            cost:4_000,           scale:1.8,  onBuy:()=>{ perSec+=47; } },
-      { key:"lab",        icon:"🔬",  name:"67 Laboratory",      desc:"+260 points/sec",           cost:40_000,          scale:1.85, onBuy:()=>{ perSec+=260; } },
-      { key:"powerclick", icon:"⚡",  name:"Power Click",        desc:"+10 points per click",      cost:100_000,         scale:1.9,  onBuy:()=>{ clickPower+=10; } },
-      { key:"dimension",  icon:"🌀",  name:"67 Dimension",       desc:"+1,600 points/sec",         cost:500_000,         scale:1.9,  onBuy:()=>{ perSec+=1_600; } },
-      { key:"empire",     icon:"👑",  name:"67 Empire",          desc:"+10,000 points/sec",        cost:7_000_000,       scale:2.0,  onBuy:()=>{ perSec+=10_000; } },
-      { key:"galaxy",     icon:"🌌",  name:"67 Galaxy",          desc:"+65,000 points/sec",        cost:100_000_000,     scale:2.1,  onBuy:()=>{ perSec+=65_000; } },
-      { key:"mason",      icon:"🧱",  name:"Mason 67",           desc:"+400,000 points/sec",       cost:1_000_000_000,   scale:2.2,  onBuy:()=>{ perSec+=400_000; } },
-      { key:"god",        icon:"✨",  name:"67 God",             desc:"+2,500,000 points/sec",     cost:1_000_000_000_000, scale:2.5, onBuy:()=>{ perSec+=2_500_000; } }
+      { key:"multi",      icon:"🖱️",  name:"Multiple Clickers", desc:"+1 point per click",       cost:25,              scale:1.18, onBuy:()=>{ clickPower+=1; } },
+      { key:"auto",       icon:"🤖",  name:"Autoclicker",        desc:"+1 point/sec",              cost:50,              scale:1.22, onBuy:()=>{ perSec+=1; } },
+      { key:"factory",    icon:"🏭",  name:"67 Factory",         desc:"+8 points/sec",             cost:400,             scale:1.25, onBuy:()=>{ perSec+=8; } },
+      { key:"mine",       icon:"⛏️",  name:"67 Mine",            desc:"+47 points/sec",            cost:4_000,           scale:1.28, onBuy:()=>{ perSec+=47; } },
+      { key:"lab",        icon:"🔬",  name:"67 Laboratory",      desc:"+260 points/sec",           cost:40_000,          scale:1.3,  onBuy:()=>{ perSec+=260; } },
+      { key:"powerclick", icon:"⚡",  name:"Power Click",        desc:"+10 points per click",      cost:100_000,         scale:1.32, onBuy:()=>{ clickPower+=10; } },
+      { key:"dimension",  icon:"🌀",  name:"67 Dimension",       desc:"+1,600 points/sec",         cost:500_000,         scale:1.34, onBuy:()=>{ perSec+=1_600; } },
+      { key:"empire",     icon:"👑",  name:"67 Empire",          desc:"+10,000 points/sec",        cost:7_000_000,       scale:1.36, onBuy:()=>{ perSec+=10_000; } },
+      { key:"galaxy",     icon:"🌌",  name:"67 Galaxy",          desc:"+65,000 points/sec",        cost:100_000_000,     scale:1.38, onBuy:()=>{ perSec+=65_000; } },
+      { key:"mason",      icon:"🧱",  name:"Mason 67",           desc:"+400,000 points/sec",       cost:1_000_000_000,   scale:1.4,  onBuy:()=>{ perSec+=400_000; } },
+      { key:"god",        icon:"✨",  name:"67 God",             desc:"+2,500,000 points/sec",     cost:1_000_000_000_000, scale:1.45, onBuy:()=>{ perSec+=2_500_000; } }
     ];
 
     let points     = 0;
@@ -728,6 +926,55 @@
 
     const state = {};
     upgradeConfig.forEach(cfg => { state[cfg.key] = { count:0, cost:cfg.cost }; });
+
+    const SAVE_KEY = "alexFun67ClickerSaveV1";
+    let saveDirty = false;
+
+    function markSaveDirty() {
+      saveDirty = true;
+    }
+
+    function saveGame() {
+      try {
+        const upgrades = {};
+        upgradeConfig.forEach(cfg => {
+          upgrades[cfg.key] = {
+            count: state[cfg.key].count,
+            cost: state[cfg.key].cost
+          };
+        });
+        localStorage.setItem(SAVE_KEY, JSON.stringify({
+          points,
+          clickPower,
+          perSec,
+          upgrades
+        }));
+        saveDirty = false;
+      } catch(e) {
+        console.log("Could not save 67 Clicker:", e);
+      }
+    }
+
+    function loadGame() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (Number.isFinite(saved.points)) points = saved.points;
+        if (Number.isFinite(saved.clickPower)) clickPower = saved.clickPower;
+        if (Number.isFinite(saved.perSec)) perSec = saved.perSec;
+        upgradeConfig.forEach(cfg => {
+          const savedUpgrade = saved.upgrades && saved.upgrades[cfg.key];
+          if (!savedUpgrade) return;
+          if (Number.isFinite(savedUpgrade.count)) state[cfg.key].count = savedUpgrade.count;
+          if (Number.isFinite(savedUpgrade.cost)) state[cfg.key].cost = savedUpgrade.cost;
+        });
+      } catch(e) {
+        console.log("Could not load 67 Clicker save:", e);
+      }
+    }
+
+    loadGame();
 
     // ── Build shop DOM ────────────────────────────────────────────
     const shopEl = document.querySelector(".shop");
@@ -779,6 +1026,8 @@
       cfg.onBuy();
       u.cost = Math.ceil(u.cost * cfg.scale);
       updateUI();
+      markSaveDirty();
+      saveGame();
     }
 
     upgradeConfig.forEach(cfg => {
@@ -788,23 +1037,40 @@
     const big67    = document.getElementById("big67");
     const playArea = document.getElementById("playArea");
 
-    big67.addEventListener("click", e => {
+    function click67(clientX, clientY) {
       points += clickPower;
       updateUI();
+      markSaveDirty();
       const rect = playArea.getBoundingClientRect();
       const span = document.createElement("span");
       span.className   = "float-text";
       span.textContent = "+" + formatNum(clickPower);
-      span.style.left  = (e.clientX - rect.left + (Math.random()*36-18)) + "px";
-      span.style.top   = (e.clientY - rect.top  - 8) + "px";
+      span.style.left  = (clientX - rect.left + (Math.random()*36-18)) + "px";
+      span.style.top   = (clientY - rect.top  - 8) + "px";
       playArea.appendChild(span);
       span.addEventListener("animationend", () => span.remove());
+    }
+
+    big67.addEventListener("click", e => {
+      click67(e.clientX, e.clientY);
+    });
+
+    window.addEventListener("keydown", e => {
+      const tag = document.activeElement && document.activeElement.tagName;
+      const isTyping = ["INPUT", "TEXTAREA", "SELECT"].includes(tag);
+      if (e.code === "Space" && !game67El.classList.contains("hidden") && !isTyping) {
+        e.preventDefault();
+        const rect = big67.getBoundingClientRect();
+        click67(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      }
     });
 
     document.getElementById("resetGame").addEventListener("click", () => {
       if (!confirm("Reset all progress?")) return;
       points=0; clickPower=1; perSec=0;
       upgradeConfig.forEach(cfg => { state[cfg.key].count=0; state[cfg.key].cost=cfg.cost; });
+      localStorage.removeItem(SAVE_KEY);
+      saveDirty = false;
       updateUI();
     });
 
@@ -816,8 +1082,18 @@
     });
 
     setInterval(() => {
-      if (perSec > 0) { points += perSec/10; updateUI(); }
+      if (perSec > 0) {
+        points += perSec/10;
+        updateUI();
+        markSaveDirty();
+      }
     }, 100);
+
+    setInterval(() => {
+      if (saveDirty) saveGame();
+    }, 2000);
+
+    window.addEventListener("beforeunload", saveGame);
 
     updateUI();
   </script>

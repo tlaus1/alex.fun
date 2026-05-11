@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clever | Portal</title>
+  <link rel="icon" type="image/png" href="./clever1.png" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+    body {
+      background:
+        radial-gradient(circle at 12% 12%, rgba(96,165,250,0.22), transparent 28%),
+        radial-gradient(circle at 82% 18%, rgba(45,212,191,0.18), transparent 24%),
+        linear-gradient(135deg, #0f172a 0%, #111827 52%, #020617 100%);
+      color: #f8fafc;
+      font-family: Arial, Helvetica, sans-serif;
+      overflow: hidden;
+    }
+
+    .browser {
+      width: min(1180px, calc(100vw - 24px));
+      height: calc(100vh - 78px);
+      margin: 12px auto 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 20px;
+      background: rgba(15,23,42,0.76);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.36);
+      backdrop-filter: blur(18px);
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: auto auto 1fr auto auto;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 6px;
+      padding: 0 6px;
+    }
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    .dot:nth-child(2) { background: #f59e0b; }
+    .dot:nth-child(3) { background: #22c55e; }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      min-height: 38px;
+      padding: 0 13px;
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn:hover { background: rgba(255,255,255,0.2); }
+
+    .address-form {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .address {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 999px;
+      padding: 0 16px;
+      outline: 0;
+      background: rgba(255,255,255,0.93);
+      color: #111827;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .viewport {
+      position: relative;
+      flex: 1;
+      background: #e5e7eb;
+    }
+
+    .web-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #fff;
+    }
+
+    .help-panel {
+      position: absolute;
+      inset: auto 18px 18px auto;
+      max-width: 330px;
+      border: 1px solid rgba(15,23,42,0.12);
+      border-radius: 18px;
+      padding: 16px;
+      color: #0f172a;
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 18px 48px rgba(15,23,42,0.22);
+    }
+    .help-panel h1 {
+      font-size: 18px;
+      line-height: 1.1;
+      margin-bottom: 7px;
+    }
+    .help-panel p {
+      font-size: 13px;
+      line-height: 1.45;
+      color: #475569;
+      margin-bottom: 10px;
+    }
+    .help-panel .small {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .bottom-hint {
+      position: fixed;
+      left: 50%;
+      bottom: 10px;
+      z-index: 50;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      padding: 9px 14px;
+      background: rgba(8,13,24,0.74);
+      color: #fff;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.35);
+      font-size: 13px;
+      font-weight: 800;
+      backdrop-filter: blur(14px);
+    }
+    .keycap {
+      border-radius: 9px;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.12);
+      padding: 5px 9px;
+      color: #ff4d4d;
+      font-weight: 900;
+    }
+
+    #idlePhoto {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: #000;
+      opacity: 1;
+      pointer-events: auto;
+      transition: opacity 0.45s ease;
+    }
+    #idlePhoto.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #idlePhoto.no-transition { transition: none; }
+    #idlePhoto img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+    }
+
+    @media (max-width: 700px) {
+      .browser { width: 100%; height: calc(100vh - 70px); margin: 0; border-radius: 0; }
+      .toolbar { grid-template-columns: auto 1fr auto auto; }
+      .window-dots { display: none; }
+      .help-panel { inset: auto 10px 10px 10px; max-width: none; }
+      .bottom-hint { width: calc(100% - 18px); justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <main class="browser">
+    <div class="toolbar">
+      <div class="window-dots" aria-hidden="true">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+      <button class="btn" type="button" onclick="location.href='./index.html'">Back</button>
+      <form class="address-form" id="addressForm">
+        <input class="address" id="address" autocomplete="off" spellcheck="false" value="https://example.com" aria-label="Website address" />
+      </form>
+      <button class="btn" type="submit" form="addressForm">Go</button>
+      <button class="btn" id="openExternal" type="button">New Tab</button>
+    </div>
+
+    <section class="viewport">
+      <iframe
+        id="webFrame"
+        class="web-frame"
+        title="Mini browser page"
+        sandbox="allow-forms allow-popups allow-pointer-lock allow-presentation allow-scripts">
+      </iframe>
+      <div class="help-panel" id="helpPanel">
+        <h1>Mini Browser</h1>
+        <p>Type a URL to preview it here, or type search words to get a local search launcher.</p>
+        <p class="small">Some websites still block iframe previews. Use New Tab when that happens.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="bottom-hint"><span class="keycap">Backspace</span> = Cover Photo</div>
+
+  <div id="idlePhoto" class="hidden" aria-hidden="true">
+    <img src="./cleverpage.png" alt="Idle screen" />
+  </div>
+
+  <script>
+    const form = document.getElementById("addressForm");
+    const address = document.getElementById("address");
+    const frame = document.getElementById("webFrame");
+    const helpPanel = document.getElementById("helpPanel");
+    const idlePhoto = document.getElementById("idlePhoto");
+
+    function escapeHtml(text) {
+      return text.replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function searchUrl(query, engine = "duckduckgo") {
+      const encoded = encodeURIComponent(query);
+      if (engine === "google") return "https://www.google.com/search?q=" + encoded;
+      return "https://html.duckduckgo.com/html/?q=" + encoded;
+    }
+
+    function getTarget(value) {
+      const trimmed = value.trim();
+      if (!trimmed) return { type: "home" };
+      if (/^https?:\/\//i.test(trimmed)) return { type: "url", url: trimmed };
+      if (trimmed.includes(".") && !trimmed.includes(" ")) return { type: "url", url: "https://" + trimmed };
+      return { type: "search", query: trimmed, url: searchUrl(trimmed) };
+    }
+
+    function renderLocalPage(title, body) {
+      frame.removeAttribute("src");
+      frame.srcdoc = `<!doctype html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            * { box-sizing: border-box; }
+            body {
+              min-height: 100vh;
+              margin: 0;
+              display: grid;
+              place-items: center;
+              padding: 32px;
+              background:
+                radial-gradient(circle at 15% 15%, rgba(59,130,246,0.22), transparent 28%),
+                radial-gradient(circle at 80% 20%, rgba(45,212,191,0.18), transparent 24%),
+                linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+              color: #0f172a;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            .card {
+              width: min(720px, 100%);
+              border: 1px solid rgba(15,23,42,0.12);
+              border-radius: 28px;
+              padding: clamp(22px, 5vw, 42px);
+              background: rgba(255,255,255,0.86);
+              box-shadow: 0 24px 70px rgba(15,23,42,0.16);
+            }
+            h1 { margin: 0 0 10px; font-size: clamp(28px, 6vw, 52px); line-height: 1; }
+            p { margin: 0 0 22px; color: #475569; font-size: 16px; line-height: 1.5; }
+            .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+            a {
+              display: inline-flex;
+              align-items: center;
+              min-height: 42px;
+              border-radius: 999px;
+              padding: 0 16px;
+              background: #0f172a;
+              color: #fff;
+              font-weight: 800;
+              text-decoration: none;
+            }
+            a.secondary { background: #2563eb; }
+            .hint { margin-top: 18px; font-size: 13px; color: #64748b; }
+          </style>
+        </head>
+        <body>
+          <main class="card">
+            <h1>${title}</h1>
+            ${body}
+          </main>
+          <script>
+            document.addEventListener("click", event => {
+              const link = event.target.closest && event.target.closest("a[href]");
+              if (!link) return;
+              const raw = link.getAttribute("href") || "";
+              if (raw.startsWith("#") || raw.startsWith("mailto:") || raw.startsWith("tel:")) return;
+              try {
+                event.preventDefault();
+                parent.postMessage({ type: "mini-browser-navigate", url: new URL(raw, location.href).href }, "*");
+              } catch(e) {}
+            }, true);
+          <\/script>
+        </body>
+        </html>`;
+    }
+
+    function proxyUrl(url) {
+      return "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+    }
+
+    function injectMiniBrowserControls(html, pageUrl) {
+      const baseHref = escapeHtml(pageUrl);
+      const pageUrlJson = JSON.stringify(pageUrl);
+      const bridge = `
+        <script>
+          (() => {
+            const pageUrl = ${pageUrlJson};
+            const ignored = ["#", "javascript:", "mailto:", "tel:"];
+            function resolveUrl(value) {
+              try { return new URL(value, pageUrl).href; }
+              catch(e) { return ""; }
+            }
+            document.addEventListener("click", event => {
+              const link = event.target.closest && event.target.closest("a[href]");
+              if (!link) return;
+              const raw = link.getAttribute("href") || "";
+              if (ignored.some(prefix => raw.toLowerCase().startsWith(prefix))) return;
+              const next = resolveUrl(raw);
+              if (!next) return;
+              event.preventDefault();
+              parent.postMessage({ type: "mini-browser-navigate", url: next }, "*");
+            }, true);
+            document.addEventListener("submit", event => {
+              const form = event.target;
+              if (!form || !form.action) return;
+              const next = resolveUrl(form.action);
+              if (!next) return;
+              event.preventDefault();
+              parent.postMessage({ type: "mini-browser-navigate", url: next }, "*");
+            }, true);
+          })();
+        <\/script>`;
+
+      let patched = html
+        .replace(/<meta[^>]+http-equiv=["']?content-security-policy["']?[^>]*>/ig, "")
+        .replace(/<base[^>]*>/ig, "");
+
+      const base = `<base href="${baseHref}">`;
+      if (/<head[^>]*>/i.test(patched)) {
+        patched = patched.replace(/<head([^>]*)>/i, `<head$1>${base}`);
+      } else {
+        patched = `${base}${patched}`;
+      }
+
+      if (/<\/body>/i.test(patched)) {
+        return patched.replace(/<\/body>/i, `${bridge}</body>`);
+      }
+      return patched + bridge;
+    }
+
+    function renderLoadingPage(url) {
+      renderLocalPage("Loading...", `
+        <p>Opening this page inside the mini-browser:</p>
+        <div class="hint">${escapeHtml(url)}</div>
+      `);
+    }
+
+    function renderProxyError(url, message) {
+      const safeUrl = escapeHtml(url);
+      renderLocalPage("Could not load inside Mini Browser", `
+        <p>The proxy could not fetch this page. Some sites block proxies, require logins, or use scripts that do not work inside a static GitHub Pages mini-browser.</p>
+        <div class="actions">
+          <a href="${safeUrl}" target="_blank" rel="noreferrer">Open in New Tab</a>
+        </div>
+        <div class="hint">${escapeHtml(message || url)}</div>
+      `);
+    }
+
+    async function loadInsideBrowser(url) {
+      address.value = url;
+      helpPanel.style.display = "none";
+      renderLoadingPage(url);
+      try {
+        const response = await fetch(proxyUrl(url));
+        if (!response.ok) throw new Error("Proxy returned " + response.status);
+        const html = await response.text();
+        frame.removeAttribute("src");
+        frame.srcdoc = injectMiniBrowserControls(html, url);
+      } catch(e) {
+        renderProxyError(url, e.message);
+      }
+    }
+
+    function renderHomePage() {
+      renderLocalPage("Mini Browser", `
+        <p>This mini-browser tries to load pages through a static proxy so browsing can stay inside your website instead of jumping to the real browser.</p>
+        <div class="actions">
+          <a href="https://example.com">Example Site</a>
+          <a class="secondary" href="https://html.duckduckgo.com/html/?q=games">Search Example</a>
+        </div>
+        <div class="hint">Tip: try typing example.com, wikipedia.org, or a search like funny games.</div>
+      `);
+    }
+
+    async function go() {
+      const target = getTarget(address.value);
+      helpPanel.style.display = "none";
+      if (target.type === "home") {
+        renderHomePage();
+        return;
+      }
+      if (target.type === "search") {
+        await loadInsideBrowser(target.url);
+        return;
+      }
+      await loadInsideBrowser(target.url);
+    }
+
+    function showIdle(instant = false) {
+      if (instant) {
+        idlePhoto.classList.add("no-transition");
+        idlePhoto.classList.remove("hidden");
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          idlePhoto.classList.remove("no-transition");
+        }));
+        return;
+      }
+      idlePhoto.classList.remove("hidden");
+    }
+
+    function hideIdle() {
+      idlePhoto.classList.add("hidden");
+    }
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      go();
+    });
+
+    document.getElementById("openExternal").addEventListener("click", () => {
+      const target = getTarget(address.value);
+      if (target.type === "home") return;
+      window.open(target.url, "_blank", "noopener,noreferrer");
+    });
+
+    window.addEventListener("message", e => {
+      if (!e.data || e.data.type !== "mini-browser-navigate" || !e.data.url) return;
+      loadInsideBrowser(e.data.url);
+    });
+
+    renderHomePage();
+
+    ["mousemove", "mousedown", "touchstart", "click", "wheel", "input"].forEach(evt => {
+      window.addEventListener(evt, hideIdle, { passive: true });
+    });
+
+    window.addEventListener("keydown", e => {
+      if (e.key === "Backspace" && document.activeElement !== address) {
+        e.preventDefault();
+        showIdle(true);
+        return;
+      }
+      hideIdle();
+    }, true);
+  </script>
+</body>
+</html>
