@@ -281,110 +281,6 @@
     .snake-body { background:#22c55e; }
     .snake-food { background:#ef4444;border-radius:50%;margin-left:16px; }
 
-    /* ── Slope card ── */
-    .card-slope {
-      background: linear-gradient(135deg, #06111f 0%, #12324f 42%, #1dd3b0 100%);
-    }
-    .card-slope.card::after {
-      background: linear-gradient(to top, rgba(2,6,23,0.68) 0%, rgba(2,6,23,0.08) 45%, transparent 70%);
-    }
-    .slope-preview {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      overflow: hidden;
-      perspective: 360px;
-    }
-    .slope-road {
-      position: absolute;
-      left: 19%;
-      right: 19%;
-      top: 8%;
-      bottom: -18%;
-      background:
-        linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.65) 48%, rgba(255,255,255,0.65) 52%, transparent 53%),
-        linear-gradient(180deg, #26364a 0%, #070b13 100%);
-      clip-path: polygon(35% 0, 65% 0, 100% 100%, 0 100%);
-      transform: rotateX(58deg);
-      transform-origin: bottom center;
-      border-left: 4px solid rgba(45,212,191,0.95);
-      border-right: 4px solid rgba(45,212,191,0.95);
-      box-shadow: 0 0 42px rgba(45,212,191,0.35);
-    }
-    .slope-ball {
-      position: absolute;
-      left: 47%;
-      top: 40%;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 30% 25%, #fff, #9ca3af 36%, #111827 78%);
-      box-shadow: 0 10px 18px rgba(0,0,0,0.35);
-    }
-    .slope-block {
-      position: absolute;
-      width: 30px;
-      height: 28px;
-      background: #ef4444;
-      transform: skewY(-14deg);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.28);
-    }
-    .slope-block.one { left: 34%; top: 48%; }
-    .slope-block.two { right: 30%; top: 27%; background: #f97316; }
-
-    /* ── Browser card ── */
-    .card-browser {
-      background: linear-gradient(135deg, #f5f7fb 0%, #b8c5d6 48%, #2f4057 100%);
-    }
-    .card-browser.card::after {
-      background: linear-gradient(to top, rgba(15,23,42,0.7) 0%, rgba(15,23,42,0.04) 46%, transparent 70%);
-    }
-    .browser-preview {
-      position: absolute;
-      inset: 10%;
-      z-index: 1;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #f8fafc;
-      border: 2px solid rgba(15,23,42,0.35);
-      box-shadow: 0 12px 28px rgba(15,23,42,0.24);
-    }
-    .browser-preview-bar {
-      height: 28px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 0 9px;
-      background: #e2e8f0;
-    }
-    .browser-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #ef4444;
-    }
-    .browser-dot:nth-child(2) { background: #f59e0b; }
-    .browser-dot:nth-child(3) { background: #22c55e; }
-    .browser-url {
-      flex: 1;
-      height: 14px;
-      margin-left: 8px;
-      border-radius: 999px;
-      background: #fff;
-    }
-    .browser-page-lines {
-      display: grid;
-      gap: 8px;
-      padding: 15px;
-    }
-    .browser-line {
-      height: 10px;
-      border-radius: 999px;
-      background: #94a3b8;
-    }
-    .browser-line.short { width: 58%; }
-    .browser-line.mid { width: 78%; }
-
     /* ── Staggered card entrance ── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(18px); }
@@ -395,9 +291,6 @@
     .card:nth-child(3) { animation: fadeUp 0.35s ease 0.20s both; }
     .card:nth-child(4) { animation: fadeUp 0.35s ease 0.28s both; }
     .card:nth-child(5) { animation: fadeUp 0.35s ease 0.36s both; }
-    .card:nth-child(6) { animation: fadeUp 0.35s ease 0.44s both; }
-    .card:nth-child(7) { animation: fadeUp 0.35s ease 0.52s both; }
-    .card:nth-child(8) { animation: fadeUp 0.35s ease 0.60s both; }
 
     /* ══════════════════════════════════════════════
        GAME SCREEN
@@ -676,32 +569,6 @@
         <h3 class="card-title">Google Snake Mods</h3>
       </article>
 
-      <article class="card card-slope" onclick="location.href='./slope.html'" style="cursor:pointer">
-        <div class="slope-preview" aria-hidden="true">
-          <span class="slope-road"></span>
-          <span class="slope-ball"></span>
-          <span class="slope-block one"></span>
-          <span class="slope-block two"></span>
-        </div>
-        <h3 class="card-title">Slope</h3>
-      </article>
-
-      <article class="card card-browser" onclick="location.href='./browser.html'" style="cursor:pointer">
-        <div class="browser-preview" aria-hidden="true">
-          <div class="browser-preview-bar">
-            <span class="browser-dot"></span>
-            <span class="browser-dot"></span>
-            <span class="browser-dot"></span>
-            <span class="browser-url"></span>
-          </div>
-          <div class="browser-page-lines">
-            <span class="browser-line"></span>
-            <span class="browser-line mid"></span>
-            <span class="browser-line short"></span>
-          </div>
-        </div>
-        <h3 class="card-title">Mini Browser</h3>
-      </article>
     </main>
   </div>
 
