@@ -45,7 +45,7 @@
     font-size="72"
     font-weight="900"
     fill="#2ecc71"
-    filter="url(#gf)">$321.7B</text>
+    filter="url(#gf)">$695B</text>
 
   <!-- Progress bar mock -->
   <rect x="220" y="252" width="500" height="8" rx="4" fill="rgba(255,255,255,0.07)"/>

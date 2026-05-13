@@ -6,6 +6,8 @@
   <title>Clever | Portal</title>
   <link rel="icon" type="image/png" href="./clever1.png" />
   <script src="./cover-profiles.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
@@ -19,6 +21,7 @@
       --surface:  #fafafa;
       --surface2: #fff;
       --hover:    #f5f5f5;
+      --status-h: 26px;
     }
     [data-theme="dark"] {
       --bg:       #111;
@@ -42,9 +45,119 @@
       color: var(--fg);
       min-height: 100vh;
       transition: background 0.25s, color 0.25s;
+      animation: pageIn .35s ease both;
+    }
+
+    @keyframes pageIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .hidden { display: none !important; }
+
+    .auth-overlay {
+      position: fixed; inset: 0; z-index: 10050;
+      display: grid; place-items: center; padding: 24px;
+      background: radial-gradient(circle at 20% 10%, rgba(255,199,39,.22), transparent 34%), rgba(0,0,0,.72);
+      backdrop-filter: blur(8px);
+    }
+    .auth-overlay.hidden { display: none !important; }
+    .auth-card {
+      width: min(420px, 100%); border-radius: 24px; padding: 24px;
+      background: var(--surface2); color: var(--fg); border: 1.5px solid var(--border);
+      box-shadow: 0 24px 80px rgba(0,0,0,.35);
+    }
+    .auth-card h2 { font-size: 28px; line-height: 1; margin-bottom: 8px; font-weight: 900; }
+    .auth-card p { color: var(--muted); font-weight: 700; font-size: 13px; margin-bottom: 16px; }
+    .auth-card label { display: block; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin: 12px 0 5px; }
+    .auth-card input {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 11px 12px;
+      font: inherit; font-weight: 800; color: var(--fg); background: var(--surface);
+    }
+    .auth-actions { display: flex; gap: 10px; align-items: center; margin-top: 18px; }
+    .auth-actions .btn { flex: 1; }
+    .auth-note { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 12px; }
+    .signout-btn {
+      position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+      z-index: 9000; border: 1.5px solid var(--border); border-radius: 999px;
+      padding: 8px 16px; font: inherit; font-size: 12px; font-weight: 900;
+      color: var(--fg); background: var(--surface2); cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+      transition: background .2s, color .2s, border-color .2s, transform .15s;
+    }
+    .signout-btn:hover { transform: translateX(-50%) translateY(-1px); }
+    .signout-btn.hidden { display: none !important; }
+    body.game-active .signout-btn { display: none !important; }
+
+    #statusBar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: var(--status-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px; background: var(--surface2); border-top: 1px solid var(--border);
+      font-size: 11px; font-weight: 800; color: var(--muted); z-index: 9000;
+      transition: background .25s, border-color .25s, color .25s;
+    }
+    #statusBar .sb-cover { cursor: pointer; user-select: none; }
+    #statusBar .sb-cover:hover { color: var(--fg); }
+
+    .card-browser { background: linear-gradient(135deg,#0f172a 0%,#164e63 50%,#06b6d4 100%); }
+    .card-browser.card::after { background:linear-gradient(to top,rgba(2,6,23,.72) 0%,rgba(2,6,23,.12) 48%,transparent 70%); }
+    .browser-preview { position:absolute; inset:18px; border:2px solid rgba(255,255,255,.35); border-radius:14px; z-index:1; background:rgba(255,255,255,.12); overflow:hidden; }
+    .browser-preview::before { content:""; display:block; height:22px; background:rgba(255,255,255,.22); box-shadow:38px 7px 0 -5px #ef4444,58px 7px 0 -5px #facc15,78px 7px 0 -5px #22c55e; }
+    .browser-preview::after { content:"ad-blocked search"; position:absolute; left:18px; right:18px; top:52px; border-radius:999px; padding:10px 14px; color:#dffbff; background:rgba(15,23,42,.55); font-size:13px; font-weight:900; }
+
+    .card-crossy { background: #64cbe0; }
+    .card-crossy img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-crossy.card::after { background:linear-gradient(to top,rgba(15,23,42,.58) 0%,rgba(15,23,42,.08) 48%,transparent 72%); }
+    .card-solar { background: #03040a; }
+    .card-solar img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-solar.card::after { background:linear-gradient(to top,rgba(0,0,0,.64) 0%,rgba(0,0,0,.08) 50%,transparent 72%); }
+
+    .mini-browser {
+      max-width: 1180px; margin: 0 auto; padding: 20px 18px 18px;
+      height: calc(100vh - var(--status-h)); min-height: 0;
+    }
+    .browser-top { display:flex; gap:10px; align-items:center; margin-bottom:14px; }
+    .browser-top input { flex:1; border:1.5px solid var(--border); border-radius:999px; padding:10px 14px; font:inherit; font-weight:800; background:var(--surface2); color:var(--fg); }
+    .browser-shell { border:1.5px solid var(--border); border-radius:16px; overflow:hidden; background:var(--surface); min-height:calc(100vh - 138px - var(--status-h)); }
+    .browser-safe-note { padding:12px 14px; font-size:12px; font-weight:800; color:var(--muted); border-bottom:1px solid var(--border); }
+    .browser-shell iframe { width:100%; height:calc(100vh - 178px - var(--status-h)); min-height:520px; border:0; display:block; background:#fff; }
+
+    .rebirth-panel, .achievement-panel {
+      margin-top: 16px; border: 1.5px solid var(--border); border-radius: 14px;
+      background: var(--surface2); padding: 12px; text-align: left;
+    }
+    .rebirth-title, .achievement-title { font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .rebirth-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px; font-weight:800; color:var(--muted); }
+    .rebirth-row strong { color:var(--fg); }
+    .rebirth-row .btn { margin-left:auto; padding:6px 12px; }
+    .achievement-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+    .achievement-chip { border:1.5px solid var(--border); border-radius:999px; padding:5px 8px; font-size:10px; font-weight:900; color:var(--muted); background:var(--surface); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .achievement-chip.unlocked { color:#1a0800; background:#ffe27a; border-color:#ffc107; }
+
+    .mason-bonus {
+      position:absolute; width:78px; height:78px; border:0; border-radius:50%; padding:0; overflow:hidden;
+      background:#071b1d; box-shadow:0 0 24px rgba(34,211,238,.55), 0 8px 24px rgba(0,0,0,.25);
+      cursor:pointer; z-index:4; animation:masonDrift 8s ease-in-out infinite alternate;
+      display:none;
+    }
+    .mason-bonus.visible { display:block; }
+    .mason-bonus img { width:100%; height:100%; object-fit:cover; display:block; }
+    .mason-bonus::after { content:"BONUS"; position:absolute; left:6px; right:6px; bottom:5px; padding:1px 0; border-radius:999px; background:rgba(0,0,0,.58); color:#a5f3fc; font-size:9px; font-weight:900; letter-spacing:.8px; }
+    @keyframes masonDrift { from { transform:translate(0,0) rotate(-5deg); } to { transform:translate(26px,-18px) rotate(5deg); } }
+
+    .leaderboard-modal {
+      position:fixed; inset:0; z-index:10020; display:none; place-items:center; padding:24px;
+      background:rgba(0,0,0,.55); backdrop-filter:blur(6px);
+    }
+    .leaderboard-modal.show { display:grid; }
+    .leaderboard-card { width:min(440px,100%); border-radius:22px; padding:20px; background:var(--surface2); border:1.5px solid var(--border); color:var(--fg); box-shadow:0 24px 80px rgba(0,0,0,.32); }
+    .leaderboard-card h2 { font-size:24px; font-weight:900; margin-bottom:10px; }
+    .leader-row { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; font-weight:900; }
+    .leader-row:last-child { border-bottom:0; }
+    .leader-row span:last-child { color:#e67e00; }
+
+    body.no-page-scroll { overflow:hidden; }
+
 
     /* ══════════════════════════════════════════════
        DASHBOARD
@@ -266,21 +379,9 @@
     .card-pw .card-title { color:#1a1a1a;text-shadow:0 1px 6px rgba(255,255,255,0.6); }
 
     /* ── Snake card ── */
-    .card-snake { background: linear-gradient(135deg, #d9f99d 0%, #65a30d 48%, #1f4d13 100%); }
+    .card-snake { background: #65a30d; }
+    .card-snake img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
     .card-snake.card::after { background:linear-gradient(to top,rgba(15,55,8,0.68) 0%,rgba(15,55,8,0.08) 45%,transparent 68%); }
-    .snake-preview {
-      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;z-index:1;
-    }
-    .snake-dot,.snake-body,.snake-food {
-      width:32px;height:32px;border-radius:9px;box-shadow:0 4px 12px rgba(0,0,0,0.18);
-    }
-    .snake-dot { background:#166534;position:relative; }
-    .snake-dot::before {
-      content:"";position:absolute;right:6px;top:7px;width:6px;height:6px;border-radius:50%;background:#fefce8;
-      box-shadow:0 12px 0 #fefce8;
-    }
-    .snake-body { background:#22c55e; }
-    .snake-food { background:#ef4444;border-radius:50%;margin-left:16px; }
 
     /* ── Staggered card entrance ── */
     @keyframes fadeUp {
@@ -292,6 +393,9 @@
     .card:nth-child(3) { animation: fadeUp 0.35s ease 0.20s both; }
     .card:nth-child(4) { animation: fadeUp 0.35s ease 0.28s both; }
     .card:nth-child(5) { animation: fadeUp 0.35s ease 0.36s both; }
+    .card:nth-child(6) { animation: fadeUp 0.35s ease 0.44s both; }
+    .card:nth-child(7) { animation: fadeUp 0.35s ease 0.52s both; }
+    .card:nth-child(8) { animation: fadeUp 0.35s ease 0.60s both; }
 
     /* ══════════════════════════════════════════════
        GAME SCREEN
@@ -299,7 +403,8 @@
     #game67 {
       max-width: 1060px;
       margin: 0 auto;
-      padding: 24px 24px 60px;
+      min-height: calc(100vh - var(--status-h));
+      padding: 24px 24px calc(60px + var(--status-h));
     }
 
     .game-top {
@@ -458,8 +563,9 @@
     #snakeGame {
       max-width: 1180px;
       margin: 0 auto;
-      padding: 20px 18px 70px;
-      min-height: 100vh;
+      padding: 20px 18px 18px;
+      height: calc(100vh - var(--status-h));
+      min-height: 0;
     }
 
     .snake-top {
@@ -481,7 +587,7 @@
       border-radius: 14px;
       overflow: hidden;
       background: var(--surface);
-      height: calc(100vh - 116px);
+      height: calc(100vh - 96px - var(--status-h));
       min-height: 560px;
       transition: background 0.25s, border-color 0.25s;
     }
@@ -492,13 +598,14 @@
       border: 0;
       display: block;
       background: #fff;
+      overflow: hidden;
     }
 
     /* ══════════════════════════════════════════════
        IDLE OVERLAY
     ══════════════════════════════════════════════ */
     #idlePhoto {
-      position: fixed; inset: 0; z-index: 9999;
+      position: fixed; inset: 0; z-index: 20000;
       background: #000; opacity: 1; pointer-events: auto;
       transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -517,7 +624,8 @@
       .game-wrap { grid-template-columns: 1fr; }
       .shop { max-height: none; }
       .pill { font-size: 12px; padding: 6px 13px; }
-      .snake-frame-wrap { height: 72vh; min-height: 420px; }
+      .snake-frame-wrap, .browser-shell iframe { height: calc(72vh - var(--status-h)); min-height: 420px; }
+      .achievement-list { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -528,12 +636,11 @@
 
     <header class="site-header">
       <button class="pill pill-icon" id="themeToggle" type="button" title="Toggle dark mode">🌙</button>
-      <button class="pill" type="button">
+      <button class="pill" id="suggestionBtn" type="button" title="Send a site idea">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
-        Get new posts
+        Suggest idea
       </button>
       <span class="brand-name">alex.fun</span>
-      <span class="brand-tag">games and stuff</span>
     </header>
 
     <main class="grid">
@@ -560,17 +667,32 @@
       </article>
 
       <article class="card card-snake" id="openSnake" style="cursor:pointer">
-        <div class="snake-preview">
-          <span class="snake-dot"></span>
-          <span class="snake-body"></span>
-          <span class="snake-body"></span>
-          <span class="snake-body"></span>
-          <span class="snake-food"></span>
-        </div>
+        <img src="./snake-card.webp" alt="Google Snake preview">
         <h3 class="card-title">Google Snake</h3>
       </article>
 
+      <article class="card card-browser" id="openBrowser" style="cursor:pointer">
+        <div class="browser-preview"></div>
+        <h3 class="card-title">Mini Browser</h3>
+      </article>
+
+      <article class="card card-crossy" onclick="location.href='./crossy-road.html'" style="cursor:pointer">
+        <img src="./crossy-road-card.jpg" alt="Crossy Road preview">
+        <h3 class="card-title">Crossy Road</h3>
+      </article>
+
+      <article class="card card-solar" onclick="location.href='./solar-smash.html'" style="cursor:pointer">
+        <img src="./solar-smash-cover.png" alt="Solar Smash preview">
+        <h3 class="card-title">Solar Smash</h3>
+      </article>
+
     </main>
+  </div>
+
+  <button id="signOutBtn" class="signout-btn hidden" type="button">Sign out</button>
+  <div id="statusBar" class="hidden">
+    <span class="sb-cover" onclick="showIdle(true)">⌫ Cover Image</span>
+    <span>v1.0.0</span>
   </div>
 
   <!-- ══ 67 Clicker ═════════════════════════════════════════════ -->
@@ -579,6 +701,7 @@
     <div class="game-top">
       <button id="backToDash"    class="btn" type="button">← Back</button>
       <button id="fullscreenBtn" class="btn" type="button">Fullscreen</button>
+      <button id="leaderboardBtn" class="btn" type="button">Leaderboard</button>
       <button id="resetGame"     class="btn" type="button">Reset Game</button>
     </div>
 
@@ -595,7 +718,22 @@
             </div>
           </div>
           <button id="big67" type="button">67</button>
+          <div class="rebirth-panel">
+            <div class="rebirth-title">Rebirth</div>
+            <div class="rebirth-row">
+              <span><strong id="rebirthCount">0</strong> rebirths</span>
+              <span><strong id="rebirthBoost">1x</strong> boost</span>
+              <button class="btn" id="rebirthBtn" type="button">Rebirth at 1B</button>
+            </div>
+          </div>
+          <div class="achievement-panel">
+            <div class="achievement-title">Achievements</div>
+            <div class="achievement-list" id="achievementList67"></div>
+          </div>
         </div>
+        <button id="masonBonus" class="mason-bonus" type="button" title="Mason bonus">
+          <img src="./mason67.png" alt="Floating Mason 67 bonus">
+        </button>
       </div>
 
       <aside class="shop">
@@ -609,13 +747,13 @@
   <section id="snakeGame" class="hidden">
     <div class="snake-top">
       <button id="backFromSnake" class="btn" type="button">← Back</button>
-      <div class="snake-title">Google Snake Mods</div>
+      <div class="snake-title">Google Snake</div>
     </div>
     <div class="snake-frame-wrap">
       <iframe
         id="snakeFrame"
-        title="Google Snake Mods"
-        src="./snake/index.html"
+        title="Google Snake"
+        src="./snake/index.html?v=3"
         loading="lazy"
         allowfullscreen
         referrerpolicy="no-referrer-when-downgrade">
@@ -623,13 +761,190 @@
     </div>
   </section>
 
+  <!-- ══ Mini Browser ════════════════════════════════════════════ -->
+  <section id="miniBrowser" class="mini-browser hidden">
+    <div class="browser-top">
+      <button id="backFromBrowser" class="btn" type="button">← Back</button>
+      <input id="browserAddress" type="text" value="" placeholder="Search or enter a URL">
+      <button id="browserGo" class="btn" type="button">Go</button>
+      <button id="browserCoverBtn" class="btn" type="button">Cover Image</button>
+    </div>
+    <div class="browser-shell">
+      <div class="browser-safe-note">Type a site or search above, then press Go. Sandboxed iframe mode blocks popups and most ad redirects.</div>
+      <iframe id="browserFrame" title="Mini Browser" src="about:blank" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>
+    </div>
+  </section>
+
+  <div id="leaderboardModal" class="leaderboard-modal" aria-hidden="true">
+    <div class="leaderboard-card">
+      <h2>67 Clicker Leaderboard</h2>
+      <div id="leaderboardRows"></div>
+      <button class="btn" id="closeLeaderboard" type="button" style="margin-top:14px;width:100%;">Close</button>
+    </div>
+  </div>
+
+  <div id="authOverlay" class="auth-overlay hidden">
+    <form class="auth-card" id="authForm">
+      <h2>Sign in</h2>
+      <p>This saves your games to Supabase when connected, with local fallback.</p>
+      <label for="authUser">Username</label>
+      <input id="authUser" autocomplete="username" required maxlength="24" placeholder="alex67">
+      <label for="authPass">Password</label>
+      <input id="authPass" type="password" autocomplete="current-password" required maxlength="48" placeholder="Password">
+      <div class="auth-actions">
+        <button class="btn" type="submit">Log in / Sign up</button>
+      </div>
+      <div class="auth-note">Use a simple game password. Do not reuse an important password here.</div>
+    </form>
+  </div>
+
   <!-- ══ Idle photo ═════════════════════════════════════════════ -->
   <div id="idlePhoto" aria-hidden="true">
     <img src="./cleverpage.png" alt="Idle screen" />
   </div>
 
   <script>
-    // ── Dark mode ─────────────────────────────────────────────────
+    // ── Supabase username/password login ─────────────────────────
+    const APP_USERS_KEY = "alexFunUsersV1";
+    const ACTIVE_USER_KEY = "alexFunActiveUserV1";
+    const SESSION_TOKEN_KEY = "alexFunSessionTokenV1";
+    const supabaseClient = (window.supabase && window.ALEX_FUN_SUPABASE_URL && window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
+      ? window.supabase.createClient(window.ALEX_FUN_SUPABASE_URL, window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
+      : null;
+    let currentSessionToken = localStorage.getItem(SESSION_TOKEN_KEY) || "";
+    let activeUser = localStorage.getItem(ACTIVE_USER_KEY) || "guest";
+    function safeUserKey(){ return activeUser.replace(/[^a-z0-9_-]/gi, "_").toLowerCase() || "guest"; }
+    function profileKey(base){ return `${base}_${safeUserKey()}`; }
+    function normalizeUsername(username){
+      return username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    }
+
+    const authOverlay = document.getElementById("authOverlay");
+    const authForm = document.getElementById("authForm");
+    const authUser = document.getElementById("authUser");
+    const authPass = document.getElementById("authPass");
+    const signOutBtn = document.getElementById("signOutBtn");
+
+    function updateSignOutButton(){
+      signOutBtn.classList.toggle("hidden", !localStorage.getItem(ACTIVE_USER_KEY));
+    }
+
+    function loadUsers(){
+      try { return JSON.parse(localStorage.getItem(APP_USERS_KEY) || "{}"); } catch { return {}; }
+    }
+    function saveUsers(users){ localStorage.setItem(APP_USERS_KEY, JSON.stringify(users)); }
+    function loginWithLocalProfile(username, password){
+      const users = loadUsers();
+      if(users[username] && users[username].password !== password){
+        throw new Error("That username exists with a different password on this device.");
+      }
+      users[username] = { password, lastLogin: Date.now() };
+      saveUsers(users);
+      activeUser = username;
+      localStorage.setItem(ACTIVE_USER_KEY, username);
+      updateSignOutButton();
+    }
+    function isLocalTestingHost(){
+      return ["localhost", "127.0.0.1", ""].includes(location.hostname);
+    }
+    function showAuthIfNeeded(){
+      if(localStorage.getItem(ACTIVE_USER_KEY) && !supabaseClient) return;
+      authOverlay.classList.remove("hidden");
+      setTimeout(()=>authUser.focus(), 50);
+    }
+    function firstRpcRow(data){
+      return Array.isArray(data) ? data[0] : data;
+    }
+    async function rpcLoginOrRegister(username, password){
+      if(!supabaseClient) return null;
+      let result = await supabaseClient.rpc("login_player", { p_username: username, p_password: password });
+      if(result.error){
+        result = await supabaseClient.rpc("register_player", { p_username: username, p_password: password });
+      }
+      if(result.error) throw result.error;
+      const row = firstRpcRow(result.data);
+      if(!row || !row.session_token) throw new Error("Login did not return a session token.");
+      currentSessionToken = row.session_token;
+      activeUser = row.username || normalizeUsername(username);
+      localStorage.setItem(SESSION_TOKEN_KEY, currentSessionToken);
+      localStorage.setItem(ACTIVE_USER_KEY, activeUser);
+      updateSignOutButton();
+      return row;
+    }
+    async function initializeAuth(){
+      if(supabaseClient && currentSessionToken){
+        try{
+          reset67StateToDefaults();
+          const loadedCloud = await loadGameFromCloud();
+          if(loadedCloud){
+            authOverlay.classList.add("hidden");
+            updateUI();
+            updateLeaderboard();
+            return;
+          }
+        }catch(e){
+          console.log("Saved session restore failed:", e);
+          currentSessionToken = "";
+          localStorage.removeItem(SESSION_TOKEN_KEY);
+        }
+      }
+      showAuthIfNeeded();
+      updateSignOutButton();
+    }
+    authForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const username = normalizeUsername(authUser.value);
+      const password = authPass.value;
+      if(!username || !password) return;
+      try{
+        if(supabaseClient){
+          await rpcLoginOrRegister(username, password);
+        } else {
+          loginWithLocalProfile(username, password);
+        }
+        authOverlay.classList.add("hidden");
+        updateSignOutButton();
+        reset67StateToDefaults();
+        const loadedCloud = await loadGameFromCloud();
+        if(!loadedCloud) loadGame();
+        updateUI();
+        updateLeaderboard();
+      }catch(err){
+        console.log("Login failed:", err);
+        if(isLocalTestingHost()){
+          try{
+            loginWithLocalProfile(username, password);
+            authOverlay.classList.add("hidden");
+            updateSignOutButton();
+            reset67StateToDefaults();
+            loadGame();
+            updateUI();
+            updateLeaderboard();
+            return;
+          }catch(localErr){
+            alert(localErr.message || "Local sign in failed.");
+            return;
+          }
+        }
+        alert(err.message || "Could not sign in right now.");
+      }
+    });
+    signOutBtn.addEventListener("click", () => {
+      currentSessionToken = "";
+      activeUser = "guest";
+      localStorage.removeItem(SESSION_TOKEN_KEY);
+      localStorage.removeItem(ACTIVE_USER_KEY);
+      updateSignOutButton();
+      reset67StateToDefaults();
+      loadGame();
+      updateUI();
+      updateLeaderboard();
+      authPass.value = "";
+      authOverlay.classList.remove("hidden");
+      setTimeout(()=>authUser.focus(), 50);
+    });
+    updateSignOutButton();
+
     const themeToggle = document.getElementById('themeToggle');
     const savedTheme  = localStorage.getItem('theme') || 'light';
     if (savedTheme === 'dark') {
@@ -649,21 +964,41 @@
       }
     });
 
-    // ── Idle logic ────────────────────────────────────────────────
+    document.getElementById("suggestionBtn").addEventListener("click", async () => {
+      const ideas = [
+        "Add a boss fight to 67 Clicker",
+        "Add daily challenges",
+        "Add secret codes on the dashboard",
+        "Add a music toggle",
+        "Add custom themes for each game"
+      ];
+      const starter = ideas[Math.floor(Math.random() * ideas.length)];
+      const idea = prompt("Send a suggestion for alex.fun:", starter);
+      if(!idea || !idea.trim()) return;
+      if(supabaseClient && currentSessionToken){
+        const { error } = await supabaseClient.rpc("submit_suggestion", {
+          p_token: currentSessionToken,
+          p_idea: idea.trim()
+        });
+        if(!error){
+          alert("Suggestion saved.");
+          return;
+        }
+        console.log("Suggestion save failed:", error);
+      }
+      const subject = encodeURIComponent("alex.fun suggestion");
+      const body = encodeURIComponent(`My suggestion: ${idea.trim()}`);
+      location.href = `mailto:?subject=${subject}&body=${body}`;
+    });
+
+    // ── Cover image / idle logic ──────────────────────────────────────
     const IDLE_MS   = 5000;
     const idlePhoto = document.getElementById("idlePhoto");
     let   idleTimer = null;
 
     function showIdle(instant) {
-      if (instant) {
-        idlePhoto.classList.add("no-transition");
-        idlePhoto.classList.remove("hidden");
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          idlePhoto.classList.remove("no-transition");
-        }));
-      } else {
-        idlePhoto.classList.remove("hidden");
-      }
+      idlePhoto.classList.remove("no-transition");
+      idlePhoto.classList.remove("hidden");
       clearTimeout(idleTimer);
     }
 
@@ -672,12 +1007,38 @@
       return snake && !snake.classList.contains("hidden");
     }
 
-    function hideIdleAndArmTimer() {
-      idlePhoto.classList.add("hidden");
+    function isMiniBrowserActive() {
+      const browser = document.getElementById("miniBrowser");
+      return browser && !browser.classList.contains("hidden");
+    }
+
+    function isIdleVisible() {
+      return !idlePhoto.classList.contains("hidden");
+    }
+
+    function isTypingField() {
+      const active = document.activeElement;
+      if (!active) return false;
+      return active.closest("input, textarea, select, [contenteditable='true']");
+    }
+
+    function dismissIdleCover() {
       clearTimeout(idleTimer);
-      if (isEmbeddedGameActive()) return;
+      idlePhoto.classList.add("hidden");
       idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
     }
+
+    function hideIdleAndArmTimer() {
+      if (isIdleVisible()) return;
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
+    }
+
+    idlePhoto.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      dismissIdleCover();
+    });
 
     // Show clever picture on fresh visits; skip it when coming back from a game
     function isFromGame() {
@@ -702,7 +1063,15 @@
     });
 
     window.addEventListener("keydown", e => {
-      if (e.key === "Backspace") {
+      if (isTypingField()) {
+        hideIdleAndArmTimer();
+        return;
+      }
+      if (isIdleVisible()) {
+        if (["Backspace", "Enter"].includes(e.key)) e.preventDefault();
+        return;
+      }
+      if (["Backspace", "Enter"].includes(e.key)) {
         e.preventDefault();
         showIdle(true);
         return;
@@ -716,9 +1085,9 @@
     });
 
     window.addEventListener("blur", () => {
-      if (!isEmbeddedGameActive()) return;
       idlePhoto.classList.add("hidden");
       clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
     });
 
     // ── Screen switching ──────────────────────────────────────────
@@ -726,27 +1095,49 @@
     const game67El  = document.getElementById("game67");
     const snakeGame = document.getElementById("snakeGame");
     const snakeFrame = document.getElementById("snakeFrame");
+    const miniBrowser = document.getElementById("miniBrowser");
+    const browserFrame = document.getElementById("browserFrame");
+    const browserAddress = document.getElementById("browserAddress");
+    const statusBar = document.getElementById("statusBar");
+
+    function setGameStatusVisible(visible) {
+      statusBar.classList.toggle("hidden", !visible);
+      document.body.classList.toggle("game-active", visible);
+    }
 
     document.getElementById("open67").addEventListener("click", () => {
       dashboard.classList.add("hidden");
       snakeGame.classList.add("hidden");
+      miniBrowser.classList.add("hidden");
+      document.body.classList.remove("no-page-scroll");
       game67El.classList.remove("hidden");
+      setGameStatusVisible(true);
+      scheduleMasonBonus();
     });
 
     document.getElementById("backToDash").addEventListener("click", () => {
       game67El.classList.add("hidden");
+      masonBonus?.classList.remove("visible");
+      document.body.classList.remove("no-page-scroll");
+      setGameStatusVisible(false);
       dashboard.classList.remove("hidden");
+      hideIdleAndArmTimer();
     });
 
     document.getElementById("openSnake").addEventListener("click", () => {
       dashboard.classList.add("hidden");
       game67El.classList.add("hidden");
+      miniBrowser.classList.add("hidden");
       snakeGame.classList.remove("hidden");
+      document.body.classList.add("no-page-scroll");
+      setGameStatusVisible(true);
       hideIdleAndArmTimer();
     });
 
     document.getElementById("backFromSnake").addEventListener("click", () => {
       snakeGame.classList.add("hidden");
+      document.body.classList.remove("no-page-scroll");
+      setGameStatusVisible(false);
       dashboard.classList.remove("hidden");
       hideIdleAndArmTimer();
     });
@@ -758,7 +1149,7 @@
         if (!win || !doc || win.__alexFunCoverHookInstalled) return;
         win.__alexFunCoverHookInstalled = true;
         const cover = e => {
-          if (e.key !== "Backspace") return;
+          if (!["Backspace", "Enter"].includes(e.key)) return;
           e.preventDefault();
           e.stopImmediatePropagation();
           showIdle(true);
@@ -773,50 +1164,185 @@
 
     snakeFrame.addEventListener("load", installSnakeCoverHook);
 
+    document.getElementById("openBrowser").addEventListener("click", () => {
+      dashboard.classList.add("hidden");
+      game67El.classList.add("hidden");
+      snakeGame.classList.add("hidden");
+      miniBrowser.classList.remove("hidden");
+      document.body.classList.remove("no-page-scroll");
+      setGameStatusVisible(true);
+      hideIdleAndArmTimer();
+    });
+    document.getElementById("backFromBrowser").addEventListener("click", () => {
+      miniBrowser.classList.add("hidden");
+      setGameStatusVisible(false);
+      dashboard.classList.remove("hidden");
+      hideIdleAndArmTimer();
+    });
+    function normalizeBrowserUrl(value){
+      const trimmed = value.trim();
+      if(!trimmed) return "about:blank";
+      if(/^https?:\/\//i.test(trimmed)) return trimmed;
+      if(trimmed.includes(".") && !trimmed.includes(" ")) return "https://" + trimmed;
+      return "https://www.google.com/search?igu=1&q=" + encodeURIComponent(trimmed);
+    }
+    document.getElementById("browserGo").addEventListener("click", () => {
+      browserFrame.src = normalizeBrowserUrl(browserAddress.value);
+    });
+    document.getElementById("browserCoverBtn").addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      showIdle(true);
+    });
+    browserAddress.addEventListener("keydown", e => {
+      if(e.key === "Enter") { e.preventDefault(); browserFrame.src = normalizeBrowserUrl(browserAddress.value); }
+    });
+
     // ── Upgrade definitions ───────────────────────────────────────
     const upgradeConfig = [
-      { key:"multi",      icon:"🖱️",  name:"Multiple Clickers", desc:"+1 point per click",       cost:25,              scale:1.18, onBuy:()=>{ clickPower+=1; } },
-      { key:"auto",       icon:"🤖",  name:"Autoclicker",        desc:"+1 point/sec",              cost:50,              scale:1.22, onBuy:()=>{ perSec+=1; } },
-      { key:"factory",    icon:"🏭",  name:"67 Factory",         desc:"+8 points/sec",             cost:400,             scale:1.25, onBuy:()=>{ perSec+=8; } },
-      { key:"mine",       icon:"⛏️",  name:"67 Mine",            desc:"+47 points/sec",            cost:4_000,           scale:1.28, onBuy:()=>{ perSec+=47; } },
-      { key:"lab",        icon:"🔬",  name:"67 Laboratory",      desc:"+260 points/sec",           cost:40_000,          scale:1.3,  onBuy:()=>{ perSec+=260; } },
-      { key:"powerclick", icon:"⚡",  name:"Power Click",        desc:"+10 points per click",      cost:100_000,         scale:1.32, onBuy:()=>{ clickPower+=10; } },
-      { key:"dimension",  icon:"🌀",  name:"67 Dimension",       desc:"+1,600 points/sec",         cost:500_000,         scale:1.34, onBuy:()=>{ perSec+=1_600; } },
-      { key:"empire",     icon:"👑",  name:"67 Empire",          desc:"+10,000 points/sec",        cost:7_000_000,       scale:1.36, onBuy:()=>{ perSec+=10_000; } },
-      { key:"galaxy",     icon:"🌌",  name:"67 Galaxy",          desc:"+65,000 points/sec",        cost:100_000_000,     scale:1.38, onBuy:()=>{ perSec+=65_000; } },
-      { key:"mason",      icon:"🧱",  name:"Mason 67",           desc:"+400,000 points/sec",       cost:1_000_000_000,   scale:1.4,  onBuy:()=>{ perSec+=400_000; } },
-      { key:"god",        icon:"✨",  name:"67 God",             desc:"+2,500,000 points/sec",     cost:1_000_000_000_000, scale:1.45, onBuy:()=>{ perSec+=2_500_000; } }
+      { key:"multi",      icon:"🖱️", name:"Multiple Clickers",       desc:"+1 point per click",        cost:20,              scale:1.12, onBuy:()=>{ clickPower+=1; } },
+      { key:"auto",       icon:"🤖", name:"Autoclicker",             desc:"+1 point/sec",              cost:40,              scale:1.14, onBuy:()=>{ perSec+=1; } },
+      { key:"factory",    icon:"🏭", name:"67 Factory",              desc:"+8 points/sec",             cost:300,             scale:1.15, onBuy:()=>{ perSec+=8; } },
+      { key:"mine",       icon:"⛏️", name:"67 Mine",                 desc:"+47 points/sec",            cost:3_000,           scale:1.16, onBuy:()=>{ perSec+=47; } },
+      { key:"lab",        icon:"🔬", name:"67 Laboratory",           desc:"+260 points/sec",           cost:28_000,          scale:1.17, onBuy:()=>{ perSec+=260; } },
+      { key:"powerclick", icon:"⚡", name:"Power Click",             desc:"+10,000 points per click",   cost:75_000,          scale:1.18, onBuy:()=>{ clickPower+=10_000; } },
+      { key:"dimension",  icon:"🌀", name:"67 Dimension",            desc:"+5,000 points/sec",         cost:420_000,         scale:1.18, onBuy:()=>{ perSec+=5_000; } },
+      { key:"sahur",      icon:"🥁", name:"Tung Tung Tung Sahur",    desc:"+67,000 points/sec",        cost:1_000_000,       scale:1.19, onBuy:()=>{ perSec+=67_000; } },
+      { key:"empire",     icon:"👑", name:"67 Empire",               desc:"+20,000 points/sec",        cost:5_000_000,       scale:1.19, onBuy:()=>{ perSec+=20_000; } },
+      { key:"galaxy",     icon:"🌌", name:"67 Galaxy",               desc:"+100,000 points/sec",       cost:75_000_000,      scale:1.20, onBuy:()=>{ perSec+=100_000; } },
+      { key:"patapim",    icon:"🌳", name:"Brr Brr Patapim Helper", desc:"+250,000 points/sec",       cost:100_000_000,     scale:1.20, onBuy:()=>{ perSec+=250_000; } },
+      { key:"mason",      icon:"🧱", name:"Mason 67",                desc:"+3,000,000 points/sec",     cost:750_000_000,     scale:1.21, onBuy:()=>{ perSec+=3_000_000; } },
+      { key:"god",        icon:"✨", name:"67 God",                  desc:"+500,000,000 points/sec",   cost:50_000_000_000,  scale:1.22, onBuy:()=>{ perSec+=500_000_000; } }
     ];
 
     let points     = 0;
     let clickPower = 1;
     let perSec     = 0;
+    let rebirths   = 0;
+    let maxPoints  = 0;
+    let unlockedAchievements67 = [];
+    let lastSavedAt = Date.now();
+
+    function rebirthMultiplier(){ return 1 + rebirths * 0.35; }
+    function effectiveClickPower(){ return clickPower * rebirthMultiplier(); }
+    function effectivePerSec(){ return perSec * rebirthMultiplier(); }
 
     const state = {};
     upgradeConfig.forEach(cfg => { state[cfg.key] = { count:0, cost:cfg.cost }; });
 
-    const SAVE_KEY = "alexFun67ClickerSaveV1";
+    const SAVE_KEY_BASE = "alexFun67ClickerSaveV2";
+    const LEADERBOARD_KEY = "alexFun67LeaderboardV2";
+    const LEADERBOARD_RESET_AT = 1778639344000;
     let saveDirty = false;
+
+    localStorage.removeItem("alexFun67LeaderboardV1");
+
+    function getSaveKey(){ return profileKey(SAVE_KEY_BASE); }
+    function reset67StateToDefaults(){
+      points = 0; clickPower = 1; perSec = 0; rebirths = 0; maxPoints = 0; unlockedAchievements67 = []; lastSavedAt = Date.now();
+      upgradeConfig.forEach(cfg => { state[cfg.key] = { count:0, cost:cfg.cost }; });
+    }
 
     function markSaveDirty() {
       saveDirty = true;
     }
 
+    function buildSavePayload() {
+      const upgrades = {};
+      upgradeConfig.forEach(cfg => {
+        upgrades[cfg.key] = {
+          count: state[cfg.key].count,
+          cost: state[cfg.key].cost
+        };
+      });
+      return {
+        points,
+        clickPower,
+        perSec,
+        rebirths,
+        maxPoints,
+        unlockedAchievements67,
+        lastSavedAt: Date.now(),
+        upgrades
+      };
+    }
+
+    function applySavedGame(saved) {
+      if(!saved) return false;
+      if (Number.isFinite(saved.points)) points = saved.points;
+      if (Number.isFinite(saved.clickPower)) clickPower = saved.clickPower;
+      if (Number.isFinite(saved.perSec)) perSec = saved.perSec;
+      if (Number.isFinite(saved.rebirths)) rebirths = saved.rebirths;
+      if (Number.isFinite(saved.maxPoints)) maxPoints = saved.maxPoints;
+      if (Array.isArray(saved.unlockedAchievements67)) unlockedAchievements67 = saved.unlockedAchievements67;
+      if (Number.isFinite(saved.lastSavedAt) && perSec > 0) {
+        const elapsed = Math.min(21600, Math.max(0, (Date.now() - saved.lastSavedAt) / 1000));
+        if (elapsed > 5) points += effectivePerSec() * elapsed;
+      }
+      upgradeConfig.forEach(cfg => {
+        const savedUpgrade = saved.upgrades && saved.upgrades[cfg.key];
+        if (!savedUpgrade) return;
+        if (Number.isFinite(savedUpgrade.count)) state[cfg.key].count = savedUpgrade.count;
+        if (Number.isFinite(savedUpgrade.cost)) state[cfg.key].cost = savedUpgrade.cost;
+      });
+      return true;
+    }
+
+    async function syncGameToSupabase(payload) {
+      if(!supabaseClient || !currentSessionToken) return;
+      try{
+        const { error } = await supabaseClient.rpc("save_clicker", {
+          p_token: currentSessionToken,
+          p_save: payload,
+          p_max_points: Math.floor(Math.max(maxPoints || 0, points || 0))
+        });
+        if(error) console.log("Cloud save failed:", error);
+      }catch(e){
+        console.log("Cloud save failed:", e);
+      }
+    }
+
+    async function loadGameFromCloud() {
+      if(!supabaseClient || !currentSessionToken) return false;
+      try{
+        const { data, error } = await supabaseClient.rpc("get_clicker_save", { p_token: currentSessionToken });
+        if(error){
+          console.log("Cloud load failed:", error);
+          return false;
+        }
+        const row = firstRpcRow(data);
+        if(!row) return false;
+        if(row.username){
+          activeUser = row.username;
+          localStorage.setItem(ACTIVE_USER_KEY, activeUser);
+          updateSignOutButton();
+        }
+        if(!row.save) return true;
+        const loaded = applySavedGame(row.save);
+        if(Number.isFinite(Number(row.max_points))) maxPoints = Math.max(maxPoints, Number(row.max_points));
+        localStorage.setItem(getSaveKey(), JSON.stringify(buildSavePayload()));
+        return loaded;
+      }catch(e){
+        console.log("Cloud load failed:", e);
+        return false;
+      }
+    }
+
+    async function deleteCloudSave() {
+      if(!supabaseClient || !currentSessionToken) return;
+      try{
+        await supabaseClient.rpc("delete_clicker_save", { p_token: currentSessionToken });
+      }catch(e){
+        console.log("Cloud reset failed:", e);
+      }
+    }
+
     function saveGame() {
       try {
-        const upgrades = {};
-        upgradeConfig.forEach(cfg => {
-          upgrades[cfg.key] = {
-            count: state[cfg.key].count,
-            cost: state[cfg.key].cost
-          };
-        });
-        localStorage.setItem(SAVE_KEY, JSON.stringify({
-          points,
-          clickPower,
-          perSec,
-          upgrades
-        }));
+        const payload = buildSavePayload();
+        localStorage.setItem(getSaveKey(), JSON.stringify(payload));
+        updateLeaderboard();
+        syncGameToSupabase(payload);
         saveDirty = false;
       } catch(e) {
         console.log("Could not save 67 Clicker:", e);
@@ -825,26 +1351,18 @@
 
     function loadGame() {
       try {
-        const raw = localStorage.getItem(SAVE_KEY);
-        if (!raw) return;
-        const saved = JSON.parse(raw);
-        if (Number.isFinite(saved.points)) points = saved.points;
-        if (Number.isFinite(saved.clickPower)) clickPower = saved.clickPower;
-        if (Number.isFinite(saved.perSec)) perSec = saved.perSec;
-        upgradeConfig.forEach(cfg => {
-          const savedUpgrade = saved.upgrades && saved.upgrades[cfg.key];
-          if (!savedUpgrade) return;
-          if (Number.isFinite(savedUpgrade.count)) state[cfg.key].count = savedUpgrade.count;
-          if (Number.isFinite(savedUpgrade.cost)) state[cfg.key].cost = savedUpgrade.cost;
-        });
+        const raw = localStorage.getItem(getSaveKey());
+        if (!raw) return false;
+        return applySavedGame(JSON.parse(raw));
       } catch(e) {
         console.log("Could not load 67 Clicker save:", e);
+        return false;
       }
     }
 
     loadGame();
 
-    // ── Build shop DOM ────────────────────────────────────────────
+    // ── Build shop DOM    // ── Build shop DOM ────────────────────────────────────────────
     const shopEl = document.querySelector(".shop");
     upgradeConfig.forEach(cfg => {
       const div = document.createElement("div");
@@ -873,8 +1391,13 @@
 
     function updateUI() {
       document.getElementById("points").textContent   = formatNum(points);
-      document.getElementById("perClick").textContent = formatNum(clickPower);
-      document.getElementById("perSec").textContent   = formatNum(perSec);
+      if(points > maxPoints) maxPoints = points;
+      document.getElementById("perClick").textContent = formatNum(effectiveClickPower());
+      document.getElementById("perSec").textContent   = formatNum(effectivePerSec());
+      document.getElementById("rebirthCount").textContent = rebirths;
+      document.getElementById("rebirthBoost").textContent = rebirthMultiplier().toFixed(2).replace(/\.00$/, "") + "x";
+      document.getElementById("rebirthBtn").disabled = points < 1_000_000_000;
+      updateAchievements67();
       upgradeConfig.forEach(cfg => {
         const u = state[cfg.key];
         const canBuy = points >= u.cost;
@@ -906,13 +1429,14 @@
     const playArea = document.getElementById("playArea");
 
     function click67(clientX, clientY) {
-      points += clickPower;
+      const gained = effectiveClickPower();
+      points += gained;
       updateUI();
       markSaveDirty();
       const rect = playArea.getBoundingClientRect();
       const span = document.createElement("span");
       span.className   = "float-text";
-      span.textContent = "+" + formatNum(clickPower);
+      span.textContent = "+" + formatNum(gained);
       span.style.left  = (clientX - rect.left + (Math.random()*36-18)) + "px";
       span.style.top   = (clientY - rect.top  - 8) + "px";
       playArea.appendChild(span);
@@ -933,11 +1457,134 @@
       }
     });
 
+
+    const achievements67 = [
+      { id:"first", label:"First 67", test:()=>maxPoints>=67 },
+      { id:"thousand", label:"1K Club", test:()=>maxPoints>=1_000 },
+      { id:"million", label:"Millionaire", test:()=>maxPoints>=1_000_000 },
+      { id:"billion", label:"Billion 67", test:()=>maxPoints>=1_000_000_000 },
+      { id:"rebirth", label:"Reborn", test:()=>rebirths>=1 },
+      { id:"mason", label:"Mason Energy", test:()=>state.mason && state.mason.count>=1 },
+      { id:"god", label:"67 God Mode", test:()=>state.god && state.god.count>=1 },
+      { id:"space", label:"Spacebar Clicker", test:()=>clickPower>=10_000 }
+    ];
+
+    function updateAchievements67(){
+      const list = document.getElementById("achievementList67");
+      if(!list) return;
+      achievements67.forEach(a => {
+        if(a.test() && !unlockedAchievements67.includes(a.id)) unlockedAchievements67.push(a.id);
+      });
+      list.innerHTML = achievements67.map(a => `<span class="achievement-chip ${unlockedAchievements67.includes(a.id) ? 'unlocked' : ''}">${unlockedAchievements67.includes(a.id) ? '✓' : '•'} ${a.label}</span>`).join("");
+    }
+
+    document.getElementById("rebirthBtn").addEventListener("click", () => {
+      if(points < 1_000_000_000) return;
+      if(!confirm("Rebirth resets your 67 points and upgrades, but gives a permanent +35% boost. Do it?")) return;
+      rebirths += 1;
+      points = 0; clickPower = 1; perSec = 0;
+      upgradeConfig.forEach(cfg => { state[cfg.key].count=0; state[cfg.key].cost=cfg.cost; });
+      markSaveDirty(); saveGame(); updateUI();
+    });
+
+    const masonBonus = document.getElementById("masonBonus");
+    let masonBonusTimer = null;
+
+    function masonBonusAmount(){
+      const wealthBase = Math.max(points, maxPoints, 1);
+      const incomeBase = Math.max(effectivePerSec() * 18, 0);
+      const percentBonus = wealthBase * (0.025 + Math.random() * 0.055);
+      return Math.max(67, Math.floor((percentBonus + incomeBase) * rebirthMultiplier()));
+    }
+
+    function moveMasonBonus(){
+      const area = playArea.getBoundingClientRect();
+      const size = 78;
+      const x = 18 + Math.random() * Math.max(20, area.width - size - 36);
+      const y = 18 + Math.random() * Math.max(20, area.height - size - 36);
+      masonBonus.style.left = x + "px";
+      masonBonus.style.top = y + "px";
+    }
+
+    function scheduleMasonBonus(){
+      clearTimeout(masonBonusTimer);
+      masonBonusTimer = setTimeout(() => {
+        if(game67El.classList.contains("hidden") || !masonBonus) {
+          scheduleMasonBonus();
+          return;
+        }
+        moveMasonBonus();
+        masonBonus.classList.add("visible");
+        setTimeout(() => {
+          masonBonus.classList.remove("visible");
+          scheduleMasonBonus();
+        }, 6500);
+      }, 7000 + Math.random() * 15000);
+    }
+
+    masonBonus.addEventListener("click", e => {
+      e.stopPropagation();
+      if(!masonBonus.classList.contains("visible")) return;
+      masonBonus.classList.remove("visible");
+      const bonus = masonBonusAmount();
+      points += bonus;
+      updateUI(); markSaveDirty(); saveGame();
+      const rect = masonBonus.getBoundingClientRect();
+      const span = document.createElement("span");
+      span.className = "float-text";
+      span.textContent = "+" + formatNum(bonus);
+      const area = playArea.getBoundingClientRect();
+      span.style.left = (rect.left - area.left + 18) + "px";
+      span.style.top = (rect.top - area.top - 8) + "px";
+      playArea.appendChild(span);
+      span.addEventListener("animationend", () => span.remove());
+      scheduleMasonBonus();
+    });
+
+    function loadLeaderboard(){
+      try {
+        return JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || "[]")
+          .filter(row => (row.when || 0) >= LEADERBOARD_RESET_AT && (row.max || 0) > 0);
+      } catch { return []; }
+    }
+    function updateLeaderboard(){
+      const name = activeUser || "guest";
+      const best = Math.floor(maxPoints || points || 0);
+      if (best <= 0) return;
+      const rows = loadLeaderboard().filter(r => r.name !== name);
+      rows.push({ name, max: best, when: Date.now() });
+      rows.sort((a,b)=>b.max-a.max);
+      localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(rows.slice(0, 20)));
+    }
+    async function fetchCloudLeaderboard(){
+      if(!supabaseClient) return null;
+      try{
+        const { data, error } = await supabaseClient.rpc("get_clicker_leaderboard");
+        if(error) throw error;
+        return (data || []).map(row => ({
+          name: row.username || "guest",
+          max: Number(row.max_points) || 0,
+          when: row.updated_at ? Date.parse(row.updated_at) : Date.now()
+        })).filter(row => row.when >= LEADERBOARD_RESET_AT && row.max > 0);
+      }catch(e){
+        console.log("Leaderboard cloud fetch failed:", e);
+        return null;
+      }
+    }
+    async function showLeaderboard(){
+      const cloudRows = await fetchCloudLeaderboard();
+      const rows = (cloudRows && cloudRows.length ? cloudRows : loadLeaderboard().slice(0, 10));
+      document.getElementById("leaderboardRows").innerHTML = rows.length ? rows.map((r,i)=>`<div class="leader-row"><span>#${i+1} ${r.name}</span><span>${formatNum(r.max)}</span></div>`).join("") : "<p>No scores yet.</p>";
+      document.getElementById("leaderboardModal").classList.add("show");
+    }
+    document.getElementById("leaderboardBtn").addEventListener("click", showLeaderboard);
+    document.getElementById("closeLeaderboard").addEventListener("click", () => document.getElementById("leaderboardModal").classList.remove("show"));
+
     document.getElementById("resetGame").addEventListener("click", () => {
       if (!confirm("Reset all progress?")) return;
-      points=0; clickPower=1; perSec=0;
-      upgradeConfig.forEach(cfg => { state[cfg.key].count=0; state[cfg.key].cost=cfg.cost; });
-      localStorage.removeItem(SAVE_KEY);
+      reset67StateToDefaults();
+      localStorage.removeItem(getSaveKey());
+      deleteCloudSave();
       saveDirty = false;
       updateUI();
     });
@@ -951,7 +1598,7 @@
 
     setInterval(() => {
       if (perSec > 0) {
-        points += perSec/10;
+        points += effectivePerSec()/10;
         updateUI();
         markSaveDirty();
       }
@@ -963,7 +1610,9 @@
 
     window.addEventListener("beforeunload", saveGame);
 
+    initializeAuth();
     updateUI();
+    scheduleMasonBonus();
   </script>
 
 </body>

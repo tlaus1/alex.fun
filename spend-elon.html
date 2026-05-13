@@ -15,7 +15,10 @@
       font-family:"Martel Sans",Arial,sans-serif;
       background:#0d0d0d;color:#f0f0f0;min-height:100vh;
       display:flex;flex-direction:column;
+      padding-bottom:26px;
+      animation:pageIn .32s ease both;
     }
+    @keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
     /* ── Top bar ── */
     .top-bar{
@@ -197,9 +200,11 @@
 
     /* ── Cover overlay ── */
     #coverOverlay{
-      display:none;position:fixed;inset:0;z-index:9998;cursor:pointer;
+      position:fixed;inset:0;z-index:9998;cursor:pointer;
+      opacity:0;pointer-events:none;transition:opacity .55s cubic-bezier(.4,0,.2,1);
     }
-    #coverOverlay img{width:100%;height:100%;object-fit:cover;display:block;}
+    #coverOverlay.show{opacity:1;pointer-events:auto;}
+    #coverOverlay img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
   </style>
 </head>
 <body>
@@ -660,17 +665,38 @@ updateHUD();
 //  Cover overlay
 // ─────────────────────────────────────────────
 function showCover(){
-  document.getElementById('coverOverlay').style.display='block';
+  document.getElementById('coverOverlay').classList.add('show');
+  clearTimeout(coverTimer);
 }
 function hideCover(){
-  document.getElementById('coverOverlay').style.display='none';
+  document.getElementById('coverOverlay').classList.remove('show');
+  armCoverTimer();
+}
+let coverTimer = null;
+function isTypingField(){
+  const active = document.activeElement;
+  return active && active.closest("input, textarea, select, [contenteditable='true']");
+}
+function armCoverTimer(){
+  clearTimeout(coverTimer);
+  coverTimer = setTimeout(showCover, 5000);
 }
 document.addEventListener('keydown',e=>{
-  if(e.key==='Backspace'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){
-    e.preventDefault();
-    showCover();
+  if(!['Backspace','Enter'].includes(e.key)){
+    armCoverTimer();
+    return;
   }
+  if(isTypingField()){
+    armCoverTimer();
+    return;
+  }
+  e.preventDefault();
+  showCover();
 });
+["mousemove","mousedown","touchstart","click","wheel"].forEach(evt=>{
+  window.addEventListener(evt, armCoverTimer, { passive:true });
+});
+armCoverTimer();
 </script>
 </body>
 </html>

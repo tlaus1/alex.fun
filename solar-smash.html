@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en-us">
+<head>
+  <script src="./cover-profiles.js"></script>
+  <script>
+    if (localStorage.getItem("theme") === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  </script>
+  <base href="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@c5eefc5c13316b94c58e63cb5270b99a13c88fea/solar-smash/">
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Solar Smash</title>
+  <link rel="stylesheet" href="TemplateData/style.css">
+  <script src="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@main/ytgame.js"></script>
+  <script src="lib/jszip.min.js"></script>
+  <style>
+    :root {
+      --control-fg: #12131a;
+      --control-bg: rgba(255,255,255,.9);
+      --control-bg-hover: #fff;
+      --control-border: rgba(18,19,26,.18);
+      --control-shadow: rgba(0,0,0,.18);
+      --status-h: 26px;
+    }
+    [data-theme="dark"] {
+      --control-fg: #ececec;
+      --control-bg: rgba(24,24,30,.9);
+      --control-bg-hover: #292936;
+      --control-border: rgba(255,255,255,.18);
+      --control-shadow: rgba(0,0,0,.38);
+    }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #03040a;
+      touch-action: none;
+      overscroll-behavior: none;
+      user-select: none;
+      animation: pageIn .32s ease both;
+    }
+    @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
+    #unity-container {
+      position: fixed;
+      inset: 0 0 var(--status-h) 0;
+      width: 100%;
+      height: auto;
+      background: #03040a;
+    }
+    #unity-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #03040a;
+    }
+    .game-bar {
+      position: fixed;
+      left: 14px;
+      top: 14px;
+      z-index: 100000;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .game-bar button {
+      font: 800 13px Arial, sans-serif;
+      color: var(--control-fg);
+      background: var(--control-bg);
+      border: 1px solid var(--control-border);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px var(--control-shadow);
+      transition: background .15s, border-color .15s, color .15s, transform .12s;
+    }
+    .game-bar button:hover {
+      background: var(--control-bg-hover);
+      transform: translateY(-1px);
+    }
+    #coverOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200000;
+      background: #000;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .55s cubic-bezier(.4, 0, .2, 1);
+    }
+    #coverOverlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #coverOverlay img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+    #statusBar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--status-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background: var(--control-bg);
+      border-top: 1px solid var(--control-border);
+      color: rgba(18,19,26,.68);
+      font: 800 11px Arial, sans-serif;
+      z-index: 100000;
+    }
+    #statusBar .sb-cover {
+      cursor: pointer;
+      user-select: none;
+    }
+    #statusBar .sb-cover:hover {
+      color: var(--control-fg);
+    }
+    [data-theme="dark"] #statusBar {
+      color: rgba(236,236,236,.68);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-bar">
+    <button id="backBtn" type="button">Back</button>
+    <button id="fullscreenBtn" type="button">Fullscreen</button>
+  </div>
+
+  <div id="unity-container" class="unity-desktop">
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="unity-loading-bar">
+      <div id="unity-logo"></div>
+      <div id="unity-progress-bar-empty">
+        <div id="unity-progress-bar-full"></div>
+      </div>
+    </div>
+    <div id="unity-warning"></div>
+  </div>
+
+  <div id="coverOverlay" aria-hidden="true">
+    <img id="coverImage" alt="Solar Smash cover">
+  </div>
+  <div id="statusBar">
+    <span class="sb-cover" onclick="showCover()">⌫ Cover Image</span>
+    <span>v1.0.0</span>
+  </div>
+
+  <script>
+    "use strict";
+
+    const backBtn = document.getElementById("backBtn");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const coverOverlay = document.getElementById("coverOverlay");
+    let coverTimer = null;
+
+    function syncTheme() {
+      if (localStorage.getItem("theme") === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+    }
+
+    function showCover() {
+      coverOverlay.classList.add("show");
+      coverOverlay.setAttribute("aria-hidden", "false");
+      clearTimeout(coverTimer);
+    }
+
+    function hideCover() {
+      coverOverlay.classList.remove("show");
+      coverOverlay.setAttribute("aria-hidden", "true");
+      armCoverTimer();
+    }
+
+    function armCoverTimer() {
+      clearTimeout(coverTimer);
+      coverTimer = setTimeout(showCover, 5000);
+    }
+
+    function isTypingField() {
+      const active = document.activeElement;
+      return active && active.closest("input, textarea, select, [contenteditable='true']");
+    }
+
+    backBtn.addEventListener("click", () => {
+      location.href = new URL("index.html", window.location.href).href;
+    });
+
+    fullscreenBtn.addEventListener("click", async () => {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          fullscreenBtn.textContent = "Exit Fullscreen";
+        } else {
+          await document.exitFullscreen();
+          fullscreenBtn.textContent = "Fullscreen";
+        }
+      } catch (e) {
+        console.log("Fullscreen failed:", e);
+      }
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      fullscreenBtn.textContent = document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen";
+    });
+
+    coverOverlay.addEventListener("click", hideCover);
+    window.addEventListener("storage", e => {
+      if (e.key === "theme") syncTheme();
+    });
+    document.addEventListener("keydown", e => {
+      if (!["Backspace", "Enter"].includes(e.key)) {
+        armCoverTimer();
+        return;
+      }
+      if (isTypingField()) {
+        armCoverTimer();
+        return;
+      }
+      e.preventDefault();
+      showCover();
+    }, true);
+    ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt => {
+      window.addEventListener(evt, armCoverTimer, { passive: true });
+    });
+    syncTheme();
+    armCoverTimer();
+
+    const container = document.querySelector("#unity-container");
+    const canvas = document.querySelector("#unity-canvas");
+    const loadingBar = document.querySelector("#unity-loading-bar");
+    const progressBarFull = document.querySelector("#unity-progress-bar-full");
+    const warningBanner = document.querySelector("#unity-warning");
+
+    function unityShowBanner(msg, type) {
+      console[type === "error" ? "error" : "warn"](msg);
+      warningBanner.textContent = msg;
+      warningBanner.style.display = "block";
+      if (type !== "error") {
+        setTimeout(() => {
+          warningBanner.textContent = "";
+          warningBanner.style.display = "none";
+        }, 5000);
+      }
+    }
+
+    const buildUrl = "Build";
+    const loaderUrl = buildUrl + "/Build.loader.js";
+    const config = {
+      dataUrl: buildUrl + "/Build.data",
+      frameworkUrl: buildUrl + "/Build.framework.js",
+      codeUrl: buildUrl + "/Build.wasm",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "Paradyme Games",
+      productName: "Live - Solar Smash YouTube",
+      productVersion: "0.1.0",
+      showBanner: unityShowBanner
+    };
+
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      const meta = document.createElement("meta");
+      meta.name = "viewport";
+      meta.content = "width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes";
+      document.head.appendChild(meta);
+      container.className = "unity-mobile";
+      canvas.className = "unity-mobile";
+    } else {
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+    }
+
+    loadingBar.style.display = "block";
+
+    function urlExists(urlToCheck) {
+      try {
+        const httpReq = new XMLHttpRequest();
+        httpReq.open("HEAD", urlToCheck, false);
+        httpReq.send();
+        return httpReq.status !== 404;
+      } catch (e) {
+        console.log("Could not check resource:", urlToCheck, e);
+        return false;
+      }
+    }
+
+    function getBlobType(urlToCheck) {
+      if (urlToCheck.includes(".wasm")) return "application/wasm";
+      if (urlToCheck.includes(".js")) return "text/javascript";
+      return "application/octet-stream";
+    }
+
+    async function unzipFirstFile(url, blobMimeType) {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const zip = await JSZip.loadAsync(blob);
+      const firstFile = Object.values(zip.files).find(file => !file.dir);
+      if (!firstFile) throw new Error("Zip did not contain a file: " + url);
+      const data = await firstFile.async("arraybuffer");
+      return URL.createObjectURL(new Blob([data], { type: blobMimeType }));
+    }
+
+    async function maybeDecompress(url) {
+      if (url.includes(".zip")) return unzipFirstFile(url, getBlobType(url));
+      if (urlExists(url + ".zip")) return unzipFirstFile(url + ".zip", getBlobType(url));
+      return url;
+    }
+
+    let unityGameInstance = null;
+    async function loadResources() {
+      config.dataUrl = await maybeDecompress(config.dataUrl);
+      config.codeUrl = await maybeDecompress(config.codeUrl);
+    }
+
+    function initUnitySection() {
+      const script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, progress => {
+          progressBarFull.style.width = (100 * progress) + "%";
+        }).then(unityInstance => {
+          unityGameInstance = unityInstance;
+          loadingBar.style.display = "none";
+        }).catch(message => {
+          console.error(message);
+        });
+      };
+      document.body.appendChild(script);
+    }
+
+    const originalFetch = window.fetch;
+    window.fetch = function(input, options) {
+      if (typeof input === "string" && input.endsWith("AssetBundles/WebGL/planets")) {
+        input = "https://rawcdn.githack.com/bubbls/youtube-playables/c5eefc5c13316b94c58e63cb5270b99a13c88fea/solar-smash/StreamingAssets/AssetBundles/WebGL/planets";
+      } else if (typeof input === "string" && input.endsWith("AssetBundles/WebGL/planets2")) {
+        input = "https://rawcdn.githack.com/bubbls/youtube-playables/c5eefc5c13316b94c58e63cb5270b99a13c88fea/solar-smash/StreamingAssets/AssetBundles/WebGL/planets2";
+      }
+      return originalFetch(input, options);
+    };
+
+    loadResources().then(initUnitySection).catch(error => {
+      unityShowBanner(error.message || String(error), "error");
+    });
+  </script>
+</body>
+</html>

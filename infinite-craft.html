@@ -6,6 +6,8 @@
   <title>Infinite Craft — alex.fun</title>
   <link rel="icon" type="image/png" href="./clever1.png"/>
   <script src="./cover-profiles.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -25,8 +27,11 @@
       font-family:"Martel Sans",Arial,sans-serif;
       background:var(--bg);color:var(--fg);
       height:100vh;display:flex;flex-direction:column;overflow:hidden;
+      padding-bottom:26px;
       transition:background .25s,color .25s;
+      animation:pageIn .32s ease both;
     }
+    @keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
     /* ── Top bar ── */
     .top-bar{
@@ -81,7 +86,8 @@
     .sb-item:hover{background:var(--hover);transform:translateX(2px);}
     .sb-item:active{transform:translateX(0) scale(.97);}
     .sb-item.sb-new{
-      background:#fffbea;border-color:#ffd700;
+      background:#fff3b8;border-color:#d6b600;color:#241b00;
+      box-shadow:0 0 0 1px rgba(214,182,0,.18) inset;
       animation:sbPop .4s ease;
     }
     @keyframes sbPop{0%{transform:scale(1.08)}50%{transform:scale(.97)}100%{transform:scale(1)}}
@@ -155,7 +161,7 @@
       60%{transform:translateX(-4px)}
       80%{transform:translateX(4px)}
     }
-    .ws-tile.tile-new{background:#fffbea;border-color:#ffd700;}
+    .ws-tile.tile-new{background:#fff3b8;border-color:#d6b600;color:#241b00;}
     .tile-emoji{font-size:18px;line-height:1;}
     .tile-remove{
       font-size:10px;color:#ccc;margin-left:2px;cursor:pointer;
@@ -180,7 +186,7 @@
 
     /* ── Toast ── */
     #toast{
-      position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+      position:fixed;bottom:50px;left:50%;transform:translateX(-50%) translateY(20px);
       background:#1a1a1a;color:#fff;font-size:14px;font-weight:800;
       padding:10px 20px;border-radius:100px;
       pointer-events:none;opacity:0;
@@ -202,9 +208,19 @@
 
     /* ── Cover overlay ── */
     #coverOverlay{
-      display:none;position:fixed;inset:0;z-index:9998;cursor:pointer;
+      position:fixed;inset:0;z-index:9998;cursor:pointer;
+      opacity:0;pointer-events:none;transition:opacity .55s cubic-bezier(.4,0,.2,1);
     }
-    #coverOverlay img{width:100%;height:100%;object-fit:cover;display:block;}
+    #coverOverlay.show{opacity:1;pointer-events:auto;}
+    #coverOverlay img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
+
+    .ic-achievements{display:none;position:fixed;inset:0;z-index:9997;place-items:center;background:rgba(0,0,0,.45);padding:20px;}
+    .ic-achievements.show{display:grid;}
+    .ic-ach-card{width:min(460px,100%);background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.3);}
+    .ic-ach-card h2{font-size:22px;font-weight:900;margin-bottom:12px;}
+    .ic-ach-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px;}
+    .ic-ach{border:1.5px solid var(--border);border-radius:12px;padding:9px;font-size:12px;font-weight:900;color:var(--muted);}
+    .ic-ach.unlocked{background:#fff3b8;border-color:#d6b600;color:#241b00;}
 
     /* Mobile */
     @media(max-width:600px){
@@ -224,6 +240,7 @@
 <div class="top-bar">
   <button class="btn" onclick="location.href='./index.html'">← Back</button>
   <h1>Infinite Craft <span id="counter">4 discovered</span></h1>
+  <button class="btn" id="achievementsBtn">Achievements</button>
   <button class="btn" id="clearBoardBtn">Clear Board</button>
   <button class="btn btn-danger" id="resetBtn">Reset</button>
   <button class="btn" id="themeToggle" title="Toggle dark mode" style="padding:6px 10px;font-size:15px;">🌙</button>
@@ -250,6 +267,14 @@
 
 <div id="coverOverlay" onclick="hideCover()">
   <img src="./cleverpage.png" alt="Cover"/>
+</div>
+
+<div id="icAchievements" class="ic-achievements">
+  <div class="ic-ach-card">
+    <h2>Infinite Craft Achievements</h2>
+    <div id="icAchievementList" class="ic-ach-list"></div>
+    <button class="btn" id="closeAchievementsBtn" style="width:100%;">Close</button>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -284,17 +309,38 @@
 //  Cover overlay
 // ─────────────────────────────────────────────
 function showCover(){
-  document.getElementById('coverOverlay').style.display='block';
+  document.getElementById('coverOverlay').classList.add('show');
+  clearTimeout(coverTimer);
 }
 function hideCover(){
-  document.getElementById('coverOverlay').style.display='none';
+  document.getElementById('coverOverlay').classList.remove('show');
+  armCoverTimer();
+}
+let coverTimer = null;
+function isTypingField(){
+  const active = document.activeElement;
+  return active && active.closest("input, textarea, select, [contenteditable='true']");
+}
+function armCoverTimer(){
+  clearTimeout(coverTimer);
+  coverTimer = setTimeout(showCover, 5000);
 }
 document.addEventListener('keydown',function(e){
-  if(e.key==='Backspace'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){
-    e.preventDefault();
-    showCover();
+  if(!['Backspace','Enter'].includes(e.key)){
+    armCoverTimer();
+    return;
   }
+  if(isTypingField()){
+    armCoverTimer();
+    return;
+  }
+  e.preventDefault();
+  showCover();
 });
+["mousemove","mousedown","touchstart","click","wheel"].forEach(evt=>{
+  window.addEventListener(evt, armCoverTimer, { passive:true });
+});
+armCoverTimer();
 
 // ─────────────────────────────────────────────
 //  RECIPES  [a, b, emoji, name]
@@ -485,6 +531,9 @@ let thirdPartyRecipeCache = {};
 let thirdPartyIndexPromise = null;
 let thirdPartyLookup = null;
 let lastThirdPartyLookupWasBlocked = false;
+const supabaseClient = (window.supabase && window.ALEX_FUN_SUPABASE_URL && window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
+  ? window.supabase.createClient(window.ALEX_FUN_SUPABASE_URL, window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
+  : null;
 
 function recipeKey(a,b){
   return [a,b].sort().join('|');
@@ -500,6 +549,40 @@ function loadThirdPartyRecipeCache(){
 
 function saveThirdPartyRecipeCache(){
   localStorage.setItem(THIRD_PARTY_CACHE_KEY, JSON.stringify(thirdPartyRecipeCache));
+}
+
+async function loadSharedRecipeCache(a,b,key){
+  if(!supabaseClient) return null;
+  try{
+    const { data, error } = await supabaseClient
+      .from('recipe_cache')
+      .select('result_emoji,result_name,missing')
+      .eq('recipe_key', key)
+      .maybeSingle();
+    if(error || !data) return null;
+    if(data.missing) return { missing:true };
+    if(data.result_name) return { emoji:data.result_emoji || '✨', name:data.result_name };
+  }catch(e){
+    console.log('Shared recipe cache read failed:', e);
+  }
+  return null;
+}
+
+async function saveSharedRecipeCache(a,b,key,result){
+  if(!supabaseClient) return;
+  try{
+    await supabaseClient.from('recipe_cache').upsert({
+      recipe_key: key,
+      input_a: a,
+      input_b: b,
+      result_emoji: result && !result.missing ? result.emoji : null,
+      result_name: result && !result.missing ? result.name : null,
+      missing: !!(result && result.missing),
+      updated_at: new Date().toISOString()
+    }, { onConflict:'recipe_key' });
+  }catch(e){
+    console.log('Shared recipe cache save failed:', e);
+  }
 }
 
 async function fetchJson(url){
@@ -563,7 +646,20 @@ async function loadThirdPartyIndex(){
 
 async function lookupThirdPartyRecipe(a,b){
   const key = recipeKey(a,b);
-  if(thirdPartyRecipeCache[key]) return thirdPartyRecipeCache[key];
+  if(thirdPartyRecipeCache[key]) {
+    if(thirdPartyRecipeCache[key].missing) return null;
+    return thirdPartyRecipeCache[key];
+  }
+
+  const sharedResult = await loadSharedRecipeCache(a,b,key);
+  if(sharedResult){
+    thirdPartyRecipeCache[key] = sharedResult;
+    saveThirdPartyRecipeCache();
+    if(sharedResult.missing) return null;
+    COMBO_MAP[key] = sharedResult;
+    return sharedResult;
+  }
+
   lastThirdPartyLookupWasBlocked = false;
 
   try{
@@ -578,6 +674,7 @@ async function lookupThirdPartyRecipe(a,b){
         thirdPartyRecipeCache[key] = result;
         COMBO_MAP[key] = result;
         saveThirdPartyRecipeCache();
+        saveSharedRecipeCache(a,b,key,result);
         return result;
       }
     }
@@ -586,6 +683,9 @@ async function lookupThirdPartyRecipe(a,b){
     console.log('Third-party recipe lookup failed:', e);
   }
 
+  thirdPartyRecipeCache[key] = { missing:true, checkedAt:Date.now() };
+  saveThirdPartyRecipeCache();
+  saveSharedRecipeCache(a,b,key,{ missing:true });
   return null;
 }
 
@@ -614,6 +714,22 @@ function save(){ localStorage.setItem(SAVE_KEY,JSON.stringify(discovered)); }
 // ─────────────────────────────────────────────
 //  Sidebar
 // ─────────────────────────────────────────────
+const icAchievements = [
+  { id:'ten', label:'10 discoveries', test:()=>discovered.length>=10 },
+  { id:'twentyfive', label:'25 discoveries', test:()=>discovered.length>=25 },
+  { id:'fifty', label:'50 discoveries', test:()=>discovered.length>=50 },
+  { id:'hundred', label:'100 discoveries', test:()=>discovered.length>=100 },
+  { id:'life', label:'Create Life', test:()=>discovered.some(d=>d.name==='Life') },
+  { id:'human', label:'Create Human', test:()=>discovered.some(d=>d.name==='Human') },
+  { id:'internet', label:'Create Internet', test:()=>discovered.some(d=>d.name==='Internet') },
+  { id:'thirdparty', label:'Third-party finder', test:()=>Object.keys(thirdPartyRecipeCache).length>0 }
+];
+function renderAchievements(){
+  const list = document.getElementById('icAchievementList');
+  if(!list) return;
+  list.innerHTML = icAchievements.map(a=>`<div class="ic-ach ${a.test()?'unlocked':''}">${a.test()?'✓':'•'} ${a.label}</div>`).join('');
+}
+
 function renderSidebar(){
   const list = document.getElementById('sbList');
   const header = document.getElementById('sbHeader');
@@ -621,6 +737,7 @@ function renderSidebar(){
   document.getElementById('counter').textContent = discovered.length + ' discovered';
 
   list.innerHTML = '';
+  renderAchievements();
   for(const el of discovered){
     const div = document.createElement('div');
     div.className = 'sb-item' + (el.isNew ? ' sb-new' : '');
@@ -761,7 +878,7 @@ async function tryCombine(idA, idB){
     const lookupStarted = Date.now();
     result = await lookupThirdPartyRecipe(iA.name, iB.name);
     const elapsed = Date.now() - lookupStarted;
-    if(elapsed < 900) await sleep(900 - elapsed);
+    if(elapsed < 200) await sleep(200 - elapsed);
   }
 
   if(result){
@@ -818,6 +935,9 @@ function showToast(msg){
 // ─────────────────────────────────────────────
 //  Controls
 // ─────────────────────────────────────────────
+document.getElementById('achievementsBtn').addEventListener('click',()=>{ renderAchievements(); document.getElementById('icAchievements').classList.add('show'); });
+document.getElementById('closeAchievementsBtn').addEventListener('click',()=>document.getElementById('icAchievements').classList.remove('show'));
+
 document.getElementById('clearBoardBtn').addEventListener('click',()=>{
   board=[];
   workspace.querySelectorAll('.ws-tile').forEach(t=>t.remove());
@@ -841,6 +961,7 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 // ─────────────────────────────────────────────
 load();
 loadThirdPartyRecipeCache();
+loadThirdPartyIndex().catch(()=>{});
 renderSidebar();
 </script>
 </body>

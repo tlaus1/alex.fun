@@ -21,11 +21,11 @@
     {
       title: "New Tab",
       cover: "./cover-new-tab.png",
-      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%2323292f'/%3E%3C/svg%3E",
+      icon: "./new-tab-icon.svg",
       alt: "New Tab cover"
     },
     {
-      title: "Screencastify - Sign In",
+      title: "Castify V3 Extension Popup",
       cover: "./cover-screencastify.png",
       icon: "https://cdn.prod.website-files.com/639781d572293a44a8b20e90/639781d572293a4ad9b20f41_android-chrome-384x384.png",
       alt: "Screencastify sign in cover"
@@ -48,24 +48,34 @@
       icon.rel = "icon";
       document.head.appendChild(icon);
     }
-    icon.href = profile.icon;
+    icon.href = resolveSiteUrl(profile.icon);
+  }
+
+  function resolveSiteUrl(value){
+    if(/^https?:\/\//i.test(value)) return value;
+    return new URL(value, location.href).href;
   }
 
   function setCoverImages(profile){
     document.querySelectorAll("#idlePhoto img, #coverOverlay img, img[data-cover-image]").forEach(img => {
-      img.src = profile.cover;
+      img.src = resolveSiteUrl(profile.cover);
       img.alt = profile.alt;
     });
   }
 
+  function applyProfile(profile){
+    document.title = profile.title;
+    setFavicon(profile);
+    setCoverImages(profile);
+  }
+
   const profile = chooseProfile();
   window.alexFunCoverProfile = profile;
-  document.title = profile.title;
-  setFavicon(profile);
+  applyProfile(profile);
 
   if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", () => setCoverImages(profile));
+    document.addEventListener("DOMContentLoaded", () => applyProfile(profile));
   }else{
-    setCoverImages(profile);
+    applyProfile(profile);
   }
 })();

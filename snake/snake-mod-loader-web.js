@@ -1600,11 +1600,12 @@ function getGameVersionFromUrl() {
 
   let thisUrl = window.location.href;
 
-  if(thisUrl.includes('v/current')) {
-    return webLatestVersion
-  } else {
-    return parseInt(thisUrl.match(/v\/(\d+)/)[1]);
+  if(thisUrl.includes('v/current') || thisUrl.includes('/snake/index.html')) {
+    return webLatestVersion;
   }
+
+  const match = thisUrl.match(/v\/(\d+)/);
+  return match ? parseInt(match[1]) : webLatestVersion;
 }
 
 function redirectToSpecificGameVersion(gameVersion) {
