@@ -799,7 +799,7 @@
       <h2>Sign in</h2>
       <p>This saves your games to Supabase when connected, with local fallback.</p>
       <label for="authUser">Username</label>
-      <input id="authUser" autocomplete="username" required maxlength="24" placeholder="alex67">
+      <input id="authUser" autocomplete="username" required maxlength="24" placeholder="bob123">
       <label for="authPass">Password</label>
       <input id="authPass" type="password" autocomplete="current-password" required maxlength="48" placeholder="Password">
       <div class="auth-actions">
@@ -835,9 +835,29 @@
     const authUser = document.getElementById("authUser");
     const authPass = document.getElementById("authPass");
     const signOutBtn = document.getElementById("signOutBtn");
+    const openBrowserCard = document.getElementById("openBrowser");
+
+    function isAlexAccount(){
+      return normalizeUsername(activeUser || "") === "alex";
+    }
+
+    function updateMiniBrowserAccess(){
+      const allowed = isAlexAccount();
+      if(openBrowserCard) openBrowserCard.classList.toggle("hidden", !allowed);
+      const browser = document.getElementById("miniBrowser");
+      const frame = document.getElementById("browserFrame");
+      if(!allowed && browser && !browser.classList.contains("hidden")){
+        browser.classList.add("hidden");
+        document.body.classList.remove("no-page-scroll");
+        frame.src = "about:blank";
+        setGameStatusVisible(false);
+        document.getElementById("dashboard").classList.remove("hidden");
+      }
+    }
 
     function updateSignOutButton(){
       signOutBtn.classList.toggle("hidden", !localStorage.getItem(ACTIVE_USER_KEY));
+      updateMiniBrowserAccess();
     }
 
     function loadUsers(){
@@ -1181,7 +1201,11 @@
 
     snakeFrame.addEventListener("load", installSnakeCoverHook);
 
-    document.getElementById("openBrowser").addEventListener("click", () => {
+    openBrowserCard.addEventListener("click", () => {
+      if(!isAlexAccount()){
+        updateMiniBrowserAccess();
+        return;
+      }
       dashboard.classList.add("hidden");
       game67El.classList.add("hidden");
       snakeGame.classList.add("hidden");
