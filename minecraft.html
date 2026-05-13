@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft</title>
+  <link rel="icon" type="image/png" href="./clever1.png">
+  <script src="./cover-profiles.js"></script>
+  <script>
+    if (localStorage.getItem("theme") === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  </script>
+  <style>
+    :root {
+      --control-fg: #111812;
+      --control-bg: rgba(255,255,255,.9);
+      --control-bg-hover: #fff;
+      --control-border: rgba(0,0,0,.16);
+      --control-shadow: rgba(0,0,0,.18);
+      --status-h: 26px;
+    }
+    [data-theme="dark"] {
+      --control-fg: #ececec;
+      --control-bg: rgba(22,24,22,.9);
+      --control-bg-hover: #2a2d2a;
+      --control-border: rgba(255,255,255,.18);
+      --control-shadow: rgba(0,0,0,.36);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+      touch-action: none;
+      overscroll-behavior: none;
+      user-select: none;
+      animation: pageIn .32s ease both;
+    }
+    @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
+    .game-frame {
+      position: fixed;
+      inset: 0 0 var(--status-h) 0;
+      width: 100%;
+      height: calc(100% - var(--status-h));
+      border: 0;
+      display: block;
+      background: #111;
+    }
+    .game-bar {
+      position: fixed;
+      left: 14px;
+      top: 14px;
+      z-index: 100000;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .game-bar button {
+      font: 800 13px Arial, sans-serif;
+      color: var(--control-fg);
+      background: var(--control-bg);
+      border: 1px solid var(--control-border);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px var(--control-shadow);
+      transition: background .15s, transform .12s;
+    }
+    .game-bar button:hover {
+      background: var(--control-bg-hover);
+      transform: translateY(-1px);
+    }
+    #introSplash {
+      position: fixed;
+      inset: 0 0 var(--status-h) 0;
+      z-index: 90000;
+      background: #000;
+      opacity: 1;
+      pointer-events: none;
+      transition: opacity .85s cubic-bezier(.4, 0, .2, 1);
+    }
+    #introSplash.hide {
+      opacity: 0;
+    }
+    #introSplash img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+    #coverOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200000;
+      background: #000;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .55s cubic-bezier(.4, 0, .2, 1);
+    }
+    #coverOverlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #coverOverlay img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+    #statusBar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--status-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background: var(--control-bg);
+      border-top: 1px solid var(--control-border);
+      color: rgba(20,20,20,.68);
+      font: 800 11px Arial, sans-serif;
+      z-index: 100000;
+    }
+    [data-theme="dark"] #statusBar { color: rgba(236,236,236,.68); }
+    #statusBar .sb-cover {
+      cursor: pointer;
+      user-select: none;
+    }
+    #statusBar .sb-cover:hover { color: var(--control-fg); }
+  </style>
+</head>
+<body>
+  <div class="game-bar">
+    <button id="backBtn" type="button">Back</button>
+    <button id="fullscreenBtn" type="button">Fullscreen</button>
+  </div>
+
+  <iframe id="gameFrame" class="game-frame" src="./minecraft-game.html" title="Minecraft game"></iframe>
+
+  <div id="introSplash" aria-hidden="true">
+    <img src="./minecraft-cover.webp" alt="">
+  </div>
+
+  <div id="coverOverlay" aria-hidden="true">
+    <img id="coverImage" alt="Cover">
+  </div>
+  <div id="statusBar">
+    <span class="sb-cover" onclick="showCover()">Backspace Cover Image</span>
+    <span>Minecraft</span>
+  </div>
+
+  <script>
+    const backBtn = document.getElementById("backBtn");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const coverOverlay = document.getElementById("coverOverlay");
+    const introSplash = document.getElementById("introSplash");
+    const gameFrame = document.getElementById("gameFrame");
+    let coverTimer = null;
+
+    function syncTheme() {
+      if (localStorage.getItem("theme") === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+    }
+
+    function showCover() {
+      coverOverlay.classList.add("show");
+      coverOverlay.setAttribute("aria-hidden", "false");
+      clearTimeout(coverTimer);
+    }
+
+    function hideCover() {
+      coverOverlay.classList.remove("show");
+      coverOverlay.setAttribute("aria-hidden", "true");
+      armCoverTimer();
+    }
+
+    function armCoverTimer() {
+      clearTimeout(coverTimer);
+      coverTimer = setTimeout(showCover, 5000);
+    }
+
+    function handleCoverActivity() {
+      if (coverOverlay.classList.contains("show")) {
+        hideCover();
+      } else {
+        armCoverTimer();
+      }
+    }
+
+    function isTypingField() {
+      const active = document.activeElement;
+      return active && active.closest("input, textarea, select, [contenteditable='true']");
+    }
+
+    function coverKeyHandler(e) {
+      if (!["Backspace", "Enter"].includes(e.key)) {
+        armCoverTimer();
+        return;
+      }
+      if (isTypingField()) {
+        armCoverTimer();
+        return;
+      }
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      showCover();
+    }
+
+    function installFrameCoverHook() {
+      try {
+        const win = gameFrame.contentWindow;
+        const doc = gameFrame.contentDocument;
+        if (!win || !doc || win.__alexFunCoverHookInstalled) return;
+        win.__alexFunCoverHookInstalled = true;
+        win.addEventListener("keydown", coverKeyHandler, true);
+        doc.addEventListener("keydown", coverKeyHandler, true);
+        doc.documentElement.addEventListener("keydown", coverKeyHandler, true);
+        ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt => {
+          win.addEventListener(evt, handleCoverActivity, { passive: true });
+          doc.addEventListener(evt, handleCoverActivity, { passive: true });
+        });
+      } catch (e) {
+        console.log("Frame cover hook skipped:", e);
+      }
+    }
+
+    backBtn.addEventListener("click", () => {
+      location.href = new URL("index.html", window.location.href).href;
+    });
+
+    fullscreenBtn.addEventListener("click", async () => {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          fullscreenBtn.textContent = "Exit Fullscreen";
+        } else {
+          await document.exitFullscreen();
+          fullscreenBtn.textContent = "Fullscreen";
+        }
+      } catch (e) {
+        console.log("Fullscreen failed:", e);
+      }
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      fullscreenBtn.textContent = document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen";
+    });
+    document.addEventListener("keydown", coverKeyHandler, true);
+    coverOverlay.addEventListener("click", hideCover);
+    gameFrame.addEventListener("load", installFrameCoverHook);
+    window.addEventListener("storage", e => {
+      if (e.key === "theme") syncTheme();
+    });
+    ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt => {
+      window.addEventListener(evt, handleCoverActivity, { passive: true });
+    });
+    setTimeout(() => {
+      introSplash.classList.add("hide");
+    }, 5000);
+    syncTheme();
+    armCoverTimer();
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft Loader</title>
+  <style>
+    html, body, #stage { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #050913; }
+    iframe { width: 100%; height: 100%; border: 0; display: block; }
+    #status { position: fixed; inset: 0; display: grid; place-items: center; color: white; font: 600 18px system-ui, sans-serif; background: #050913; z-index: 2; }
+  </style>
+  <script src="./minecraft-game.part0.js"></script>
+  <script src="./minecraft-game.part1.js"></script>
+  <script src="./minecraft-game.part2.js"></script>
+  <script src="./minecraft-game.part3.js"></script>
+</head>
+<body>
+  <div id="status">Starting Minecraft...</div>
+  <div id="stage"></div>
+  <script>
+    (function () {
+      const status = document.getElementById("status");
+      const chunks = window.__minecraftGameParts || [];
+      if (4 !== chunks.length || chunks.some((part) => typeof part !== "string")) {
+        status.textContent = "Minecraft files are missing. Upload minecraft-game.part0.js through minecraft-game.part3.js next to this file.";
+        return;
+      }
+      const blob = new Blob(chunks, { type: "text/html" });
+      const frame = document.createElement("iframe");
+      frame.title = "Minecraft game";
+      frame.src = URL.createObjectURL(blob);
+      document.getElementById("stage").appendChild(frame);
+      status.remove();
+    })();
+  </script>
+</body>
+</html>

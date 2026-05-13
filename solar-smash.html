@@ -7,7 +7,7 @@
       document.documentElement.setAttribute("data-theme", "dark");
     }
   </script>
-  <base href="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@c5eefc5c13316b94c58e63cb5270b99a13c88fea/solar-smash/">
+  <base href="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@a2e4bb68955f2665d16669bbbf7be3123870c2e0/solar-smash/">
   <meta charset="UTF-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -188,6 +188,14 @@
       coverTimer = setTimeout(showCover, 5000);
     }
 
+    function handleCoverActivity() {
+      if (coverOverlay.classList.contains("show")) {
+        hideCover();
+      } else {
+        armCoverTimer();
+      }
+    }
+
     function isTypingField() {
       const active = document.activeElement;
       return active && active.closest("input, textarea, select, [contenteditable='true']");
@@ -232,7 +240,7 @@
       showCover();
     }, true);
     ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt => {
-      window.addEventListener(evt, armCoverTimer, { passive: true });
+      window.addEventListener(evt, handleCoverActivity, { passive: true });
     });
     syncTheme();
     armCoverTimer();
@@ -339,13 +347,55 @@
     }
 
     const originalFetch = window.fetch;
-    window.fetch = function(input, options) {
-      if (typeof input === "string" && input.endsWith("AssetBundles/WebGL/planets")) {
-        input = "https://rawcdn.githack.com/bubbls/youtube-playables/c5eefc5c13316b94c58e63cb5270b99a13c88fea/solar-smash/StreamingAssets/AssetBundles/WebGL/planets";
-      } else if (typeof input === "string" && input.endsWith("AssetBundles/WebGL/planets2")) {
-        input = "https://rawcdn.githack.com/bubbls/youtube-playables/c5eefc5c13316b94c58e63cb5270b99a13c88fea/solar-smash/StreamingAssets/AssetBundles/WebGL/planets2";
+    const assetBundleBase = "https://rawcdn.githack.com/bubbls/youtube-playables/a2e4bb68955f2665d16669bbbf7be3123870c2e0/solar-smash/StreamingAssets/AssetBundles/WebGL/";
+    const splitBundles = new Map();
+
+    function getAssetBundleName(input) {
+      const value = typeof input === "string" ? input : (input && input.url);
+      if (!value) return null;
+      const match = value.match(/(?:StreamingAssets\/)?AssetBundles\/WebGL\/([^?#]+)/);
+      return match ? match[1] : null;
+    }
+
+    async function mergeBundleParts(bundleName, partCount) {
+      const buffers = [];
+      for (let i = 1; i <= partCount; i += 1) {
+        const response = await originalFetch(`StreamingAssets/AssetBundles/WebGL/${bundleName}.part${i}`);
+        if (!response.ok) throw new Error(`Could not load ${bundleName}.part${i}`);
+        buffers.push(await response.arrayBuffer());
       }
-      return originalFetch(input, options);
+      splitBundles.set(bundleName, new Blob(buffers, { type: "application/octet-stream" }));
+    }
+
+    const splitBundlePromise = Promise.all([
+      mergeBundleParts("planets", 2),
+      mergeBundleParts("planets2", 2)
+    ]).catch(error => {
+      console.log("Solar Smash split asset preload failed:", error);
+    });
+
+    function rewriteSolarSmashUrl(input) {
+      const value = typeof input === "string" ? input : (input && input.url);
+      if (!value) return input;
+      const match = value.match(/(?:StreamingAssets\/)?AssetBundles\/WebGL\/([^?#]+)/);
+      if (!match) return input;
+      const rewritten = assetBundleBase + match[1];
+      return typeof input === "string" ? rewritten : new Request(rewritten, input);
+    }
+
+    window.fetch = async function(input, options) {
+      const bundleName = getAssetBundleName(input);
+      if (bundleName === "planets" || bundleName === "planets2") {
+        await splitBundlePromise;
+        const bundle = splitBundles.get(bundleName);
+        if (bundle) return new Response(bundle, { status: 200 });
+      }
+      return originalFetch(rewriteSolarSmashUrl(input), options);
+    };
+
+    const originalXHROpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+      return originalXHROpen.call(this, method, rewriteSolarSmashUrl(url), ...rest);
     };
 
     loadResources().then(initUnitySection).catch(error => {

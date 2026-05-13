@@ -681,6 +681,10 @@ function armCoverTimer(){
   clearTimeout(coverTimer);
   coverTimer = setTimeout(showCover, 5000);
 }
+function handleCoverActivity(){
+  if(document.getElementById('coverOverlay').classList.contains('show')) hideCover();
+  else armCoverTimer();
+}
 document.addEventListener('keydown',e=>{
   if(!['Backspace','Enter'].includes(e.key)){
     armCoverTimer();
@@ -694,7 +698,7 @@ document.addEventListener('keydown',e=>{
   showCover();
 });
 ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt=>{
-  window.addEventListener(evt, armCoverTimer, { passive:true });
+  window.addEventListener(evt, handleCoverActivity, { passive:true });
 });
 armCoverTimer();
 </script>
