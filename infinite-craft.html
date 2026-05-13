@@ -325,6 +325,10 @@ function armCoverTimer(){
   clearTimeout(coverTimer);
   coverTimer = setTimeout(showCover, 5000);
 }
+function handleCoverActivity(){
+  if(document.getElementById('coverOverlay').classList.contains('show')) hideCover();
+  else armCoverTimer();
+}
 document.addEventListener('keydown',function(e){
   if(!['Backspace','Enter'].includes(e.key)){
     armCoverTimer();
@@ -338,7 +342,7 @@ document.addEventListener('keydown',function(e){
   showCover();
 });
 ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt=>{
-  window.addEventListener(evt, armCoverTimer, { passive:true });
+  window.addEventListener(evt, handleCoverActivity, { passive:true });
 });
 armCoverTimer();
 
@@ -534,6 +538,8 @@ let lastThirdPartyLookupWasBlocked = false;
 const supabaseClient = (window.supabase && window.ALEX_FUN_SUPABASE_URL && window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
   ? window.supabase.createClient(window.ALEX_FUN_SUPABASE_URL, window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
   : null;
+const ACTIVE_USER_KEY = 'alexFunActiveUserV1';
+const SESSION_TOKEN_KEY = 'alexFunSessionTokenV1';
 
 function recipeKey(a,b){
   return [a,b].sort().join('|');
@@ -705,11 +711,88 @@ const workspace = document.getElementById('workspace');
 // ─────────────────────────────────────────────
 function getStarters(){ return [{emoji:"🌍",name:"Earth"},{emoji:"🔥",name:"Fire"},{emoji:"💧",name:"Water"},{emoji:"💨",name:"Wind"}]; }
 
+function getAccountName(){
+  return localStorage.getItem(ACTIVE_USER_KEY) || 'guest';
+}
+
+function getSessionToken(){
+  return localStorage.getItem(SESSION_TOKEN_KEY) || '';
+}
+
+function getSaveKey(){
+  return `${SAVE_KEY}_${getAccountName().replace(/[^a-z0-9_-]/gi, '_')}`;
+}
+
+function normalizeDiscoveries(value){
+  const byName = new Map(getStarters().map(item => [item.name, { emoji:item.emoji, name:item.name }]));
+  if(Array.isArray(value)){
+    for(const item of value){
+      if(!item || !item.name) continue;
+      byName.set(item.name, { emoji:item.emoji || '✨', name:String(item.name) });
+    }
+  }
+  return Array.from(byName.values());
+}
+
+function cleanDiscoveries(){
+  return normalizeDiscoveries(discovered);
+}
+
+function saveLocalDiscoveries(){
+  const clean = cleanDiscoveries();
+  localStorage.setItem(getSaveKey(), JSON.stringify(clean));
+  localStorage.setItem(SAVE_KEY, JSON.stringify(clean));
+}
+
 function load(){
-  try{ const s=localStorage.getItem(SAVE_KEY); if(s) discovered=JSON.parse(s); else discovered=getStarters(); }
+  try{
+    const s = localStorage.getItem(getSaveKey()) || localStorage.getItem(SAVE_KEY);
+    discovered = s ? normalizeDiscoveries(JSON.parse(s)) : getStarters();
+  }
   catch{ discovered=getStarters(); }
 }
-function save(){ localStorage.setItem(SAVE_KEY,JSON.stringify(discovered)); }
+
+let cloudSaveTimer = null;
+
+async function loadAccountDiscoveries(){
+  const token = getSessionToken();
+  if(!supabaseClient || !token) return false;
+  try{
+    const { data, error } = await supabaseClient.rpc('get_infinite_craft_save', { p_token: token });
+    if(error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if(!row || !Array.isArray(row.discoveries)) return false;
+    discovered = normalizeDiscoveries(row.discoveries);
+    saveLocalDiscoveries();
+    return true;
+  }catch(e){
+    console.log('Account discovery load failed:', e);
+    return false;
+  }
+}
+
+async function syncAccountDiscoveries(){
+  const token = getSessionToken();
+  if(!supabaseClient || !token) return;
+  try{
+    await supabaseClient.rpc('save_infinite_craft', {
+      p_token: token,
+      p_discoveries: cleanDiscoveries()
+    });
+  }catch(e){
+    console.log('Account discovery save failed:', e);
+  }
+}
+
+function queueAccountSave(){
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(syncAccountDiscoveries, 450);
+}
+
+function save(){
+  saveLocalDiscoveries();
+  queueAccountSave();
+}
 
 // ─────────────────────────────────────────────
 //  Sidebar
@@ -947,8 +1030,8 @@ document.getElementById('clearBoardBtn').addEventListener('click',()=>{
 
 document.getElementById('resetBtn').addEventListener('click',()=>{
   if(!confirm('Reset ALL discoveries and start over?')) return;
-  localStorage.removeItem(SAVE_KEY);
   discovered=getStarters();
+  save();
   board=[]; nextId=0;
   workspace.querySelectorAll('.ws-tile').forEach(t=>t.remove());
   const hint=document.getElementById('wsHint');
@@ -959,10 +1042,14 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 // ─────────────────────────────────────────────
 //  Init
 // ─────────────────────────────────────────────
-load();
-loadThirdPartyRecipeCache();
-loadThirdPartyIndex().catch(()=>{});
-renderSidebar();
+async function initGame(){
+  load();
+  loadThirdPartyRecipeCache();
+  loadThirdPartyIndex().catch(()=>{});
+  renderSidebar();
+  if(await loadAccountDiscoveries()) renderSidebar();
+}
+initGame();
 </script>
 </body>
 </html>

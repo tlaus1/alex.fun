@@ -15,6 +15,57 @@
   <link rel="icon" type="image/png" href="sprites/crossy-road-logo.png">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@main/ytgame.js"></script>
+  <script>
+    (function keepCrossyRoadMuted() {
+      window.__alexFunMuted = true;
+
+      function muteExistingMedia() {
+        document.querySelectorAll("audio, video").forEach(media => {
+          media.muted = true;
+          media.volume = 0;
+        });
+        if (window.Howler) {
+          window.Howler.mute(true);
+          window.Howler.volume(0);
+        }
+      }
+
+      const originalPlay = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function(...args) {
+        this.muted = true;
+        this.volume = 0;
+        return originalPlay.apply(this, args);
+      };
+
+      function installWebAudioMute() {
+        if (!window.AudioNode || !window.AudioDestinationNode) return;
+        if (AudioNode.prototype.__alexFunMutedConnect) return;
+        const originalConnect = AudioNode.prototype.connect;
+        AudioNode.prototype.connect = function(destination, ...args) {
+          try {
+            if (destination instanceof AudioDestinationNode && this.context && this.context.createGain) {
+              const silentGain = this.context.createGain();
+              silentGain.gain.value = 0;
+              originalConnect.call(silentGain, destination);
+              return originalConnect.call(this, silentGain, ...args);
+            }
+          } catch (e) {
+            console.log("Crossy mute bypassed one audio connection:", e);
+          }
+          return originalConnect.call(this, destination, ...args);
+        };
+        AudioNode.prototype.__alexFunMutedConnect = true;
+      }
+
+      installWebAudioMute();
+      window.addEventListener("load", () => {
+        installWebAudioMute();
+        muteExistingMedia();
+      });
+      document.addEventListener("visibilitychange", muteExistingMedia);
+      setInterval(muteExistingMedia, 1000);
+    })();
+  </script>
   <script src="scripts/three.min.js"></script>
   <script src="scripts/game.min.js"></script>
   <script src="scripts/extra.min.js"></script>
@@ -219,6 +270,14 @@
       coverTimer = setTimeout(showCover, 5000);
     }
 
+    function handleCoverActivity() {
+      if (coverOverlay.classList.contains("show")) {
+        hideCover();
+      } else {
+        armCoverTimer();
+      }
+    }
+
     function isTypingField() {
       const active = document.activeElement;
       return active && active.closest("input, textarea, select, [contenteditable='true']");
@@ -263,7 +322,7 @@
       showCover();
     }, true);
     ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt => {
-      window.addEventListener(evt, armCoverTimer, { passive: true });
+      window.addEventListener(evt, handleCoverActivity, { passive: true });
     });
     syncTheme();
     armCoverTimer();
