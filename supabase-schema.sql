@@ -468,3 +468,6 @@ create index if not exists infinite_craft_saves_updated_at_idx on public.infinit
 create index if not exists recipe_cache_updated_at_idx on public.recipe_cache (updated_at desc);
 create index if not exists players_banned_at_idx on public.players (banned_at);
 create index if not exists admin_actions_created_at_idx on public.admin_actions (created_at desc);
+
+-- Make newly-created RPC functions visible to the browser API immediately.
+notify pgrst, 'reload schema';

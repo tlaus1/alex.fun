@@ -1904,6 +1904,17 @@
       updateUI(); markSaveDirty(); saveGame();
     }
 
+    function adminActionErrorMessage(error, action){
+      const message = error && error.message ? error.message : "";
+      if(action === "wipe" && /admin_wipe_player|schema cache/i.test(message)){
+        return "Wipe is not installed in Supabase yet. Run the latest supabase-schema.sql in the Supabase SQL Editor, then try wiping again.";
+      }
+      if(action === "ban" && /admin_ban_player|schema cache/i.test(message)){
+        return "Ban is not installed in Supabase yet. Run the latest supabase-schema.sql in the Supabase SQL Editor, then try banning again.";
+      }
+      return message || "Admin action failed.";
+    }
+
     async function runAdminAction(action){
       if(!isAlexAccount()) return;
       const target = normalizeUsername(document.getElementById("adminTargetUser").value);
@@ -1923,7 +1934,7 @@
         p_reason: reason
       });
       if(error){
-        alert(error.message || "Admin action failed.");
+        alert(adminActionErrorMessage(error, action));
         return;
       }
       showNotice(`${target} ${action === "ban" ? "banned" : "wiped"}: ${reason}`);
