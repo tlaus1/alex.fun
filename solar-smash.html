@@ -360,6 +360,11 @@
       return match ? match[1] : null;
     }
 
+    function shouldUseRemoteBundleFallback() {
+      const localHosts = ["", "localhost", "127.0.0.1", "::1"];
+      return location.protocol !== "file:" && !localHosts.includes(location.hostname) && navigator.onLine !== false;
+    }
+
     async function mergeBundleParts(bundleName, partCount) {
       const buffers = [];
       for (let i = 1; i <= partCount; i += 1) {
@@ -403,12 +408,29 @@
       return blob;
     }
 
-    const splitBundlePromise = Promise.all([
-      mergeBundleParts("planets", 2),
-      mergeBundleParts("planets2", 2)
-    ]).catch(error => {
-      console.log("Solar Smash split asset preload failed:", error);
-    });
+    async function loadBundleResponse(bundleName, options, originalInput) {
+      if (originalInput) {
+        try {
+          const localResponse = await originalFetch(originalInput, options);
+          if (localResponse.ok) return localResponse;
+        } catch (error) {
+          console.log("Solar Smash local bundle load failed:", bundleName, error);
+        }
+      }
+      try {
+        return await fetchBundleCandidate(bundleName, options);
+      } catch (error) {
+        console.log("Solar Smash bundle direct load failed:", bundleName, error);
+      }
+      const splitBundle = await loadLazySplitBundle(bundleName);
+      if (splitBundle) {
+        return new Response(splitBundle, {
+          status: 200,
+          headers: { "Content-Type": "application/octet-stream" }
+        });
+      }
+      throw new Error(`Could not load Solar Smash asset bundle: ${bundleName}`);
+    }
 
     function rewriteSolarSmashUrl(input) {
       const value = typeof input === "string" ? input : (input && input.url);
@@ -421,27 +443,13 @@
 
     window.fetch = async function(input, options) {
       const bundleName = getAssetBundleName(input);
-      if (bundleName === "planets" || bundleName === "planets2") {
-        await splitBundlePromise;
-        const bundle = splitBundles.get(bundleName);
-          if (bundle) return new Response(bundle, { status: 200 });
+      if (bundleName && !shouldUseRemoteBundleFallback()) {
+        return originalFetch(input, options);
       }
       if (bundleName) {
-        try {
-          const response = await fetchBundleCandidate(bundleName, options);
-          if (response.ok) return response;
-        } catch (error) {
-          console.log("Solar Smash bundle direct load failed:", bundleName, error);
-        }
-        const bundle = await loadLazySplitBundle(bundleName);
-        if (bundle) return new Response(bundle, { status: 200 });
+        return loadBundleResponse(bundleName, options, input);
       }
       return originalFetch(input, options);
-    };
-
-    const originalXHROpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
-      return originalXHROpen.call(this, method, rewriteSolarSmashUrl(url), ...rest);
     };
 
     loadResources().then(initUnitySection).catch(error => {

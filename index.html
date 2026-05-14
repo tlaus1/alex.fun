@@ -1128,6 +1128,9 @@
       if(!supabaseClient) return null;
       let result = await supabaseClient.rpc("login_player", { p_username: username, p_password: password });
       if(result.error){
+        if(/banned/i.test(result.error.message || "")){
+          throw result.error;
+        }
         result = await supabaseClient.rpc("register_player", { p_username: username, p_password: password });
       }
       if(result.error) throw result.error;
