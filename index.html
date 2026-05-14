@@ -232,6 +232,40 @@
     .user-row strong { display:block; font-size:13px; }
     .message-thread { border:1px solid var(--border); border-radius:10px; padding:10px; background:var(--surface); min-height:190px; max-height:280px; overflow:auto; }
     .message-bubble { margin:5px 0; padding:7px 9px; border-radius:10px; background:var(--surface2); font-size:12px; font-weight:800; }
+    .message-sender { display:block; margin-bottom:3px; font-size:10px; font-weight:900; letter-spacing:.4px; text-transform:uppercase; color:var(--muted); }
+    .message-bubble.mine { background:#ffe27a; color:#1a0800; margin-left:18%; }
+    .message-bubble.mine .message-sender { color:#7c4a03; }
+    .message-bubble.theirs { margin-right:18%; }
+    .request-row { border:1px solid var(--border); border-radius:10px; padding:8px; margin:8px 0; background:var(--surface); }
+    .button-badge { display:none; min-width:17px; height:17px; margin-left:5px; border-radius:999px; padding:0 5px; background:#dc2626; color:#fff; font-size:10px; line-height:17px; font-weight:900; text-align:center; }
+    .button-badge.show { display:inline-block; }
+    .notification-stack {
+      position:fixed; top:14px; right:14px; z-index:12000; display:grid; gap:8px;
+      width:min(330px, calc(100vw - 28px)); pointer-events:none;
+    }
+    .notification-card {
+      border:1px solid var(--border); border-radius:14px; padding:10px 12px;
+      background:var(--surface2); color:var(--fg); box-shadow:0 14px 38px rgba(0,0,0,.22);
+      font-size:12px; font-weight:850; pointer-events:auto; animation:noticeSlide .22s ease both;
+    }
+    .notification-card strong { display:block; margin-bottom:2px; font-size:11px; color:#dc2626; text-transform:uppercase; letter-spacing:.7px; }
+    @keyframes noticeSlide { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+    .ban-screen {
+      position:fixed; inset:0; z-index:13000; display:none; place-items:center; padding:24px;
+      background:linear-gradient(180deg, rgba(127,29,29,.86), rgba(0,0,0,.88));
+      color:#fff;
+    }
+    .ban-screen.show { display:grid; }
+    .ban-card {
+      width:min(520px,100%); border:1px solid rgba(255,255,255,.2); border-radius:20px;
+      background:rgba(17,24,39,.92); padding:22px; box-shadow:0 24px 80px rgba(0,0,0,.45);
+    }
+    .ban-card h2 { font-size:28px; font-weight:900; margin-bottom:8px; }
+    .ban-card p { color:#e5e7eb; font-size:13px; font-weight:800; margin:8px 0; }
+    .ban-card textarea { width:100%; min-height:90px; margin-top:12px; border:1px solid rgba(255,255,255,.18); border-radius:12px; background:#111827; color:#fff; padding:10px; font:inherit; font-size:13px; font-weight:800; }
+    .ban-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .ban-actions .btn { background:#fff; color:#111827; }
+    .ban-actions .danger { background:#dc2626; color:#fff; }
 
     body.no-page-scroll { overflow:hidden; }
 
@@ -791,8 +825,13 @@
       <input id="adminTargetUser" type="text" placeholder="username">
       <input id="adminReason" type="text" placeholder="reason required">
     </div>
+    <div class="admin-grid" style="margin-top:10px;">
+      <input id="adminBanMinutes" type="number" min="0" step="1" placeholder="ban minutes blank=permanent">
+      <input id="adminUnbanReason" type="text" placeholder="unban reason optional">
+    </div>
     <div class="admin-actions">
       <button class="btn" id="adminBanBtn" type="button">Ban account</button>
+      <button class="btn" id="adminUnbanBtn" type="button">Unban account</button>
       <button class="btn" id="adminWipeBtn" type="button">Wipe account</button>
     </div>
     <div class="admin-grid" style="margin-top:10px;">
@@ -811,8 +850,8 @@
   <div id="dashboardBar" class="dashboard-bottom-bar">
     <span>Backspace = cover image</span>
     <div class="dashboard-bottom-actions">
-      <button id="friendsBtn" type="button" title="Users">👤 Friends</button>
-      <button id="messagesBtn" type="button" title="Messages">✉ Messages</button>
+      <button id="friendsBtn" type="button" title="Users">👤 Friends <span id="friendsBadge" class="button-badge"></span></button>
+      <button id="messagesBtn" type="button" title="Messages">✉ Messages <span id="messagesBadge" class="button-badge"></span></button>
     </div>
   </div>
   <div id="statusBar" class="hidden">
@@ -820,6 +859,21 @@
     <span>v1.0.0</span>
   </div>
   <div id="noticeToast" class="notice-toast" role="status" aria-live="polite"></div>
+  <div id="notificationStack" class="notification-stack" aria-live="polite"></div>
+
+  <section id="banScreen" class="ban-screen" aria-hidden="true">
+    <div class="ban-card">
+      <h2>Account Banned</h2>
+      <p id="banReasonText">No reason provided.</p>
+      <p id="banTimeText">Duration unavailable.</p>
+      <textarea id="banAppealText" placeholder="Write an appeal message"></textarea>
+      <div class="ban-actions">
+        <button id="appealBanBtn" class="btn" type="button">Appeal ban</button>
+        <button id="deleteBannedAccountBtn" class="btn danger" type="button">Permanently delete account</button>
+        <button id="backToLoginBtn" class="btn" type="button">Back to login</button>
+      </div>
+    </div>
+  </section>
 
   <!-- ══ 67 Clicker ═════════════════════════════════════════════ -->
   <section id="game67" class="hidden">
@@ -911,6 +965,7 @@
       <h3>Users</h3>
     </div>
     <input id="userSearch" type="text" placeholder="Search users">
+    <div id="friendRequestsList"></div>
     <div id="userList" class="user-list"></div>
   </aside>
 
@@ -977,6 +1032,8 @@
     const authPass = document.getElementById("authPass");
     const signOutBtn = document.getElementById("signOutBtn");
     const openBrowserCard = document.getElementById("openBrowser");
+    const banScreen = document.getElementById("banScreen");
+    let pendingBannedLogin = { username:"", password:"" };
 
     function isAlexAccount(){
       return normalizeUsername(activeUser || "") === "alex";
@@ -1000,6 +1057,45 @@
       signOutBtn.classList.toggle("hidden", !localStorage.getItem(ACTIVE_USER_KEY));
       updateMiniBrowserAccess();
       updateAdminPanelVisibility();
+    }
+
+    function formatBanDuration(status){
+      if(!status || !status.banned) return "Ban expired.";
+      if(!status.ban_expires_at) return "Permanent ban.";
+      const seconds = Number(status.remaining_seconds || 0);
+      if(seconds <= 0) return "Ban expires soon.";
+      const days = Math.floor(seconds / 86400);
+      const hours = Math.floor((seconds % 86400) / 3600);
+      const minutes = Math.ceil((seconds % 3600) / 60);
+      if(days > 0) return `Expires in ${days}d ${hours}h.`;
+      if(hours > 0) return `Expires in ${hours}h ${minutes}m.`;
+      return `Expires in ${minutes}m.`;
+    }
+
+    async function fetchBanStatus(username){
+      if(!supabaseClient) return null;
+      try{
+        const { data, error } = await supabaseClient.rpc("get_ban_status", { p_username: username });
+        if(error) return null;
+        return firstRpcRow(data);
+      }catch{
+        return null;
+      }
+    }
+
+    async function showBanScreen(username, password, fallbackMessage){
+      pendingBannedLogin = { username, password };
+      const status = await fetchBanStatus(username);
+      document.getElementById("banReasonText").textContent = `Reason: ${(status && status.reason) || fallbackMessage || "No reason provided."}`;
+      document.getElementById("banTimeText").textContent = formatBanDuration(status) || "Duration unavailable.";
+      authOverlay.classList.add("hidden");
+      banScreen.classList.add("show");
+      banScreen.setAttribute("aria-hidden", "false");
+    }
+
+    function hideBanScreen(){
+      banScreen.classList.remove("show");
+      banScreen.setAttribute("aria-hidden", "true");
     }
 
     function loadUsers(){
@@ -1053,16 +1149,25 @@
             authOverlay.classList.add("hidden");
             updateUI();
             updateLeaderboard();
+            startSocialPolling();
             return;
           }
         }catch(e){
           console.log("Saved session restore failed:", e);
+          if(/banned/i.test(e && e.message ? e.message : "")){
+            await showBanScreen(activeUser, "", e.message);
+            currentSessionToken = "";
+            localStorage.removeItem(SESSION_TOKEN_KEY);
+            updateSignOutButton();
+            return;
+          }
           currentSessionToken = "";
           localStorage.removeItem(SESSION_TOKEN_KEY);
         }
       }
       showAuthIfNeeded();
       updateSignOutButton();
+      if(localStorage.getItem(ACTIVE_USER_KEY)) startSocialPolling();
     }
     authForm.addEventListener("submit", async e => {
       e.preventDefault();
@@ -1082,8 +1187,13 @@
         if(!loadedCloud) loadGame();
         updateUI();
         updateLeaderboard();
+        startSocialPolling();
       }catch(err){
         console.log("Login failed:", err);
+        if(/banned/i.test(err && err.message ? err.message : "")){
+          await showBanScreen(username, password, err.message);
+          return;
+        }
         if(isLocalTestingHost()){
           try{
             loginWithLocalProfile(username, password);
@@ -1093,6 +1203,7 @@
             loadGame();
             updateUI();
             updateLeaderboard();
+            startSocialPolling();
             return;
           }catch(localErr){
             alert(localErr.message || "Local sign in failed.");
@@ -1107,6 +1218,8 @@
       activeUser = "guest";
       localStorage.removeItem(SESSION_TOKEN_KEY);
       localStorage.removeItem(ACTIVE_USER_KEY);
+      clearInterval(socialPollTimer);
+      socialState = null;
       updateSignOutButton();
       reset67StateToDefaults();
       loadGame();
@@ -1115,6 +1228,49 @@
       authPass.value = "";
       authOverlay.classList.remove("hidden");
       setTimeout(()=>authUser.focus(), 50);
+    });
+    document.getElementById("backToLoginBtn").addEventListener("click", () => {
+      hideBanScreen();
+      authOverlay.classList.remove("hidden");
+    });
+    document.getElementById("appealBanBtn").addEventListener("click", async () => {
+      const message = document.getElementById("banAppealText").value.trim();
+      if(!pendingBannedLogin.username || !message) return;
+      if(!supabaseClient){
+        alert("Appeals require Supabase to be connected.");
+        return;
+      }
+      const { error } = await supabaseClient.rpc("submit_ban_appeal", {
+        p_username: pendingBannedLogin.username,
+        p_message: message
+      });
+      if(error) alert(error.message || "Appeal failed.");
+      else {
+        document.getElementById("banAppealText").value = "";
+        alert("Appeal sent.");
+      }
+    });
+    document.getElementById("deleteBannedAccountBtn").addEventListener("click", async () => {
+      if(!pendingBannedLogin.username) return;
+      const password = pendingBannedLogin.password || prompt("Enter your password to permanently delete this account:");
+      if(!password) return;
+      if(!confirm("Permanently delete this account and all saved data? This cannot be undone.")) return;
+      if(!supabaseClient){
+        alert("Account deletion requires Supabase to be connected.");
+        return;
+      }
+      const { error } = await supabaseClient.rpc("delete_player_account", {
+        p_username: pendingBannedLogin.username,
+        p_password: password
+      });
+      if(error) alert(error.message || "Account deletion failed.");
+      else {
+        localStorage.removeItem(SESSION_TOKEN_KEY);
+        localStorage.removeItem(ACTIVE_USER_KEY);
+        hideBanScreen();
+        authOverlay.classList.remove("hidden");
+        alert("Account deleted.");
+      }
     });
     updateSignOutButton();
 
@@ -1810,6 +1966,10 @@
           .filter(row => (row.when || 0) >= LEADERBOARD_RESET_AT && (row.max || 0) > 0);
       } catch { return []; }
     }
+    function removeLocalLeaderboardEntry(name){
+      const rows = loadLeaderboard().filter(row => row.name !== name);
+      localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(rows));
+    }
     function updateLeaderboard(){
       const name = activeUser || "guest";
       const best = Math.floor(maxPoints || points || 0);
@@ -1912,13 +2072,16 @@
       if(action === "ban" && /admin_ban_player|schema cache/i.test(message)){
         return "Ban is not installed in Supabase yet. Run the latest supabase-schema.sql in the Supabase SQL Editor, then try banning again.";
       }
+      if(action === "unban" && /admin_unban_player|schema cache/i.test(message)){
+        return "Unban is not installed in Supabase yet. Run the latest supabase-schema.sql in the Supabase SQL Editor, then try unbanning again.";
+      }
       return message || "Admin action failed.";
     }
 
     async function runAdminAction(action){
       if(!isAlexAccount()) return;
       const target = normalizeUsername(document.getElementById("adminTargetUser").value);
-      const reason = document.getElementById("adminReason").value.trim();
+      const reason = (action === "unban" ? document.getElementById("adminUnbanReason").value.trim() : document.getElementById("adminReason").value.trim()) || "admin action";
       if(!target || !reason){
         alert("Enter a username and a reason first.");
         return;
@@ -1927,21 +2090,27 @@
         alert("Admin actions require Supabase to be connected.");
         return;
       }
-      const rpcName = action === "ban" ? "admin_ban_player" : "admin_wipe_player";
-      const { error } = await supabaseClient.rpc(rpcName, {
+      const rpcName = action === "ban" ? "admin_ban_player" : action === "unban" ? "admin_unban_player" : "admin_wipe_player";
+      const args = {
         p_token: currentSessionToken,
         p_target_username: target,
         p_reason: reason
-      });
+      };
+      if(action === "ban"){
+        const minutes = Number(document.getElementById("adminBanMinutes").value);
+        args.p_duration_minutes = Number.isFinite(minutes) && minutes > 0 ? Math.floor(minutes) : null;
+      }
+      const { error } = await supabaseClient.rpc(rpcName, args);
       if(error){
         alert(adminActionErrorMessage(error, action));
         return;
       }
-      showNotice(`${target} ${action === "ban" ? "banned" : "wiped"}: ${reason}`);
+      showNotice(`${target} ${action === "ban" ? "banned" : action === "unban" ? "unbanned" : "wiped"}: ${reason}`);
       updateLeaderboard();
     }
 
     document.getElementById("adminBanBtn").addEventListener("click", () => runAdminAction("ban"));
+    document.getElementById("adminUnbanBtn").addEventListener("click", () => runAdminAction("unban"));
     document.getElementById("adminWipeBtn").addEventListener("click", () => runAdminAction("wipe"));
     document.getElementById("adminFab").addEventListener("click", () => {
       if(!isAlexAccount()) return;
@@ -2002,13 +2171,115 @@
 
     const SOCIAL_KEY_BASE = "alexFunSocialV1";
     let selectedMessageFriend = "";
+    let socialState = null;
+    let socialPollTimer = null;
     function getSocialKey(){ return profileKey(SOCIAL_KEY_BASE); }
     function loadSocial(){
-      try { return JSON.parse(localStorage.getItem(getSocialKey()) || '{"friends":[],"blocked":[],"messages":{}}'); }
-      catch { return { friends:[], blocked:[], messages:{} }; }
+      try { return JSON.parse(localStorage.getItem(getSocialKey()) || '{"friends":[],"blocked":[],"messages":{},"incomingRequests":[],"outgoingRequests":[],"notifications":[]}'); }
+      catch { return { friends:[], blocked:[], messages:{}, incomingRequests:[], outgoingRequests:[], notifications:[] }; }
     }
     function saveSocial(social){ localStorage.setItem(getSocialKey(), JSON.stringify(social)); }
+    function normalizeSocialState(raw){
+      const fallback = loadSocial();
+      const state = raw || fallback;
+      const messagesByFriend = {};
+      if(Array.isArray(state.messages)){
+        state.messages.forEach(msg => {
+          const other = msg.mine ? msg.to : msg.from;
+          if(!other) return;
+          messagesByFriend[other] = messagesByFriend[other] || [];
+          messagesByFriend[other].push(msg);
+        });
+      }else{
+        Object.assign(messagesByFriend, state.messages || {});
+      }
+      return {
+        users: Array.isArray(state.users) ? state.users : [],
+        friends: Array.isArray(state.friends) ? state.friends : (fallback.friends || []),
+        blocked: Array.isArray(state.blocked) ? state.blocked : (fallback.blocked || []),
+        incomingRequests: Array.isArray(state.incomingRequests) ? state.incomingRequests : [],
+        outgoingRequests: Array.isArray(state.outgoingRequests) ? state.outgoingRequests : [],
+        messages: messagesByFriend,
+        notifications: Array.isArray(state.notifications) ? state.notifications : []
+      };
+    }
+    function currentSocial(){ return socialState || normalizeSocialState(loadSocial()); }
+    function showTopNotification(title, body){
+      const stack = document.getElementById("notificationStack");
+      const card = document.createElement("div");
+      card.className = "notification-card";
+      card.innerHTML = `<strong>${escapeHtml(title)}</strong>${escapeHtml(body)}`;
+      stack.prepend(card);
+      setTimeout(()=>card.remove(), 6500);
+    }
+    function updateSocialBadges(){
+      const social = currentSocial();
+      const requestCount = social.incomingRequests.length;
+      const unreadMessages = Object.values(social.messages).flat().filter(msg => !msg.mine && !msg.read_at).length;
+      const friendsBadge = document.getElementById("friendsBadge");
+      const messagesBadge = document.getElementById("messagesBadge");
+      friendsBadge.textContent = requestCount;
+      messagesBadge.textContent = unreadMessages;
+      friendsBadge.classList.toggle("show", requestCount > 0);
+      messagesBadge.classList.toggle("show", unreadMessages > 0);
+    }
+    async function refreshSocial(options = {}){
+      if(supabaseClient && currentSessionToken){
+        try{
+          const { data, error } = await supabaseClient.rpc("list_social_state", { p_token: currentSessionToken });
+          if(!error && data){
+            socialState = normalizeSocialState(data);
+            saveSocial(socialState);
+            if(options.notify) showUnreadNotifications();
+            updateSocialBadges();
+            if(document.getElementById("friendsPanel").classList.contains("show")) renderUsers();
+            if(document.getElementById("messagesPanel").classList.contains("show")) { renderFriends(); renderThread(); }
+            return socialState;
+          }
+          if(error && /banned/i.test(error.message || "")){
+            await showBanScreen(activeUser, "", error.message);
+            currentSessionToken = "";
+            localStorage.removeItem(SESSION_TOKEN_KEY);
+            return normalizeSocialState(loadSocial());
+          }
+        }catch(e){
+          if(/banned/i.test(e && e.message ? e.message : "")){
+            await showBanScreen(activeUser, "", e.message);
+            currentSessionToken = "";
+            localStorage.removeItem(SESSION_TOKEN_KEY);
+            return normalizeSocialState(loadSocial());
+          }
+          console.log("Social refresh failed:", e);
+        }
+      }
+      socialState = normalizeSocialState(loadSocial());
+      updateSocialBadges();
+      return socialState;
+    }
+    function showUnreadNotifications(){
+      const social = currentSocial();
+      const seenKey = profileKey("alexFunNotificationSeenAtV1");
+      const lastSeen = Number(localStorage.getItem(seenKey) || 0);
+      let newest = lastSeen;
+      social.notifications
+        .slice()
+        .sort((a,b)=>Date.parse(a.created_at || 0) - Date.parse(b.created_at || 0))
+        .forEach(note => {
+          const when = Date.parse(note.created_at || 0);
+          if(when > lastSeen && !note.read_at){
+            showTopNotification(note.kind === "message" ? "Message" : "Notification", note.body || "New notification");
+          }
+          if(when > newest) newest = when;
+        });
+      if(newest > lastSeen) localStorage.setItem(seenKey, String(newest));
+    }
+    function startSocialPolling(){
+      clearInterval(socialPollTimer);
+      refreshSocial({ notify:true });
+      socialPollTimer = setInterval(()=>refreshSocial({ notify:true }), 10000);
+    }
     async function fetchUsersForSocial(){
+      if(socialState && socialState.users.length) return socialState.users;
       if(supabaseClient){
         try{
           const { data, error } = await supabaseClient.rpc("list_public_players", { p_token: currentSessionToken || "" });
@@ -2021,33 +2292,49 @@
     }
     async function renderUsers(){
       const list = document.getElementById("userList");
+      const requests = document.getElementById("friendRequestsList");
       const query = document.getElementById("userSearch").value.trim().toLowerCase();
-      const social = loadSocial();
+      const social = currentSocial();
       const users = (await fetchUsersForSocial())
         .filter(name => normalizeUsername(name) !== safeUserKey())
         .filter(name => !query || name.toLowerCase().includes(query))
         .sort((a,b)=>a.localeCompare(b));
+      requests.innerHTML = social.incomingRequests.length ? `<h3>Requests</h3>` + social.incomingRequests.map(req => `
+        <div class="request-row" data-request="${req.id}">
+          <strong>${leaderboardNameHtml(req.username)}</strong>
+          <div class="user-actions">
+            <button class="btn accept-request" type="button">Accept</button>
+            <button class="btn decline-request" type="button">Decline</button>
+          </div>
+        </div>`).join("") : "";
       list.innerHTML = users.length ? users.map(name => `
         <div class="user-row" data-user="${escapeHtml(name)}">
           <strong>${leaderboardNameHtml(name)}</strong>
           <div class="user-actions">
-            <button class="btn add-user" type="button">${social.friends.includes(name) ? "Added" : "Add"}</button>
+            <button class="btn add-user" type="button">${social.friends.includes(name) ? "Friends" : social.outgoingRequests.includes(name) ? "Requested" : "Add"}</button>
             <button class="btn msg-user" type="button">Message</button>
             <button class="btn block-user" type="button">${social.blocked.includes(name) ? "Blocked" : "Block"}</button>
           </div>
         </div>`).join("") : "<p>No users found.</p>";
     }
-    function addFriend(name){
+    async function addFriend(name){
       const social = loadSocial();
+      if(supabaseClient && currentSessionToken){
+        const { error } = await supabaseClient.rpc("send_friend_request", { p_token: currentSessionToken, p_target_username: name });
+        if(error) { alert(error.message || "Friend request failed."); return; }
+        showNotice(`Friend request sent to ${name}.`);
+        await refreshSocial();
+        return;
+      }
       if(!social.friends.includes(name)) social.friends.push(name);
       social.blocked = social.blocked.filter(user => user !== name);
-      saveSocial(social); renderUsers(); renderFriends();
+      saveSocial(social); socialState = normalizeSocialState(social); renderUsers(); renderFriends(); updateSocialBadges();
     }
     function blockUser(name){
       const social = loadSocial();
       if(!social.blocked.includes(name)) social.blocked.push(name);
       social.friends = social.friends.filter(user => user !== name);
-      saveSocial(social); renderUsers(); renderFriends();
+      saveSocial(social); socialState = normalizeSocialState(social); renderUsers(); renderFriends(); updateSocialBadges();
     }
     function openMessageWith(name){
       selectedMessageFriend = name;
@@ -2059,17 +2346,25 @@
       renderThread();
     }
     function renderFriends(){
-      const social = loadSocial();
+      const social = currentSocial();
       const query = document.getElementById("messageSearch").value.trim().toLowerCase();
-      const friends = social.friends.filter(name => !query || name.toLowerCase().includes(query));
+      const messageNames = Object.keys(social.messages || {});
+      const friends = [...new Set([...social.friends, ...messageNames])].filter(name => !query || name.toLowerCase().includes(query));
       document.getElementById("friendList").innerHTML = friends.length ? friends.map(name => `<div class="user-row" data-friend="${escapeHtml(name)}"><strong>${leaderboardNameHtml(name)}</strong></div>`).join("") : "<p>No friends yet.</p>";
     }
     function renderThread(){
-      const social = loadSocial();
+      const social = currentSocial();
       const thread = selectedMessageFriend ? (social.messages[selectedMessageFriend] || []) : [];
       document.getElementById("messageThread").innerHTML = selectedMessageFriend
-        ? `<strong>${leaderboardNameHtml(selectedMessageFriend)}</strong>` + (thread.length ? thread.map(msg => `<div class="message-bubble">${escapeHtml(msg)}</div>`).join("") : "<p>No messages yet.</p>")
+        ? `<strong>${leaderboardNameHtml(selectedMessageFriend)}</strong>` + (thread.length ? thread.map(msg => {
+            const text = typeof msg === "string" ? msg : msg.body;
+            const mine = msg && msg.mine;
+            const sender = mine ? (activeUser || "You") : ((msg && msg.from) || selectedMessageFriend);
+            return `<div class="message-bubble ${mine ? "mine" : "theirs"}"><span class="message-sender">${escapeHtml(sender)}</span>${escapeHtml(text || "")}</div>`;
+          }).join("") : "<p>No messages yet.</p>")
         : "Choose a friend to start messaging.";
+      const box = document.getElementById("messageThread");
+      box.scrollTop = box.scrollHeight;
     }
     document.getElementById("friendsBtn").addEventListener("click", async () => {
       const panel = document.getElementById("friendsPanel");
@@ -2077,15 +2372,20 @@
       panel.setAttribute("aria-hidden", panel.classList.contains("show") ? "false" : "true");
       if(panel.classList.contains("show")) {
         panel.scrollTop = 0;
+        await refreshSocial();
         await renderUsers();
       }
     });
-    document.getElementById("messagesBtn").addEventListener("click", () => {
+    document.getElementById("messagesBtn").addEventListener("click", async () => {
       const panel = document.getElementById("messagesPanel");
       panel.classList.toggle("show");
       panel.setAttribute("aria-hidden", panel.classList.contains("show") ? "false" : "true");
       if(panel.classList.contains("show")) panel.scrollTop = 0;
+      await refreshSocial();
       renderFriends(); renderThread();
+      if(supabaseClient && currentSessionToken && panel.classList.contains("show")){
+        supabaseClient.rpc("mark_notifications_read", { p_token: currentSessionToken }).then(()=>refreshSocial());
+      }
     });
     document.getElementById("friendsBackBtn").addEventListener("click", () => {
       const panel = document.getElementById("friendsPanel");
@@ -2099,6 +2399,20 @@
     });
     document.getElementById("userSearch").addEventListener("input", renderUsers);
     document.getElementById("messageSearch").addEventListener("input", renderFriends);
+    document.getElementById("friendRequestsList").addEventListener("click", async e => {
+      const row = e.target.closest(".request-row");
+      if(!row || !supabaseClient || !currentSessionToken) return;
+      const accept = e.target.classList.contains("accept-request");
+      const decline = e.target.classList.contains("decline-request");
+      if(!accept && !decline) return;
+      const { error } = await supabaseClient.rpc("respond_friend_request", {
+        p_token: currentSessionToken,
+        p_request_id: Number(row.dataset.request),
+        p_accept: accept
+      });
+      if(error) alert(error.message || "Could not respond to request.");
+      await refreshSocial();
+    });
     document.getElementById("userList").addEventListener("click", e => {
       const row = e.target.closest(".user-row");
       if(!row) return;
@@ -2113,13 +2427,26 @@
       selectedMessageFriend = row.dataset.friend;
       renderThread();
     });
-    document.getElementById("sendMessageBtn").addEventListener("click", () => {
+    document.getElementById("sendMessageBtn").addEventListener("click", async () => {
       const text = document.getElementById("messageText").value.trim();
       if(!selectedMessageFriend || !text) return;
+      if(supabaseClient && currentSessionToken){
+        const { error } = await supabaseClient.rpc("send_direct_message", {
+          p_token: currentSessionToken,
+          p_recipient_username: selectedMessageFriend,
+          p_body: text
+        });
+        if(error) { alert(error.message || "Message failed."); return; }
+        document.getElementById("messageText").value = "";
+        await refreshSocial();
+        renderThread();
+        return;
+      }
       const social = loadSocial();
       social.messages[selectedMessageFriend] = social.messages[selectedMessageFriend] || [];
-      social.messages[selectedMessageFriend].push(text);
+      social.messages[selectedMessageFriend].push({ body:text, mine:true, created_at:new Date().toISOString() });
       saveSocial(social);
+      socialState = normalizeSocialState(social);
       document.getElementById("messageText").value = "";
       renderThread();
     });
@@ -2129,13 +2456,18 @@
       panel.setAttribute("aria-hidden", "true");
     });
 
-    document.getElementById("resetGame").addEventListener("click", () => {
+    document.getElementById("resetGame").addEventListener("click", async () => {
       if (!confirm("Reset all progress?")) return;
       reset67StateToDefaults();
       localStorage.removeItem(getSaveKey());
-      deleteCloudSave();
+      removeLocalLeaderboardEntry(activeUser || "guest");
+      await deleteCloudSave();
+      markSaveDirty();
+      saveGame();
       saveDirty = false;
       updateUI();
+      updateLeaderboard();
+      showNotice("67 Clicker stats reset.");
     });
 
     document.getElementById("fullscreenBtn").addEventListener("click", async () => {

@@ -346,8 +346,11 @@
       document.body.appendChild(script);
     }
 
-    const originalFetch = window.fetch;
-    const assetBundleBase = "https://rawcdn.githack.com/bubbls/youtube-playables/a2e4bb68955f2665d16669bbbf7be3123870c2e0/solar-smash/StreamingAssets/AssetBundles/WebGL/";
+    const originalFetch = window.fetch.bind(window);
+    const assetBundleBases = [
+      "https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@a2e4bb68955f2665d16669bbbf7be3123870c2e0/solar-smash/StreamingAssets/AssetBundles/WebGL/",
+      "https://rawcdn.githack.com/bubbls/youtube-playables/a2e4bb68955f2665d16669bbbf7be3123870c2e0/solar-smash/StreamingAssets/AssetBundles/WebGL/"
+    ];
     const splitBundles = new Map();
 
     function getAssetBundleName(input) {
@@ -360,19 +363,38 @@
     async function mergeBundleParts(bundleName, partCount) {
       const buffers = [];
       for (let i = 1; i <= partCount; i += 1) {
-        const response = await originalFetch(`${assetBundleBase}${bundleName}.part${i}`);
+        const response = await fetchBundleCandidate(`${bundleName}.part${i}`);
         if (!response.ok) throw new Error(`Could not load ${bundleName}.part${i}`);
         buffers.push(await response.arrayBuffer());
       }
       splitBundles.set(bundleName, new Blob(buffers, { type: "application/octet-stream" }));
     }
 
+    async function fetchBundleCandidate(path, options) {
+      let lastError = null;
+      for (const base of assetBundleBases) {
+        try {
+          const response = await originalFetch(base + path, options);
+          if (response.ok) return response;
+          lastError = new Error(`${path} returned ${response.status}`);
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      if (lastError) throw lastError;
+      throw new Error(`Could not load ${path}`);
+    }
+
     async function loadLazySplitBundle(bundleName) {
       if (splitBundles.has(bundleName)) return splitBundles.get(bundleName);
       const buffers = [];
-      for (let i = 1; i <= 8; i += 1) {
-        const response = await originalFetch(`${assetBundleBase}${bundleName}.part${i}`);
-        if (!response.ok) break;
+      for (let i = 1; i <= 32; i += 1) {
+        let response = null;
+        try {
+          response = await fetchBundleCandidate(`${bundleName}.part${i}`);
+        } catch {
+          break;
+        }
         buffers.push(await response.arrayBuffer());
       }
       if (!buffers.length) return null;
@@ -393,7 +415,7 @@
       if (!value) return input;
       const match = value.match(/(?:StreamingAssets\/)?AssetBundles\/WebGL\/([^?#]+)/);
       if (!match) return input;
-      const rewritten = assetBundleBase + match[1];
+      const rewritten = assetBundleBases[0] + match[1];
       return typeof input === "string" ? rewritten : new Request(rewritten, input);
     }
 
@@ -402,15 +424,19 @@
       if (bundleName === "planets" || bundleName === "planets2") {
         await splitBundlePromise;
         const bundle = splitBundles.get(bundleName);
-        if (bundle) return new Response(bundle, { status: 200 });
+          if (bundle) return new Response(bundle, { status: 200 });
       }
-      const rewritten = rewriteSolarSmashUrl(input);
-      const response = await originalFetch(rewritten, options);
-      if (bundleName && !response.ok) {
+      if (bundleName) {
+        try {
+          const response = await fetchBundleCandidate(bundleName, options);
+          if (response.ok) return response;
+        } catch (error) {
+          console.log("Solar Smash bundle direct load failed:", bundleName, error);
+        }
         const bundle = await loadLazySplitBundle(bundleName);
         if (bundle) return new Response(bundle, { status: 200 });
       }
-      return response;
+      return originalFetch(input, options);
     };
 
     const originalXHROpen = XMLHttpRequest.prototype.open;
