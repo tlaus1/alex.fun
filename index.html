@@ -49,8 +49,8 @@
     }
 
     @keyframes pageIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     .hidden { display: none !important; }
@@ -78,7 +78,7 @@
     .auth-actions .btn { flex: 1; }
     .auth-note { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 12px; }
     .signout-btn {
-      position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+      position: fixed; left: 50%; bottom: 46px; transform: translateX(-50%);
       z-index: 9000; border: 1.5px solid var(--border); border-radius: 999px;
       padding: 8px 16px; font: inherit; font-size: 12px; font-weight: 900;
       color: var(--fg); background: var(--surface2); cursor: pointer;
@@ -88,6 +88,19 @@
     .signout-btn:hover { transform: translateX(-50%) translateY(-1px); }
     .signout-btn.hidden { display: none !important; }
     body.game-active .signout-btn { display: none !important; }
+    .dashboard-bottom-bar {
+      position:fixed; left:0; right:0; bottom:0; height:var(--status-h); z-index:9000;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:0 14px; background:var(--surface2); border-top:1px solid var(--border);
+      color:var(--muted); font-size:11px; font-weight:900; transition:background .25s, border-color .25s, color .25s;
+    }
+    body.game-active .dashboard-bottom-bar { display:none; }
+    body:not(.game-active) .dashboard-bottom-bar { display:flex; }
+    .dashboard-bottom-actions { display:flex; align-items:center; gap:8px; }
+    .dashboard-bottom-bar button {
+      border:0; border-radius:999px; background:var(--surface); color:var(--fg);
+      padding:4px 10px; font:inherit; font-size:11px; font-weight:900; cursor:pointer;
+    }
 
     #statusBar {
       position: fixed; bottom: 0; left: 0; right: 0; height: var(--status-h);
@@ -111,9 +124,12 @@
     .card-solar { background: #03040a; }
     .card-solar img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
     .card-solar.card::after { background:linear-gradient(to top,rgba(0,0,0,.64) 0%,rgba(0,0,0,.08) 50%,transparent 72%); }
-    .card-minecraft { background: #2b7a36; }
-    .card-minecraft img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
-    .card-minecraft.card::after { background:linear-gradient(to top,rgba(3,31,9,.66) 0%,rgba(3,31,9,.07) 48%,transparent 70%); }
+    .card-retrobowl { background: #172554; }
+    .card-retrobowl img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-retrobowl.card::after { background:linear-gradient(to top,rgba(3,7,18,.66) 0%,rgba(3,7,18,.08) 48%,transparent 70%); }
+    .card-driftboss { background: #f59e0b; }
+    .card-driftboss img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-driftboss.card::after { background:linear-gradient(to top,rgba(44,24,8,.66) 0%,rgba(44,24,8,.08) 50%,transparent 72%); }
 
     .mini-browser {
       max-width: 1180px; margin: 0 auto; padding: 20px 18px 18px;
@@ -125,15 +141,14 @@
     .browser-safe-note { padding:12px 14px; font-size:12px; font-weight:800; color:var(--muted); border-bottom:1px solid var(--border); }
     .browser-shell iframe { width:100%; height:calc(100vh - 178px - var(--status-h)); min-height:520px; border:0; display:block; background:#fff; }
 
-    .rebirth-panel, .achievement-panel {
+    .rebirth-panel {
       margin-top: 16px; border: 1.5px solid var(--border); border-radius: 14px;
       background: var(--surface2); padding: 12px; text-align: left;
     }
-    .rebirth-title, .achievement-title { font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .rebirth-title { font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
     .rebirth-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px; font-weight:800; color:var(--muted); }
     .rebirth-row strong { color:var(--fg); }
     .rebirth-row .btn { margin-left:auto; padding:6px 12px; }
-    .achievement-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
     .achievement-chip { border:1.5px solid var(--border); border-radius:999px; padding:5px 8px; font-size:10px; font-weight:900; color:var(--muted); background:var(--surface); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .achievement-chip.unlocked { color:#1a0800; background:#ffe27a; border-color:#ffc107; }
 
@@ -158,6 +173,65 @@
     .leader-row { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; font-weight:900; }
     .leader-row:last-child { border-bottom:0; }
     .leader-row span:last-child { color:#e67e00; }
+    .owner-tag { margin-left:6px; padding:2px 7px; border-radius:999px; background:#dc2626; color:#fff; font-size:10px; font-weight:900; letter-spacing:.5px; text-transform:uppercase; }
+    .notice-toast {
+      position:fixed; right:18px; bottom:calc(var(--status-h) + 16px); z-index:10040;
+      max-width:340px; padding:12px 14px; border-radius:14px; background:#111827; color:#fff;
+      box-shadow:0 16px 44px rgba(0,0,0,.28); font-size:13px; font-weight:800;
+      opacity:0; transform:translateY(10px); pointer-events:none; transition:opacity .25s, transform .25s;
+    }
+    .notice-toast.show { opacity:1; transform:translateY(0); }
+    .achievement-chip.locked { color:transparent; position:relative; }
+    .achievement-chip.locked::after { content:"🔒 Locked"; position:absolute; inset:0; display:grid; place-items:center; color:var(--muted); }
+    .upgrade.locked { opacity:.55; filter:saturate(.55); }
+    .upgrade.locked .buy::after { content:" · Rebirth locked"; }
+    .admin-fab {
+      position:fixed; left:16px; bottom:calc(var(--status-h) + 16px); z-index:11000;
+      border:1.5px solid rgba(220,38,38,.45); border-radius:999px; padding:8px 13px;
+      background:#dc2626; color:#fff; font:inherit; font-size:12px; font-weight:900;
+      box-shadow:0 12px 32px rgba(220,38,38,.28); cursor:pointer;
+    }
+    .admin-panel {
+      position:fixed; left:16px; bottom:calc(var(--status-h) + 58px); z-index:11010;
+      width:min(390px, calc(100vw - 32px)); max-height:min(78vh, 720px); overflow:auto;
+      border:1.5px solid #dc2626; border-radius:16px; padding:12px;
+      background:linear-gradient(180deg, rgba(220,38,38,.08), transparent), var(--surface2);
+      box-shadow:0 22px 70px rgba(0,0,0,.28);
+    }
+    .admin-panel h3, .friends-panel h3, .messages-panel h3 { font-size:13px; font-weight:900; margin-bottom:8px; }
+    .admin-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .admin-panel input, .friends-panel input, .messages-panel input, .messages-panel textarea {
+      width:100%; border:1.5px solid var(--border); border-radius:10px; padding:8px 10px;
+      background:var(--surface); color:var(--fg); font:inherit; font-size:12px; font-weight:800;
+    }
+    .admin-actions, .user-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .cheat-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-top:10px; max-height:220px; overflow:auto; }
+    .cheat-grid button { padding:7px 8px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--fg); font-size:10px; font-weight:900; cursor:pointer; text-align:left; line-height:1.15; }
+    .friends-panel, .messages-panel {
+      position:fixed; top:auto; bottom:calc(var(--status-h) + 10px); right:12px;
+      width:min(340px, calc(100vw - 24px)); max-height:min(520px, calc(100vh - var(--status-h) - 24px));
+      z-index:10030; background:var(--surface2); color:var(--fg); border:1.5px solid var(--border);
+      border-radius:16px; box-shadow:0 18px 54px rgba(0,0,0,.22); padding:12px;
+      transform:translateY(14px) scale(.98); opacity:0; pointer-events:none;
+      transition:transform .22s cubic-bezier(.4,0,.2,1), opacity .22s; overflow:auto;
+    }
+    .panel-head {
+      position:static; z-index:2; margin:-4px -4px 10px; padding:8px 4px 10px;
+      display:flex; align-items:center; gap:8px; background:var(--surface2); border-bottom:1px solid var(--border);
+    }
+    .panel-back {
+      border:1.5px solid var(--border); border-radius:999px; background:var(--surface);
+      color:var(--fg); font:inherit; font-size:11px; font-weight:900; padding:6px 9px; cursor:pointer;
+    }
+    .panel-head h3 { margin:0; }
+    .friends-panel.show, .messages-panel.show { transform:translateY(0) scale(1); opacity:1; pointer-events:auto; }
+    .messages-panel { width:min(540px, calc(100vw - 24px)); }
+    .messages-layout { display:grid; grid-template-columns:150px 1fr; gap:10px; min-height:0; }
+    .user-list { display:grid; gap:6px; margin-top:10px; }
+    .user-row { border:1px solid var(--border); border-radius:10px; padding:8px; background:var(--surface); cursor:pointer; }
+    .user-row strong { display:block; font-size:13px; }
+    .message-thread { border:1px solid var(--border); border-radius:10px; padding:10px; background:var(--surface); min-height:190px; max-height:280px; overflow:auto; }
+    .message-bubble { margin:5px 0; padding:7px 9px; border-radius:10px; background:var(--surface2); font-size:12px; font-weight:800; }
 
     body.no-page-scroll { overflow:hidden; }
 
@@ -612,13 +686,13 @@
     ══════════════════════════════════════════════ */
     #idlePhoto {
       position: fixed; inset: 0; z-index: 20000;
-      background: #000; opacity: 1; pointer-events: auto;
+      background: #fff; opacity: 1; pointer-events: auto; overflow:hidden; overscroll-behavior:none;
       transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
     }
     #idlePhoto.hidden { opacity: 0; pointer-events: none; }
     #idlePhoto.no-transition { transition: none !important; }
     #idlePhoto img {
-      width: 100%; height: 100%; object-fit: contain;
+      width: 100%; height: 100%; object-fit: fill;
       object-position: top center; display: block;
     }
 
@@ -631,7 +705,8 @@
       .shop { max-height: none; }
       .pill { font-size: 12px; padding: 6px 13px; }
       .snake-frame-wrap, .browser-shell iframe { height: calc(72vh - var(--status-h)); min-height: 420px; }
-      .achievement-list { grid-template-columns: 1fr; }
+      .friends-panel, .messages-panel { left:12px; width:auto; }
+      .messages-layout { grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -692,19 +767,59 @@
         <h3 class="card-title">Solar Smash</h3>
       </article>
 
-      <article class="card card-minecraft" onclick="location.href='./minecraft.html'" style="cursor:pointer">
-        <img src="./minecraft-cover.webp" alt="Minecraft preview">
-        <h3 class="card-title">Minecraft</h3>
-      </article>
+      <a class="card card-retrobowl" href="./retrobowl.html" style="cursor:pointer">
+        <img src="./retrobowl-card.avif" alt="Retro Bowl preview">
+        <h3 class="card-title">Retro Bowl</h3>
+      </a>
+
+      <a class="card card-driftboss" href="./drift-boss.html" style="cursor:pointer">
+        <img src="./drift-boss-game.png" alt="Drift Boss preview">
+        <h3 class="card-title">Drift Boss</h3>
+      </a>
 
     </main>
   </div>
 
   <button id="signOutBtn" class="signout-btn hidden" type="button">Sign out</button>
+  <button id="adminFab" class="admin-fab hidden" type="button">Admin Panel</button>
+  <div class="admin-panel hidden" id="alexAdminPanel">
+    <div class="panel-head">
+      <button id="adminBackBtn" class="panel-back" type="button">← Back</button>
+      <h3>Admin Panel</h3>
+    </div>
+    <div class="admin-grid">
+      <input id="adminTargetUser" type="text" placeholder="username">
+      <input id="adminReason" type="text" placeholder="reason required">
+    </div>
+    <div class="admin-actions">
+      <button class="btn" id="adminBanBtn" type="button">Ban account</button>
+      <button class="btn" id="adminWipeBtn" type="button">Wipe account</button>
+    </div>
+    <div class="admin-grid" style="margin-top:10px;">
+      <input id="adminPointAmount" type="number" min="0" step="1" placeholder="points amount">
+      <input id="adminMultiplierAmount" type="number" min="1" step="1" placeholder="multiplier">
+    </div>
+    <div class="admin-actions">
+      <button class="btn" id="adminSetPointsBtn" type="button">Set points</button>
+      <button class="btn" id="adminAddPointsBtn" type="button">Add points</button>
+      <button class="btn" id="adminSetMultiplierBtn" type="button">Set multiplier</button>
+      <button class="btn" id="adminUnlockAllBtn" type="button">Unlock everything</button>
+      <button class="btn" id="adminAchievementsBtn" type="button">Unlock achievements</button>
+    </div>
+    <div class="cheat-grid" id="cheatGrid67"></div>
+  </div>
+  <div id="dashboardBar" class="dashboard-bottom-bar">
+    <span>Backspace = cover image</span>
+    <div class="dashboard-bottom-actions">
+      <button id="friendsBtn" type="button" title="Users">👤 Friends</button>
+      <button id="messagesBtn" type="button" title="Messages">✉ Messages</button>
+    </div>
+  </div>
   <div id="statusBar" class="hidden">
     <span class="sb-cover" onclick="showIdle(true)">⌫ Cover Image</span>
     <span>v1.0.0</span>
   </div>
+  <div id="noticeToast" class="notice-toast" role="status" aria-live="polite"></div>
 
   <!-- ══ 67 Clicker ═════════════════════════════════════════════ -->
   <section id="game67" class="hidden">
@@ -736,10 +851,6 @@
               <span><strong id="rebirthBoost">1x</strong> boost</span>
               <button class="btn" id="rebirthBtn" type="button">Rebirth at 1B</button>
             </div>
-          </div>
-          <div class="achievement-panel">
-            <div class="achievement-title">Achievements</div>
-            <div class="achievement-list" id="achievementList67"></div>
           </div>
         </div>
         <button id="masonBonus" class="mason-bonus" type="button" title="Mason bonus">
@@ -793,6 +904,36 @@
       <button class="btn" id="closeLeaderboard" type="button" style="margin-top:14px;width:100%;">Close</button>
     </div>
   </div>
+
+  <aside id="friendsPanel" class="friends-panel" aria-hidden="true">
+    <div class="panel-head">
+      <button id="friendsBackBtn" class="panel-back" type="button">← Back</button>
+      <h3>Users</h3>
+    </div>
+    <input id="userSearch" type="text" placeholder="Search users">
+    <div id="userList" class="user-list"></div>
+  </aside>
+
+  <aside id="messagesPanel" class="messages-panel" aria-hidden="true">
+    <div class="panel-head">
+      <button id="messagesBackBtn" class="panel-back" type="button">← Back</button>
+      <h3>Messages</h3>
+    </div>
+    <div class="messages-layout">
+      <div>
+        <input id="messageSearch" type="text" placeholder="Search friends">
+        <div id="friendList" class="user-list"></div>
+      </div>
+      <div>
+        <div id="messageThread" class="message-thread">Choose a friend to start messaging.</div>
+        <textarea id="messageText" rows="3" placeholder="Write a message"></textarea>
+        <div class="admin-actions">
+          <button class="btn" id="sendMessageBtn" type="button">Send</button>
+          <button class="btn" id="closeMessagesBtn" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+  </aside>
 
   <div id="authOverlay" class="auth-overlay hidden">
     <form class="auth-card" id="authForm">
@@ -858,6 +999,7 @@
     function updateSignOutButton(){
       signOutBtn.classList.toggle("hidden", !localStorage.getItem(ACTIVE_USER_KEY));
       updateMiniBrowserAccess();
+      updateAdminPanelVisibility();
     }
 
     function loadUsers(){
@@ -1064,7 +1206,6 @@
 
     function hideIdleAndArmTimer() {
       if (isIdleVisible()) {
-        dismissIdleCover();
         return;
       }
       clearTimeout(idleTimer);
@@ -1075,6 +1216,9 @@
       e.preventDefault();
       e.stopPropagation();
       dismissIdleCover();
+    });
+    ["wheel","touchmove"].forEach(evt => {
+      idlePhoto.addEventListener(evt, e => e.preventDefault(), { passive: false });
     });
 
     // Show clever picture on fresh visits; skip it when coming back from a game
@@ -1105,10 +1249,10 @@
         return;
       }
       if (isIdleVisible()) {
-        if (["Backspace", "Enter"].includes(e.key)) e.preventDefault();
+        if (e.key === "Backspace") e.preventDefault();
         return;
       }
-      if (["Backspace", "Enter"].includes(e.key)) {
+      if (e.key === "Backspace") {
         e.preventDefault();
         showIdle(true);
         return;
@@ -1143,6 +1287,7 @@
     }
 
     document.getElementById("open67").addEventListener("click", () => {
+      show67BalanceUpdateNotice();
       dashboard.classList.add("hidden");
       snakeGame.classList.add("hidden");
       miniBrowser.classList.add("hidden");
@@ -1186,7 +1331,7 @@
         if (!win || !doc || win.__alexFunCoverHookInstalled) return;
         win.__alexFunCoverHookInstalled = true;
         const cover = e => {
-          if (!["Backspace", "Enter"].includes(e.key)) return;
+          if (e.key !== "Backspace") return;
           e.preventDefault();
           e.stopImmediatePropagation();
           showIdle(true);
@@ -1246,14 +1391,17 @@
       { key:"factory",    icon:"🏭", name:"67 Factory",              desc:"+8 points/sec",             cost:300,             scale:1.15, onBuy:()=>{ perSec+=8; } },
       { key:"mine",       icon:"⛏️", name:"67 Mine",                 desc:"+47 points/sec",            cost:3_000,           scale:1.16, onBuy:()=>{ perSec+=47; } },
       { key:"lab",        icon:"🔬", name:"67 Laboratory",           desc:"+260 points/sec",           cost:28_000,          scale:1.17, onBuy:()=>{ perSec+=260; } },
-      { key:"powerclick", icon:"⚡", name:"Power Click",             desc:"+10,000 points per click",   cost:75_000,          scale:1.18, onBuy:()=>{ clickPower+=10_000; } },
+      { key:"powerclick", icon:"⚡", name:"Power Click",             desc:"+1,000 points per click",    cost:75_000,          scale:1.18, onBuy:()=>{ clickPower+=1_000; } },
       { key:"dimension",  icon:"🌀", name:"67 Dimension",            desc:"+5,000 points/sec",         cost:420_000,         scale:1.18, onBuy:()=>{ perSec+=5_000; } },
       { key:"sahur",      icon:"🥁", name:"Tung Tung Tung Sahur",    desc:"+67,000 points/sec",        cost:1_000_000,       scale:1.19, onBuy:()=>{ perSec+=67_000; } },
       { key:"empire",     icon:"👑", name:"67 Empire",               desc:"+20,000 points/sec",        cost:5_000_000,       scale:1.19, onBuy:()=>{ perSec+=20_000; } },
       { key:"galaxy",     icon:"🌌", name:"67 Galaxy",               desc:"+100,000 points/sec",       cost:75_000_000,      scale:1.20, onBuy:()=>{ perSec+=100_000; } },
-      { key:"patapim",    icon:"🌳", name:"Brr Brr Patapim Helper", desc:"+250,000 points/sec",       cost:100_000_000,     scale:1.20, onBuy:()=>{ perSec+=250_000; } },
+      { key:"patapim",    icon:"🌳", name:"Brr Brr Patapim",        desc:"+250,000 points/sec",       cost:100_000_000,     scale:1.20, onBuy:()=>{ perSec+=250_000; } },
       { key:"mason",      icon:"🧱", name:"Mason 67",                desc:"+3,000,000 points/sec",     cost:750_000_000,     scale:1.21, onBuy:()=>{ perSec+=3_000_000; } },
-      { key:"god",        icon:"✨", name:"67 God",                  desc:"+500,000,000 points/sec",   cost:50_000_000_000,  scale:1.22, onBuy:()=>{ perSec+=500_000_000; } }
+      { key:"god",        icon:"✨", name:"67 God",                  desc:"+100,000,000 points/sec",   cost:50_000_000_000,  scale:1.22, onBuy:()=>{ perSec+=100_000_000; } },
+      { key:"rebirthClick", icon:"6️⃣", name:"61",                   desc:"+1,000,000 points per click", cost:200_000_000_000, scale:1.24, requiresRebirth:1, onBuy:()=>{ clickPower+=1_000_000; } },
+      { key:"rebirthEngine", icon:"4️⃣", name:"41",                  desc:"+1,000,000,000 points/sec", cost:100_000_000_000, scale:1.25, requiresRebirth:1, onBuy:()=>{ perSec+=1_000_000_000; } },
+      { key:"rebirthCore", icon:"🏀", name:"Lebron 67",              desc:"+10,000,000,000 points/sec", cost:100_000_000_000_000, scale:1.26, requiresRebirth:2, onBuy:()=>{ perSec+=10_000_000_000; } }
     ];
 
     let points     = 0;
@@ -1262,25 +1410,63 @@
     let rebirths   = 0;
     let maxPoints  = 0;
     let unlockedAchievements67 = [];
+    let achievementBuffUntil = 0;
+    let adminMultiplier = 1;
+    let lastSpaceClickTimes = [];
     let lastSavedAt = Date.now();
 
+    function achievementMultiplier(){ return Date.now() < achievementBuffUntil ? 1.25 : 1; }
     function rebirthMultiplier(){ return 1 + rebirths * 0.35; }
-    function effectiveClickPower(){ return clickPower * rebirthMultiplier(); }
-    function effectivePerSec(){ return perSec * rebirthMultiplier(); }
+    function effectiveClickPower(){ return clickPower * rebirthMultiplier() * achievementMultiplier() * adminMultiplier; }
+    function effectivePerSec(){ return perSec * rebirthMultiplier() * achievementMultiplier() * adminMultiplier; }
 
     const state = {};
     upgradeConfig.forEach(cfg => { state[cfg.key] = { count:0, cost:cfg.cost }; });
 
-    const SAVE_KEY_BASE = "alexFun67ClickerSaveV2";
+    const SAVE_KEY_BASE = "alexFun67ClickerSaveV3";
     const LEADERBOARD_KEY = "alexFun67LeaderboardV2";
-    const LEADERBOARD_RESET_AT = 1778639344000;
+    const CLICKER_UPDATE_ID = "balance-2026-05-13";
+    const CLICKER_UPDATE_ACK_KEY = "alexFun67BalanceNoticeV1";
+    const LEADERBOARD_RESET_AT = 1778701200000;
     let saveDirty = false;
 
     localStorage.removeItem("alexFun67LeaderboardV1");
 
+    function mark67BalanceUpdateSeen(){
+      localStorage.setItem(profileKey(CLICKER_UPDATE_ACK_KEY), CLICKER_UPDATE_ID);
+    }
+
+    function hasSeen67BalanceUpdate(){
+      if(localStorage.getItem(profileKey(CLICKER_UPDATE_ACK_KEY)) === CLICKER_UPDATE_ID) return true;
+      try{
+        const raw = localStorage.getItem(getSaveKey());
+        if(raw){
+          const saved = JSON.parse(raw);
+          if(saved && (saved.updateNoticeSeenId === CLICKER_UPDATE_ID || saved.updateId === CLICKER_UPDATE_ID)){
+            mark67BalanceUpdateSeen();
+            return true;
+          }
+        }
+      }catch(e){
+        console.log("Could not read 67 Clicker update notice state:", e);
+      }
+      return false;
+    }
+
+    function show67BalanceUpdateNotice(){
+      if(hasSeen67BalanceUpdate()) return;
+      reset67StateToDefaults();
+      localStorage.removeItem(getSaveKey());
+      localStorage.removeItem(LEADERBOARD_KEY);
+      mark67BalanceUpdateSeen();
+      markSaveDirty();
+      saveGame();
+      alert("67 Clicker was updated because users were abusing bugs. The game is now more balanced, and all 67 Clicker progress and leaderboard scores were wiped.");
+    }
+
     function getSaveKey(){ return profileKey(SAVE_KEY_BASE); }
     function reset67StateToDefaults(){
-      points = 0; clickPower = 1; perSec = 0; rebirths = 0; maxPoints = 0; unlockedAchievements67 = []; lastSavedAt = Date.now();
+      points = 0; clickPower = 1; perSec = 0; rebirths = 0; maxPoints = 0; unlockedAchievements67 = []; achievementBuffUntil = 0; adminMultiplier = 1; lastSpaceClickTimes = []; lastSavedAt = Date.now();
       upgradeConfig.forEach(cfg => { state[cfg.key] = { count:0, cost:cfg.cost }; });
     }
 
@@ -1297,12 +1483,15 @@
         };
       });
       return {
+        updateId: CLICKER_UPDATE_ID,
+        updateNoticeSeenId: CLICKER_UPDATE_ID,
         points,
         clickPower,
         perSec,
         rebirths,
         maxPoints,
         unlockedAchievements67,
+        adminMultiplier,
         lastSavedAt: Date.now(),
         upgrades
       };
@@ -1310,12 +1499,21 @@
 
     function applySavedGame(saved) {
       if(!saved) return false;
+      if(saved.updateNoticeSeenId === CLICKER_UPDATE_ID || saved.updateId === CLICKER_UPDATE_ID) {
+        mark67BalanceUpdateSeen();
+      }
+      if(saved.updateId !== CLICKER_UPDATE_ID) {
+        reset67StateToDefaults();
+        markSaveDirty();
+        return true;
+      }
       if (Number.isFinite(saved.points)) points = saved.points;
       if (Number.isFinite(saved.clickPower)) clickPower = saved.clickPower;
       if (Number.isFinite(saved.perSec)) perSec = saved.perSec;
       if (Number.isFinite(saved.rebirths)) rebirths = saved.rebirths;
       if (Number.isFinite(saved.maxPoints)) maxPoints = saved.maxPoints;
       if (Array.isArray(saved.unlockedAchievements67)) unlockedAchievements67 = saved.unlockedAchievements67;
+      if (Number.isFinite(saved.adminMultiplier)) adminMultiplier = Math.max(1, saved.adminMultiplier);
       if (Number.isFinite(saved.lastSavedAt) && perSec > 0) {
         const elapsed = Math.min(21600, Math.max(0, (Date.now() - saved.lastSavedAt) / 1000));
         if (elapsed > 5) points += effectivePerSec() * elapsed;
@@ -1360,7 +1558,7 @@
         }
         if(!row.save) return true;
         const loaded = applySavedGame(row.save);
-        if(Number.isFinite(Number(row.max_points))) maxPoints = Math.max(maxPoints, Number(row.max_points));
+        if(row.save && row.save.updateId === CLICKER_UPDATE_ID && Number.isFinite(Number(row.max_points))) maxPoints = Math.max(maxPoints, Number(row.max_points));
         localStorage.setItem(getSaveKey(), JSON.stringify(buildSavePayload()));
         return loaded;
       }catch(e){
@@ -1441,17 +1639,21 @@
       updateAchievements67();
       upgradeConfig.forEach(cfg => {
         const u = state[cfg.key];
-        const canBuy = points >= u.cost;
+        const locked = Boolean(cfg.requiresRebirth && rebirths < cfg.requiresRebirth);
+        const canBuy = points >= u.cost && !locked;
         document.getElementById("count_"+cfg.key).textContent = u.count;
         document.getElementById("cost_" +cfg.key).textContent = formatNum(u.cost);
         document.getElementById("buy_"  +cfg.key).disabled    = !canBuy;
         document.getElementById("upg_"  +cfg.key).classList.toggle("affordable", canBuy);
+        document.getElementById("upg_"  +cfg.key).classList.toggle("locked", locked);
       });
+      updateAdminPanelVisibility();
     }
 
     function buyUpgrade(key) {
       const cfg = upgradeConfig.find(c => c.key === key);
       const u   = state[key];
+      if (cfg.requiresRebirth && rebirths < cfg.requiresRebirth) return;
       if (points < u.cost) return;
       points  -= u.cost;
       u.count += 1;
@@ -1507,35 +1709,55 @@
       { id:"rebirth", label:"Reborn", test:()=>rebirths>=1 },
       { id:"mason", label:"Mason Energy", test:()=>state.mason && state.mason.count>=1 },
       { id:"god", label:"67 God Mode", test:()=>state.god && state.god.count>=1 },
-      { id:"space", label:"Spacebar Clicker", test:()=>clickPower>=10_000 }
+      { id:"space", label:"Spacebar Clicker", test:()=>clickPower>=1_000 }
     ];
+
+    function showNotice(message){
+      const toast = document.getElementById("noticeToast");
+      if(!toast) return;
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showNotice.timer);
+      showNotice.timer = setTimeout(() => toast.classList.remove("show"), 4200);
+    }
 
     function updateAchievements67(){
       const list = document.getElementById("achievementList67");
-      if(!list) return;
       achievements67.forEach(a => {
-        if(a.test() && !unlockedAchievements67.includes(a.id)) unlockedAchievements67.push(a.id);
+        if(a.test() && !unlockedAchievements67.includes(a.id)) {
+          unlockedAchievements67.push(a.id);
+          achievementBuffUntil = Date.now() + 60_000;
+          showNotice(`Achievement unlocked: ${a.label}. 1.25x points for 1 minute.`);
+          markSaveDirty();
+        }
       });
-      list.innerHTML = achievements67.map(a => `<span class="achievement-chip ${unlockedAchievements67.includes(a.id) ? 'unlocked' : ''}">${unlockedAchievements67.includes(a.id) ? '✓' : '•'} ${a.label}</span>`).join("");
+      if(!list) return;
+      list.innerHTML = achievements67.map(a => {
+        const unlocked = unlockedAchievements67.includes(a.id);
+        return `<span class="achievement-chip ${unlocked ? 'unlocked' : 'locked'}">${unlocked ? '✓ ' + a.label : 'Locked'}</span>`;
+      }).join("");
     }
 
     document.getElementById("rebirthBtn").addEventListener("click", () => {
       if(points < 1_000_000_000) return;
       if(!confirm("Rebirth resets your 67 points and upgrades, but gives a permanent +35% boost. Do it?")) return;
       rebirths += 1;
-      points = 0; clickPower = 1; perSec = 0;
+      points = 0; clickPower = 1; perSec = 0; achievementBuffUntil = 0; lastSpaceClickTimes = [];
+      if(masonBonus) masonBonus.classList.remove("visible");
+      clearTimeout(masonBonusTimer);
       upgradeConfig.forEach(cfg => { state[cfg.key].count=0; state[cfg.key].cost=cfg.cost; });
       markSaveDirty(); saveGame(); updateUI();
+      scheduleMasonBonus();
     });
 
     const masonBonus = document.getElementById("masonBonus");
     let masonBonusTimer = null;
 
     function masonBonusAmount(){
-      const wealthBase = Math.max(points, maxPoints, 1);
-      const incomeBase = Math.max(effectivePerSec() * 18, 0);
-      const percentBonus = wealthBase * (0.025 + Math.random() * 0.055);
-      return Math.max(67, Math.floor((percentBonus + incomeBase) * rebirthMultiplier()));
+      const wealthBase = Math.max(points, 0);
+      const incomeBase = Math.max(perSec * 4, 0);
+      const percentBonus = wealthBase * (0.006 + Math.random() * 0.014);
+      return Math.max(67, Math.floor(percentBonus + incomeBase));
     }
 
     function moveMasonBonus(){
@@ -1559,8 +1781,8 @@
         setTimeout(() => {
           masonBonus.classList.remove("visible");
           scheduleMasonBonus();
-        }, 6500);
-      }, 7000 + Math.random() * 15000);
+        }, 4200);
+      }, 25000 + Math.random() * 20000);
     }
 
     masonBonus.addEventListener("click", e => {
@@ -1615,11 +1837,286 @@
     async function showLeaderboard(){
       const cloudRows = await fetchCloudLeaderboard();
       const rows = (cloudRows && cloudRows.length ? cloudRows : loadLeaderboard().slice(0, 10));
-      document.getElementById("leaderboardRows").innerHTML = rows.length ? rows.map((r,i)=>`<div class="leader-row"><span>#${i+1} ${r.name}</span><span>${formatNum(r.max)}</span></div>`).join("") : "<p>No scores yet.</p>";
+      document.getElementById("leaderboardRows").innerHTML = rows.length ? rows.map((r,i)=>`<div class="leader-row"><span>#${i+1} ${leaderboardNameHtml(r.name)}</span><span>${formatNum(r.max)}</span></div>`).join("") : "<p>No scores yet.</p>";
       document.getElementById("leaderboardModal").classList.add("show");
     }
     document.getElementById("leaderboardBtn").addEventListener("click", showLeaderboard);
     document.getElementById("closeLeaderboard").addEventListener("click", () => document.getElementById("leaderboardModal").classList.remove("show"));
+
+    function escapeHtml(value){
+      return String(value || "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+    }
+
+    function leaderboardNameHtml(name){
+      const clean = escapeHtml(name || "guest");
+      return clean === "alex" ? `${clean}<span class="owner-tag">Owner</span>` : clean;
+    }
+
+    function updateAdminPanelVisibility(){
+      const panel = document.getElementById("alexAdminPanel");
+      const fab = document.getElementById("adminFab");
+      const allowed = isAlexAccount();
+      if(panel) panel.classList.toggle("hidden", !allowed || !panel.classList.contains("open"));
+      if(fab) fab.classList.toggle("hidden", !allowed);
+    }
+
+    const cheatNames67 = [
+      "Starter Points", "Tiny Score Rain", "Click Tap Boost", "Mini Auto Flow", "Five Second Fuel",
+      "Lucky 402", "Point Shower", "Factory Pulse", "Click Surge", "Auto Burst",
+      "Small Bank", "Click Booster", "Score Stack", "Bonus Roll", "CPS Kick",
+      "Point Drop", "67 Sprinkle", "Click Amp", "Score Ladder", "Auto Engine",
+      "Mason Nudge", "Point Packet", "Score Refill", "Click Charge", "Income Jet",
+      "Bonus Bag", "Click Lift", "Point Bloom", "Score Beam", "CPS Rocket",
+      "Lucky Vault", "Point Wave", "Click Storm", "Score Cannon", "Income Core",
+      "Tap Multiplier", "Bonus Crate", "Point Comet", "Click Reactor", "Auto Reactor",
+      "67 Cache", "Point Volcano", "Score Supercharge", "Click Overdrive", "CPS Overdrive",
+      "Bonus Meteor", "Point Treasury", "Click Galaxy", "Score Galaxy", "Income Galaxy",
+      "Mason Blessing", "Point Portal", "Click Dimension", "Score Dimension", "CPS Dimension",
+      "Bonus Nebula", "Point Universe", "Click Universe", "Score Universe", "Income Universe",
+      "Rebirth Prep", "Mega Tap", "Mega Points", "Mega Score", "Mega Income",
+      "God Spark", "Ultimate 67"
+    ];
+
+    function cheatName(index){
+      return cheatNames67[index - 1] || `Cheat ${index}`;
+    }
+
+    function buildCheatPanel(){
+      const grid = document.getElementById("cheatGrid67");
+      if(!grid || grid.children.length) return;
+      for(let i = 1; i <= 67; i += 1){
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = cheatName(i);
+        btn.title = `Developer cheat ${i}: ${cheatName(i)}`;
+        btn.addEventListener("click", () => runCheatCommand(i));
+        grid.appendChild(btn);
+      }
+    }
+
+    function runCheatCommand(index){
+      if(!isAlexAccount()) return;
+      if(index % 5 === 0) perSec += index * 67;
+      else if(index % 3 === 0) clickPower += index * 67;
+      else points += index * 67_000;
+      if(index === 67) points += 67_000_000;
+      showNotice(`${cheatName(index)} applied.`);
+      updateUI(); markSaveDirty(); saveGame();
+    }
+
+    async function runAdminAction(action){
+      if(!isAlexAccount()) return;
+      const target = normalizeUsername(document.getElementById("adminTargetUser").value);
+      const reason = document.getElementById("adminReason").value.trim();
+      if(!target || !reason){
+        alert("Enter a username and a reason first.");
+        return;
+      }
+      if(!supabaseClient || !currentSessionToken){
+        alert("Admin actions require Supabase to be connected.");
+        return;
+      }
+      const rpcName = action === "ban" ? "admin_ban_player" : "admin_wipe_player";
+      const { error } = await supabaseClient.rpc(rpcName, {
+        p_token: currentSessionToken,
+        p_target_username: target,
+        p_reason: reason
+      });
+      if(error){
+        alert(error.message || "Admin action failed.");
+        return;
+      }
+      showNotice(`${target} ${action === "ban" ? "banned" : "wiped"}: ${reason}`);
+      updateLeaderboard();
+    }
+
+    document.getElementById("adminBanBtn").addEventListener("click", () => runAdminAction("ban"));
+    document.getElementById("adminWipeBtn").addEventListener("click", () => runAdminAction("wipe"));
+    document.getElementById("adminFab").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      const panel = document.getElementById("alexAdminPanel");
+      panel.classList.toggle("open");
+      updateAdminPanelVisibility();
+      if(panel.classList.contains("open")) panel.scrollTop = 0;
+    });
+    document.getElementById("adminBackBtn").addEventListener("click", () => {
+      const panel = document.getElementById("alexAdminPanel");
+      panel.classList.remove("open");
+      updateAdminPanelVisibility();
+    });
+    function readAdminNumber(id, fallback = 0){
+      const value = Number(document.getElementById(id).value);
+      return Number.isFinite(value) ? Math.max(0, value) : fallback;
+    }
+    document.getElementById("adminSetPointsBtn").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      points = readAdminNumber("adminPointAmount", points);
+      maxPoints = Math.max(maxPoints, points);
+      updateUI(); markSaveDirty(); saveGame();
+    });
+    document.getElementById("adminAddPointsBtn").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      points += readAdminNumber("adminPointAmount", 0);
+      maxPoints = Math.max(maxPoints, points);
+      updateUI(); markSaveDirty(); saveGame();
+    });
+    document.getElementById("adminSetMultiplierBtn").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      adminMultiplier = Math.max(1, readAdminNumber("adminMultiplierAmount", 1));
+      showNotice(`Admin multiplier set to ${formatNum(adminMultiplier)}x.`);
+      updateUI(); markSaveDirty(); saveGame();
+    });
+    document.getElementById("adminAchievementsBtn").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      unlockedAchievements67 = achievements67.map(a => a.id);
+      achievementBuffUntil = Date.now() + 60_000;
+      updateUI(); markSaveDirty(); saveGame();
+    });
+    document.getElementById("adminUnlockAllBtn").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      points = Math.max(points, 1_000_000_000_000_000);
+      maxPoints = Math.max(maxPoints, points);
+      clickPower = Math.max(clickPower, 1_000_000_000);
+      perSec = Math.max(perSec, 10_000_000_000);
+      rebirths = Math.max(rebirths, 10);
+      adminMultiplier = Math.max(adminMultiplier, 1_000_000);
+      unlockedAchievements67 = achievements67.map(a => a.id);
+      upgradeConfig.forEach(cfg => {
+        state[cfg.key].count = Math.max(state[cfg.key].count, 1);
+        state[cfg.key].cost = Math.ceil(cfg.cost * cfg.scale);
+      });
+      updateUI(); markSaveDirty(); saveGame();
+    });
+    buildCheatPanel();
+
+    const SOCIAL_KEY_BASE = "alexFunSocialV1";
+    let selectedMessageFriend = "";
+    function getSocialKey(){ return profileKey(SOCIAL_KEY_BASE); }
+    function loadSocial(){
+      try { return JSON.parse(localStorage.getItem(getSocialKey()) || '{"friends":[],"blocked":[],"messages":{}}'); }
+      catch { return { friends:[], blocked:[], messages:{} }; }
+    }
+    function saveSocial(social){ localStorage.setItem(getSocialKey(), JSON.stringify(social)); }
+    async function fetchUsersForSocial(){
+      if(supabaseClient){
+        try{
+          const { data, error } = await supabaseClient.rpc("list_public_players", { p_token: currentSessionToken || "" });
+          if(!error && data) return data.map(row => row.username).filter(Boolean);
+        }catch(e){ console.log("User list failed:", e); }
+      }
+      const localNames = Object.keys(loadUsers());
+      const boardNames = loadLeaderboard().map(row => row.name);
+      return [...new Set([activeUser, "alex", ...localNames, ...boardNames].filter(Boolean))];
+    }
+    async function renderUsers(){
+      const list = document.getElementById("userList");
+      const query = document.getElementById("userSearch").value.trim().toLowerCase();
+      const social = loadSocial();
+      const users = (await fetchUsersForSocial())
+        .filter(name => normalizeUsername(name) !== safeUserKey())
+        .filter(name => !query || name.toLowerCase().includes(query))
+        .sort((a,b)=>a.localeCompare(b));
+      list.innerHTML = users.length ? users.map(name => `
+        <div class="user-row" data-user="${escapeHtml(name)}">
+          <strong>${leaderboardNameHtml(name)}</strong>
+          <div class="user-actions">
+            <button class="btn add-user" type="button">${social.friends.includes(name) ? "Added" : "Add"}</button>
+            <button class="btn msg-user" type="button">Message</button>
+            <button class="btn block-user" type="button">${social.blocked.includes(name) ? "Blocked" : "Block"}</button>
+          </div>
+        </div>`).join("") : "<p>No users found.</p>";
+    }
+    function addFriend(name){
+      const social = loadSocial();
+      if(!social.friends.includes(name)) social.friends.push(name);
+      social.blocked = social.blocked.filter(user => user !== name);
+      saveSocial(social); renderUsers(); renderFriends();
+    }
+    function blockUser(name){
+      const social = loadSocial();
+      if(!social.blocked.includes(name)) social.blocked.push(name);
+      social.friends = social.friends.filter(user => user !== name);
+      saveSocial(social); renderUsers(); renderFriends();
+    }
+    function openMessageWith(name){
+      selectedMessageFriend = name;
+      const panel = document.getElementById("messagesPanel");
+      panel.classList.add("show");
+      panel.setAttribute("aria-hidden", "false");
+      panel.scrollTop = 0;
+      renderFriends();
+      renderThread();
+    }
+    function renderFriends(){
+      const social = loadSocial();
+      const query = document.getElementById("messageSearch").value.trim().toLowerCase();
+      const friends = social.friends.filter(name => !query || name.toLowerCase().includes(query));
+      document.getElementById("friendList").innerHTML = friends.length ? friends.map(name => `<div class="user-row" data-friend="${escapeHtml(name)}"><strong>${leaderboardNameHtml(name)}</strong></div>`).join("") : "<p>No friends yet.</p>";
+    }
+    function renderThread(){
+      const social = loadSocial();
+      const thread = selectedMessageFriend ? (social.messages[selectedMessageFriend] || []) : [];
+      document.getElementById("messageThread").innerHTML = selectedMessageFriend
+        ? `<strong>${leaderboardNameHtml(selectedMessageFriend)}</strong>` + (thread.length ? thread.map(msg => `<div class="message-bubble">${escapeHtml(msg)}</div>`).join("") : "<p>No messages yet.</p>")
+        : "Choose a friend to start messaging.";
+    }
+    document.getElementById("friendsBtn").addEventListener("click", async () => {
+      const panel = document.getElementById("friendsPanel");
+      panel.classList.toggle("show");
+      panel.setAttribute("aria-hidden", panel.classList.contains("show") ? "false" : "true");
+      if(panel.classList.contains("show")) {
+        panel.scrollTop = 0;
+        await renderUsers();
+      }
+    });
+    document.getElementById("messagesBtn").addEventListener("click", () => {
+      const panel = document.getElementById("messagesPanel");
+      panel.classList.toggle("show");
+      panel.setAttribute("aria-hidden", panel.classList.contains("show") ? "false" : "true");
+      if(panel.classList.contains("show")) panel.scrollTop = 0;
+      renderFriends(); renderThread();
+    });
+    document.getElementById("friendsBackBtn").addEventListener("click", () => {
+      const panel = document.getElementById("friendsPanel");
+      panel.classList.remove("show");
+      panel.setAttribute("aria-hidden", "true");
+    });
+    document.getElementById("messagesBackBtn").addEventListener("click", () => {
+      const panel = document.getElementById("messagesPanel");
+      panel.classList.remove("show");
+      panel.setAttribute("aria-hidden", "true");
+    });
+    document.getElementById("userSearch").addEventListener("input", renderUsers);
+    document.getElementById("messageSearch").addEventListener("input", renderFriends);
+    document.getElementById("userList").addEventListener("click", e => {
+      const row = e.target.closest(".user-row");
+      if(!row) return;
+      const name = row.dataset.user;
+      if(e.target.classList.contains("block-user")) blockUser(name);
+      else if(e.target.classList.contains("msg-user")) openMessageWith(name);
+      else addFriend(name);
+    });
+    document.getElementById("friendList").addEventListener("click", e => {
+      const row = e.target.closest(".user-row");
+      if(!row) return;
+      selectedMessageFriend = row.dataset.friend;
+      renderThread();
+    });
+    document.getElementById("sendMessageBtn").addEventListener("click", () => {
+      const text = document.getElementById("messageText").value.trim();
+      if(!selectedMessageFriend || !text) return;
+      const social = loadSocial();
+      social.messages[selectedMessageFriend] = social.messages[selectedMessageFriend] || [];
+      social.messages[selectedMessageFriend].push(text);
+      saveSocial(social);
+      document.getElementById("messageText").value = "";
+      renderThread();
+    });
+    document.getElementById("closeMessagesBtn").addEventListener("click", () => {
+      const panel = document.getElementById("messagesPanel");
+      panel.classList.remove("show");
+      panel.setAttribute("aria-hidden", "true");
+    });
 
     document.getElementById("resetGame").addEventListener("click", () => {
       if (!confirm("Reset all progress?")) return;

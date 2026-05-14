@@ -57,9 +57,12 @@
   }
 
   function setCoverImages(profile){
+    const coverUrl = resolveSiteUrl(profile.cover);
     document.querySelectorAll("#idlePhoto img, #coverOverlay img, img[data-cover-image]").forEach(img => {
-      img.src = resolveSiteUrl(profile.cover);
+      img.src = coverUrl;
       img.alt = profile.alt;
+      const frame = img.closest("#idlePhoto, #coverOverlay");
+      if(frame) frame.style.backgroundImage = "";
     });
   }
 

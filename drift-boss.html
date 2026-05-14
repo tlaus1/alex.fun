@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drift Boss | Blooket</title>
+  <link rel="icon" type="image/png" href="./drift-boss-game.png">
+  <style>
+    :root {
+      --status-h: 24px;
+      --bg: #111827;
+      --panel: rgba(17, 24, 39, .82);
+      --fg: #f8fafc;
+      --muted: #cbd5e1;
+      --border: rgba(255,255,255,.18);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin:0; width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--fg); font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body.cover-mode::before {
+      content:"";
+      position:fixed;
+      inset:0;
+      background:#fff url("./cover-screencastify.png") center/cover no-repeat;
+      z-index:10000;
+    }
+    .topbar {
+      position:fixed;
+      top:10px;
+      left:10px;
+      right:10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      pointer-events:none;
+      z-index:20;
+    }
+    .actions { display:flex; gap:8px; pointer-events:auto; }
+    .title {
+      pointer-events:none;
+      max-width:44vw;
+      padding:8px 12px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background:var(--panel);
+      backdrop-filter:blur(12px);
+      box-shadow:0 8px 22px rgba(0,0,0,.24);
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .btn {
+      appearance:none;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background:var(--panel);
+      color:var(--fg);
+      padding:8px 12px;
+      font:inherit;
+      font-size:12px;
+      font-weight:900;
+      cursor:pointer;
+      backdrop-filter:blur(12px);
+      box-shadow:0 8px 22px rgba(0,0,0,.24);
+    }
+    .btn:hover { background:rgba(31,41,55,.92); }
+    .game-shell {
+      position:fixed;
+      inset:0 0 var(--status-h) 0;
+      background:#000;
+    }
+    iframe {
+      width:100%;
+      height:100%;
+      border:0;
+      display:block;
+      background:#000;
+    }
+    #statusBar {
+      position:fixed;
+      bottom:0;
+      left:0;
+      right:0;
+      height:var(--status-h);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 14px;
+      background:#0f172a;
+      border-top:1px solid rgba(255,255,255,.14);
+      font-size:11px;
+      font-weight:800;
+      color:var(--muted);
+      z-index:30;
+    }
+    #statusBar .sb-cover { cursor:pointer; user-select:none; }
+    #statusBar .sb-cover:hover { color:var(--fg); }
+    @media (max-width: 640px) {
+      .topbar { top:8px; left:8px; right:8px; }
+      .title { display:none; }
+      .btn { padding:7px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="actions">
+      <button class="btn" id="backBtn" type="button">Back</button>
+    </div>
+    <div class="title">Drift Boss</div>
+    <div class="actions">
+      <button class="btn" id="fullscreenBtn" type="button">Fullscreen</button>
+    </div>
+  </div>
+
+  <main class="game-shell" id="gameShell">
+    <iframe
+      id="gameFrame"
+      src="https://blooket.study/storage/driftboss/"
+      title="Drift Boss"
+      allow="fullscreen; autoplay; gamepad; clipboard-read; clipboard-write"
+      referrerpolicy="no-referrer">
+    </iframe>
+  </main>
+
+  <div id="statusBar">
+    <span>Drift Boss</span>
+    <span class="sb-cover" id="coverHint">Backspace Cover Image</span>
+  </div>
+
+  <script>
+    const body = document.body;
+    const gameShell = document.getElementById('gameShell');
+    const gameFrame = document.getElementById('gameFrame');
+    document.getElementById('backBtn').addEventListener('click', () => {
+      location.href = './index.html';
+    });
+    document.getElementById('fullscreenBtn').addEventListener('click', async () => {
+      try {
+        if (gameFrame.requestFullscreen) await gameFrame.requestFullscreen();
+        else if (gameShell.requestFullscreen) await gameShell.requestFullscreen();
+      } catch (e) {
+        console.log('Fullscreen failed:', e);
+      }
+    });
+    function toggleCover(){
+      body.classList.toggle('cover-mode');
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        toggleCover();
+      }
+    });
+    document.getElementById('coverHint').addEventListener('click', toggleCover);
+  </script>
+</body>
+</html>

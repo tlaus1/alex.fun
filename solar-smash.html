@@ -85,7 +85,7 @@
       position: fixed;
       inset: 0;
       z-index: 200000;
-      background: #000;
+      background: #fff;
       cursor: pointer;
       opacity: 0;
       pointer-events: none;
@@ -98,8 +98,8 @@
     #coverOverlay img {
       width: 100%;
       height: 100%;
-      object-fit: contain;
-      object-position: center;
+      object-fit: fill;
+      object-position: top center;
       display: block;
     }
     #statusBar {
@@ -190,7 +190,7 @@
 
     function handleCoverActivity() {
       if (coverOverlay.classList.contains("show")) {
-        hideCover();
+        return;
       } else {
         armCoverTimer();
       }
@@ -228,7 +228,7 @@
       if (e.key === "theme") syncTheme();
     });
     document.addEventListener("keydown", e => {
-      if (!["Backspace", "Enter"].includes(e.key)) {
+      if (e.key !== "Backspace") {
         armCoverTimer();
         return;
       }
@@ -360,11 +360,25 @@
     async function mergeBundleParts(bundleName, partCount) {
       const buffers = [];
       for (let i = 1; i <= partCount; i += 1) {
-        const response = await originalFetch(`StreamingAssets/AssetBundles/WebGL/${bundleName}.part${i}`);
+        const response = await originalFetch(`${assetBundleBase}${bundleName}.part${i}`);
         if (!response.ok) throw new Error(`Could not load ${bundleName}.part${i}`);
         buffers.push(await response.arrayBuffer());
       }
       splitBundles.set(bundleName, new Blob(buffers, { type: "application/octet-stream" }));
+    }
+
+    async function loadLazySplitBundle(bundleName) {
+      if (splitBundles.has(bundleName)) return splitBundles.get(bundleName);
+      const buffers = [];
+      for (let i = 1; i <= 8; i += 1) {
+        const response = await originalFetch(`${assetBundleBase}${bundleName}.part${i}`);
+        if (!response.ok) break;
+        buffers.push(await response.arrayBuffer());
+      }
+      if (!buffers.length) return null;
+      const blob = new Blob(buffers, { type: "application/octet-stream" });
+      splitBundles.set(bundleName, blob);
+      return blob;
     }
 
     const splitBundlePromise = Promise.all([
@@ -390,7 +404,13 @@
         const bundle = splitBundles.get(bundleName);
         if (bundle) return new Response(bundle, { status: 200 });
       }
-      return originalFetch(rewriteSolarSmashUrl(input), options);
+      const rewritten = rewriteSolarSmashUrl(input);
+      const response = await originalFetch(rewritten, options);
+      if (bundleName && !response.ok) {
+        const bundle = await loadLazySplitBundle(bundleName);
+        if (bundle) return new Response(bundle, { status: 200 });
+      }
+      return response;
     };
 
     const originalXHROpen = XMLHttpRequest.prototype.open;
