@@ -281,7 +281,14 @@
             <button id="musicSpotifyLoadBtn" type="button">Load</button>
           </div>
           <div class="music-modal-tip">
-            Log in &amp; grab a link from <a href="https://open.spotify.com" target="_blank" rel="noopener noreferrer" style="color:#1db954;text-decoration:none;">open.spotify.com ↗</a> — Share → Copy link, paste here. Spotify blocks its own login page from being iframed, so we can't show it inline.
+            <strong style="color:#1db954;display:block;margin-bottom:6px;">To listen to your own playlist:</strong>
+            <ol style="margin:0 0 0 18px;padding:0;line-height:1.6;">
+              <li>Open <a href="https://open.spotify.com" target="_blank" rel="noopener noreferrer" style="color:#1db954;text-decoration:none;font-weight:700;">Spotify ↗</a> in a new tab &amp; log in</li>
+              <li>Find a playlist, album, or track</li>
+              <li>Click <strong>⋯</strong> → <strong>Share</strong> → <strong>Copy link to playlist</strong></li>
+              <li>Paste it above &amp; hit <strong>Load</strong></li>
+            </ol>
+            <div style="margin-top:8px;opacity:.7;">Note: Spotify blocks its own login page from being embedded, so login has to happen on spotify.com itself.</div>
           </div>
           <div id="musicSpotifyEmbed"></div>
         </div>
