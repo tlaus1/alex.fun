@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clever | Portal</title>
   <link rel="icon" type="image/png" href="./clever1.png" />
+  <script src="./cover-profiles.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
@@ -18,6 +21,7 @@
       --surface:  #fafafa;
       --surface2: #fff;
       --hover:    #f5f5f5;
+      --status-h: 26px;
     }
     [data-theme="dark"] {
       --bg:       #111;
@@ -41,9 +45,283 @@
       color: var(--fg);
       min-height: 100vh;
       transition: background 0.25s, color 0.25s;
+      animation: pageIn .35s ease both;
+    }
+
+    @keyframes pageIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     .hidden { display: none !important; }
+
+    .auth-overlay {
+      position: fixed; inset: 0; z-index: 10050;
+      display: grid; place-items: center; padding: 24px;
+      background: radial-gradient(circle at 20% 10%, rgba(255,199,39,.22), transparent 34%), rgba(0,0,0,.72);
+      backdrop-filter: blur(8px);
+    }
+    .auth-overlay.hidden { display: none !important; }
+    .auth-card {
+      width: min(420px, 100%); border-radius: 24px; padding: 24px;
+      background: var(--surface2); color: var(--fg); border: 1.5px solid var(--border);
+      box-shadow: 0 24px 80px rgba(0,0,0,.35);
+    }
+    .auth-card h2 { font-size: 28px; line-height: 1; margin-bottom: 8px; font-weight: 900; }
+    .auth-card p { color: var(--muted); font-weight: 700; font-size: 13px; margin-bottom: 16px; }
+    .auth-card label { display: block; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin: 12px 0 5px; }
+    .auth-card input {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 11px 12px;
+      font: inherit; font-weight: 800; color: var(--fg); background: var(--surface);
+    }
+    .auth-actions { display: flex; gap: 10px; align-items: center; margin-top: 18px; }
+    .auth-actions .btn { flex: 1; }
+    .auth-note { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 12px; }
+    .signout-btn {
+      position: fixed; left: 50%; bottom: 46px; transform: translateX(-50%);
+      z-index: 9000; border: 1.5px solid var(--border); border-radius: 999px;
+      padding: 8px 16px; font: inherit; font-size: 12px; font-weight: 900;
+      color: var(--fg); background: var(--surface2); cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+      transition: background .2s, color .2s, border-color .2s, transform .15s;
+    }
+    .signout-btn:hover { transform: translateX(-50%) translateY(-1px); }
+    .signout-btn.hidden { display: none !important; }
+    body.game-active .signout-btn { display: none !important; }
+    .dashboard-bottom-bar {
+      position:fixed; left:0; right:0; bottom:0; height:var(--status-h); z-index:9000;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:0 14px; background:var(--surface2); border-top:1px solid var(--border);
+      color:var(--muted); font-size:11px; font-weight:900; transition:background .25s, border-color .25s, color .25s;
+    }
+    body.game-active .dashboard-bottom-bar { display:none; }
+    body:not(.game-active) .dashboard-bottom-bar { display:flex; }
+    .dashboard-bottom-actions { display:flex; align-items:center; gap:8px; }
+    .dashboard-bottom-bar button {
+      border:0; border-radius:999px; background:var(--surface); color:var(--fg);
+      padding:4px 10px; font:inherit; font-size:11px; font-weight:900; cursor:pointer;
+    }
+
+    #statusBar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: var(--status-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px; background: var(--surface2); border-top: 1px solid var(--border);
+      font-size: 11px; font-weight: 800; color: var(--muted); z-index: 9000;
+      transition: background .25s, border-color .25s, color .25s;
+    }
+    #statusBar .sb-cover { cursor: pointer; user-select: none; }
+    #statusBar .sb-cover:hover { color: var(--fg); }
+
+    .card-browser { background: linear-gradient(135deg,#0f172a 0%,#164e63 50%,#06b6d4 100%); }
+    .card-browser.card::after { background:linear-gradient(to top,rgba(2,6,23,.72) 0%,rgba(2,6,23,.12) 48%,transparent 70%); }
+    .browser-preview { position:absolute; inset:18px; border:2px solid rgba(255,255,255,.35); border-radius:14px; z-index:1; background:rgba(255,255,255,.12); overflow:hidden; }
+    .browser-preview::before { content:""; display:block; height:22px; background:rgba(255,255,255,.22); box-shadow:38px 7px 0 -5px #ef4444,58px 7px 0 -5px #facc15,78px 7px 0 -5px #22c55e; }
+    .browser-preview::after { content:"ad-blocked search"; position:absolute; left:18px; right:18px; top:52px; border-radius:999px; padding:10px 14px; color:#dffbff; background:rgba(15,23,42,.55); font-size:13px; font-weight:900; }
+
+    .card-crossy { background: #64cbe0; }
+    .card-crossy img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-crossy.card::after { background:linear-gradient(to top,rgba(15,23,42,.58) 0%,rgba(15,23,42,.08) 48%,transparent 72%); }
+    .card-solar { background: #03040a; }
+    .card-solar img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-solar.card::after { background:linear-gradient(to top,rgba(0,0,0,.64) 0%,rgba(0,0,0,.08) 50%,transparent 72%); }
+    .card-retrobowl { background: #172554; }
+    .card-retrobowl img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-retrobowl.card::after { background:linear-gradient(to top,rgba(3,7,18,.66) 0%,rgba(3,7,18,.08) 48%,transparent 70%); }
+    .card-driftboss { background: #f59e0b; }
+    .card-driftboss img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-driftboss.card::after { background:linear-gradient(to top,rgba(44,24,8,.66) 0%,rgba(44,24,8,.08) 50%,transparent 72%); }
+
+    .mini-browser {
+      max-width: 1180px; margin: 0 auto; padding: 20px 18px 18px;
+      height: calc(100vh - var(--status-h)); min-height: 0;
+    }
+    .browser-top { display:flex; gap:10px; align-items:center; margin-bottom:14px; }
+    .browser-top input { flex:1; border:1.5px solid var(--border); border-radius:999px; padding:10px 14px; font:inherit; font-weight:800; background:var(--surface2); color:var(--fg); }
+    .browser-shell { border:1.5px solid var(--border); border-radius:16px; overflow:hidden; background:var(--surface); min-height:calc(100vh - 138px - var(--status-h)); }
+    .browser-safe-note { padding:12px 14px; font-size:12px; font-weight:800; color:var(--muted); border-bottom:1px solid var(--border); }
+    .browser-shell iframe { width:100%; height:calc(100vh - 178px - var(--status-h)); min-height:520px; border:0; display:block; background:#fff; }
+
+    .rebirth-panel {
+      margin-top: 16px; border: 1.5px solid var(--border); border-radius: 14px;
+      background: var(--surface2); padding: 12px; text-align: left;
+    }
+    .rebirth-title { font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .rebirth-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px; font-weight:800; color:var(--muted); }
+    .rebirth-row strong { color:var(--fg); }
+    .rebirth-row .btn { margin-left:auto; padding:6px 12px; }
+    .achievement-chip { border:1.5px solid var(--border); border-radius:999px; padding:5px 8px; font-size:10px; font-weight:900; color:var(--muted); background:var(--surface); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .achievement-chip.unlocked { color:#1a0800; background:#ffe27a; border-color:#ffc107; }
+
+    .mason-bonus {
+      position:absolute; width:78px; height:78px; border:0; border-radius:50%; padding:0; overflow:hidden;
+      background:#071b1d; box-shadow:0 0 24px rgba(34,211,238,.55), 0 8px 24px rgba(0,0,0,.25);
+      cursor:pointer; z-index:4; animation:masonDrift 8s ease-in-out infinite alternate;
+      display:none;
+    }
+    .mason-bonus.visible { display:block; }
+    .mason-bonus img { width:100%; height:100%; object-fit:cover; display:block; }
+    .mason-bonus::after { content:"BONUS"; position:absolute; left:6px; right:6px; bottom:5px; padding:1px 0; border-radius:999px; background:rgba(0,0,0,.58); color:#a5f3fc; font-size:9px; font-weight:900; letter-spacing:.8px; }
+    @keyframes masonDrift { from { transform:translate(0,0) rotate(-5deg); } to { transform:translate(26px,-18px) rotate(5deg); } }
+
+    .leaderboard-modal {
+      position:fixed; inset:0; z-index:10020; display:none; place-items:center; padding:24px;
+      background:rgba(0,0,0,.55); backdrop-filter:blur(6px);
+    }
+    .leaderboard-modal.show { display:grid; }
+    .leaderboard-card { width:min(440px,100%); border-radius:22px; padding:20px; background:var(--surface2); border:1.5px solid var(--border); color:var(--fg); box-shadow:0 24px 80px rgba(0,0,0,.32); }
+    .leaderboard-card h2 { font-size:24px; font-weight:900; margin-bottom:10px; }
+    .leader-row { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; font-weight:900; }
+    .leader-row:last-child { border-bottom:0; }
+    .leader-row span:last-child { color:#e67e00; }
+    .owner-tag { margin-left:6px; padding:2px 7px; border-radius:999px; background:#dc2626; color:#fff; font-size:10px; font-weight:900; letter-spacing:.5px; text-transform:uppercase; }
+    .notice-toast {
+      position:fixed; right:18px; bottom:calc(var(--status-h) + 16px); z-index:10040;
+      max-width:340px; padding:12px 14px; border-radius:14px; background:#111827; color:#fff;
+      box-shadow:0 16px 44px rgba(0,0,0,.28); font-size:13px; font-weight:800;
+      opacity:0; transform:translateY(10px); pointer-events:none; transition:opacity .25s, transform .25s;
+    }
+    .notice-toast.show { opacity:1; transform:translateY(0); }
+    .achievement-chip.locked { color:transparent; position:relative; }
+    .achievement-chip.locked::after { content:"🔒 Locked"; position:absolute; inset:0; display:grid; place-items:center; color:var(--muted); }
+    .upgrade.locked { opacity:.55; filter:saturate(.55); }
+    .upgrade.locked .buy::after { content:" · Rebirth locked"; }
+    .admin-fab {
+      position:fixed; left:16px; bottom:calc(var(--status-h) + 16px); z-index:11000;
+      border:1.5px solid rgba(220,38,38,.45); border-radius:999px; padding:8px 13px;
+      background:#dc2626; color:#fff; font:inherit; font-size:12px; font-weight:900;
+      box-shadow:0 12px 32px rgba(220,38,38,.28); cursor:pointer;
+    }
+    .admin-panel {
+      position:fixed; left:16px; bottom:calc(var(--status-h) + 58px); z-index:11010;
+      width:min(390px, calc(100vw - 32px)); max-height:min(78vh, 720px); overflow:auto;
+      border:1.5px solid #dc2626; border-radius:16px; padding:12px;
+      background:linear-gradient(180deg, rgba(220,38,38,.08), transparent), var(--surface2);
+      box-shadow:0 22px 70px rgba(0,0,0,.28);
+    }
+    .admin-panel h3, .friends-panel h3, .messages-panel h3 { font-size:13px; font-weight:900; margin-bottom:8px; }
+    .admin-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .admin-panel input, .friends-panel input, .messages-panel input, .messages-panel textarea {
+      width:100%; border:1.5px solid var(--border); border-radius:10px; padding:8px 10px;
+      background:var(--surface); color:var(--fg); font:inherit; font-size:12px; font-weight:800;
+    }
+    .admin-actions, .user-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .cheat-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-top:10px; max-height:220px; overflow:auto; }
+    .cheat-grid button { padding:7px 8px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--fg); font-size:10px; font-weight:900; cursor:pointer; text-align:left; line-height:1.15; }
+    .friends-panel, .messages-panel {
+      position:fixed; top:auto; bottom:calc(var(--status-h) + 10px); right:12px;
+      width:min(340px, calc(100vw - 24px)); max-height:min(520px, calc(100vh - var(--status-h) - 24px));
+      z-index:10030; background:var(--surface2); color:var(--fg); border:1.5px solid var(--border);
+      border-radius:16px; box-shadow:0 18px 54px rgba(0,0,0,.22); padding:12px;
+      transform:translateY(14px) scale(.98); opacity:0; pointer-events:none;
+      transition:transform .22s cubic-bezier(.4,0,.2,1), opacity .22s; overflow:auto;
+    }
+    .panel-head {
+      position:static; z-index:2; margin:-4px -4px 10px; padding:8px 4px 10px;
+      display:flex; align-items:center; gap:8px; background:var(--surface2); border-bottom:1px solid var(--border);
+    }
+    .panel-back {
+      border:1.5px solid var(--border); border-radius:999px; background:var(--surface);
+      color:var(--fg); font:inherit; font-size:11px; font-weight:900; padding:6px 9px; cursor:pointer;
+    }
+    .panel-head h3 { margin:0; }
+    .friends-panel.show, .messages-panel.show { transform:translateY(0) scale(1); opacity:1; pointer-events:auto; }
+    .messages-panel { width:min(540px, calc(100vw - 24px)); }
+    .messages-layout { display:grid; grid-template-columns:150px 1fr; gap:10px; min-height:0; }
+    .user-list { display:grid; gap:6px; margin-top:10px; }
+    .user-row { border:1px solid var(--border); border-radius:10px; padding:8px; background:var(--surface); cursor:pointer; }
+    .user-row strong { display:block; font-size:13px; }
+    .message-thread { border:1px solid var(--border); border-radius:10px; padding:10px; background:var(--surface); min-height:190px; max-height:280px; overflow:auto; }
+    .message-bubble { margin:5px 0; padding:7px 9px; border-radius:10px; background:var(--surface2); font-size:12px; font-weight:800; }
+    .message-sender { display:block; margin-bottom:3px; font-size:10px; font-weight:900; letter-spacing:.4px; text-transform:uppercase; color:var(--muted); }
+    .message-bubble.mine { background:#ffe27a; color:#1a0800; margin-left:18%; }
+    .message-bubble.mine .message-sender { color:#7c4a03; }
+    .message-bubble.theirs { margin-right:18%; }
+    .request-row { border:1px solid var(--border); border-radius:10px; padding:8px; margin:8px 0; background:var(--surface); }
+    .button-badge { display:none; min-width:17px; height:17px; margin-left:5px; border-radius:999px; padding:0 5px; background:#dc2626; color:#fff; font-size:10px; line-height:17px; font-weight:900; text-align:center; }
+    .button-badge.show { display:inline-block; }
+    .notification-stack {
+      position:fixed; top:14px; right:14px; z-index:12000; display:grid; gap:8px;
+      width:min(330px, calc(100vw - 28px)); pointer-events:none;
+    }
+    .notification-card {
+      border:1px solid var(--border); border-radius:14px; padding:10px 12px;
+      background:var(--surface2); color:var(--fg); box-shadow:0 14px 38px rgba(0,0,0,.22);
+      font-size:12px; font-weight:850; pointer-events:auto; animation:noticeSlide .22s ease both;
+    }
+    .notification-card strong { display:block; margin-bottom:2px; font-size:11px; color:#dc2626; text-transform:uppercase; letter-spacing:.7px; }
+    @keyframes noticeSlide { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+    .ban-screen {
+      position:fixed; inset:0; z-index:13000; display:none; place-items:center; padding:24px;
+      background:linear-gradient(180deg, rgba(127,29,29,.86), rgba(0,0,0,.88));
+      color:#fff;
+    }
+    .ban-screen.show { display:grid; }
+    .ban-card {
+      width:min(520px,100%); border:1px solid rgba(255,255,255,.2); border-radius:20px;
+      background:rgba(17,24,39,.92); padding:22px; box-shadow:0 24px 80px rgba(0,0,0,.45);
+    }
+    .ban-card h2 { font-size:28px; font-weight:900; margin-bottom:8px; }
+    .ban-card p { color:#e5e7eb; font-size:13px; font-weight:800; margin:8px 0; }
+    .ban-card textarea { width:100%; min-height:90px; margin-top:12px; border:1px solid rgba(255,255,255,.18); border-radius:12px; background:#111827; color:#fff; padding:10px; font:inherit; font-size:13px; font-weight:800; }
+    .ban-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .ban-actions .btn { background:#fff; color:#111827; }
+    .ban-actions .danger { background:#dc2626; color:#fff; }
+
+    body.no-page-scroll { overflow:hidden; }
+
+    /* ── Settings modal ── */
+    .settings-modal {
+      position:fixed; inset:0; z-index:10040; display:none; place-items:center; padding:24px;
+      background:rgba(0,0,0,.55); backdrop-filter:blur(6px);
+    }
+    .settings-modal.show { display:grid; }
+    .settings-card {
+      width:min(380px,100%); border-radius:22px; padding:22px; background:var(--surface2);
+      border:1.5px solid var(--border); color:var(--fg); box-shadow:0 24px 80px rgba(0,0,0,.32);
+    }
+    .settings-card h2 { font-size:22px; font-weight:900; margin-bottom:16px; }
+    .settings-row {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 0; border-bottom:1px solid var(--border); gap:12px;
+    }
+    .settings-row:last-of-type { border-bottom:0; }
+    .settings-label { font-size:13px; font-weight:800; }
+    .settings-label small { display:block; font-size:11px; color:var(--muted); font-weight:600; margin-top:2px; }
+    .toggle-switch {
+      position:relative; width:42px; height:24px; flex-shrink:0;
+    }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-switch .slider {
+      position:absolute; cursor:pointer; inset:0; border-radius:999px;
+      background:var(--border); transition:background .2s;
+    }
+    .toggle-switch .slider::before {
+      content:""; position:absolute; width:18px; height:18px; left:3px; bottom:3px;
+      border-radius:50%; background:#fff; transition:transform .2s;
+      box-shadow:0 1px 4px rgba(0,0,0,.2);
+    }
+    .toggle-switch input:checked + .slider { background:#ffc107; }
+    .toggle-switch input:checked + .slider::before { transform:translateX(18px); }
+    .settings-row-block {
+      flex-direction:column; align-items:stretch; gap:10px;
+    }
+    .disguise-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:8px;
+    }
+    .disguise-opt {
+      display:flex; align-items:center; gap:8px; padding:8px 10px;
+      border-radius:10px; border:1.5px solid var(--border);
+      cursor:pointer; background:var(--surface);
+      transition:border-color .15s, background .15s;
+      font-size:12px; font-weight:700; color:var(--fg);
+      text-align:left; line-height:1.25;
+      min-width:0; overflow:hidden;
+    }
+    .disguise-opt:hover { background:var(--hover); }
+    .disguise-opt.active { border-color:#ffc107; background:rgba(255,193,7,.08); }
+    .disguise-opt img { width:20px; height:20px; object-fit:contain; border-radius:4px; flex-shrink:0; }
+    .disguise-opt-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+
 
     /* ══════════════════════════════════════════════
        DASHBOARD
@@ -56,16 +334,26 @@
 
     /* ── Header ── */
     .site-header {
-      position: relative;
-      text-align: center;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
       margin-bottom: 44px;
     }
+    .header-side {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding-top: 2px;
+    }
+    .header-side:last-child {
+      justify-content: flex-end;
+    }
+    .header-center {
+      text-align: center;
+    }
 
-    /* "Get new posts" pill — top-right */
+    /* Pill buttons */
     .pill {
-      position: absolute;
-      top: 0;
-      right: 0;
       font-family: "Martel Sans", Arial, sans-serif;
       font-size: 13px;
       font-weight: 700;
@@ -73,21 +361,20 @@
       background: var(--surface2);
       border: 1.5px solid var(--border);
       border-radius: 100px;
-      padding: 8px 18px;
+      padding: 8px 16px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
+      white-space: nowrap;
       transition: background 0.15s, border-color 0.15s, transform 0.15s, color 0.25s;
     }
     .pill:hover { background: var(--hover); transform: translateY(-1px); }
     .pill:active { transform: translateY(0); }
 
-    /* Dark mode toggle — top-left */
+    /* Icon-only pill (theme toggle) */
     .pill-icon {
-      right: auto;
-      left: 0;
-      padding: 8px 13px;
+      padding: 8px 12px;
       font-size: 16px;
       line-height: 1;
     }
@@ -138,6 +425,8 @@
       box-shadow: 0 10px 32px rgba(0,0,0,0.13);
     }
     .card:active { transform: scale(0.99); transition-duration: 0.08s; }
+    .card > img { transition: transform .35s ease, filter .35s ease; }
+    .card:hover > img { transform: scale(1.035); filter: saturate(1.04); }
 
     /* Gradient scrim for title readability */
     .card::after {
@@ -264,140 +553,60 @@
     .card-pw.card::after { background:linear-gradient(to top,rgba(0,0,0,0.48) 0%,rgba(0,0,0,0.03) 40%,transparent 65%); }
     .card-pw .card-title { color:#1a1a1a;text-shadow:0 1px 6px rgba(255,255,255,0.6); }
 
+    /* ── Spelling Bee card ── */
+    .card-bee {
+      background: linear-gradient(135deg, #1a0800 0%, #7c3a00 50%, #ffc107 100%);
+      grid-column: span 2;  /* full-width spotlight */
+      border: 2.5px solid #ffc107 !important;
+      box-shadow: 0 0 0 3px rgba(255,193,7,0.25), 0 12px 40px rgba(255,193,7,0.2) !important;
+    }
+    .card-bee.card::after { background: linear-gradient(to top, rgba(0,0,0,.6) 0%, rgba(0,0,0,.05) 45%, transparent 65%); }
+    .card-bee .card-title { color: #ffc107; text-shadow: 0 1px 12px rgba(0,0,0,0.6); }
+    .new-badge {
+      position: absolute; top: 10px; right: 10px; z-index: 3;
+      background: #ffc107; color: #1a0800;
+      font-size: 9px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(255,193,7,0.45);
+      animation: newPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes newPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(255,193,7,0.45); }
+      50% { transform: scale(1.08); box-shadow: 0 4px 18px rgba(255,193,7,0.7); }
+    }
+    .card-bee-preview {
+      position: absolute; inset: 0; display: flex; align-items: center;
+      justify-content: center; gap: 24px; z-index: 1;
+    }
+    .bee-stickman {
+      width: 60px; height: 80px; position: relative; opacity: 0.85;
+    }
+
+    /* ── Pico Park card ── */
+    .card-pico { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #3b82f6 100%); }
+    .card-pico.card::after { background: linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,.08) 48%, transparent 70%); }
+
     /* ── Snake card ── */
-    .card-snake { background: linear-gradient(135deg, #d9f99d 0%, #65a30d 48%, #1f4d13 100%); }
+    .card-snake { background: #65a30d; }
+    .card-snake img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
     .card-snake.card::after { background:linear-gradient(to top,rgba(15,55,8,0.68) 0%,rgba(15,55,8,0.08) 45%,transparent 68%); }
-    .snake-preview {
-      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;z-index:1;
-    }
-    .snake-dot,.snake-body,.snake-food {
-      width:32px;height:32px;border-radius:9px;box-shadow:0 4px 12px rgba(0,0,0,0.18);
-    }
-    .snake-dot { background:#166534;position:relative; }
-    .snake-dot::before {
-      content:"";position:absolute;right:6px;top:7px;width:6px;height:6px;border-radius:50%;background:#fefce8;
-      box-shadow:0 12px 0 #fefce8;
-    }
-    .snake-body { background:#22c55e; }
-    .snake-food { background:#ef4444;border-radius:50%;margin-left:16px; }
-
-    /* ── Slope card ── */
-    .card-slope {
-      background: linear-gradient(135deg, #06111f 0%, #12324f 42%, #1dd3b0 100%);
-    }
-    .card-slope.card::after {
-      background: linear-gradient(to top, rgba(2,6,23,0.68) 0%, rgba(2,6,23,0.08) 45%, transparent 70%);
-    }
-    .slope-preview {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      overflow: hidden;
-      perspective: 360px;
-    }
-    .slope-road {
-      position: absolute;
-      left: 19%;
-      right: 19%;
-      top: 8%;
-      bottom: -18%;
-      background:
-        linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.65) 48%, rgba(255,255,255,0.65) 52%, transparent 53%),
-        linear-gradient(180deg, #26364a 0%, #070b13 100%);
-      clip-path: polygon(35% 0, 65% 0, 100% 100%, 0 100%);
-      transform: rotateX(58deg);
-      transform-origin: bottom center;
-      border-left: 4px solid rgba(45,212,191,0.95);
-      border-right: 4px solid rgba(45,212,191,0.95);
-      box-shadow: 0 0 42px rgba(45,212,191,0.35);
-    }
-    .slope-ball {
-      position: absolute;
-      left: 47%;
-      top: 40%;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 30% 25%, #fff, #9ca3af 36%, #111827 78%);
-      box-shadow: 0 10px 18px rgba(0,0,0,0.35);
-    }
-    .slope-block {
-      position: absolute;
-      width: 30px;
-      height: 28px;
-      background: #ef4444;
-      transform: skewY(-14deg);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.28);
-    }
-    .slope-block.one { left: 34%; top: 48%; }
-    .slope-block.two { right: 30%; top: 27%; background: #f97316; }
-
-    /* ── Browser card ── */
-    .card-browser {
-      background: linear-gradient(135deg, #f5f7fb 0%, #b8c5d6 48%, #2f4057 100%);
-    }
-    .card-browser.card::after {
-      background: linear-gradient(to top, rgba(15,23,42,0.7) 0%, rgba(15,23,42,0.04) 46%, transparent 70%);
-    }
-    .browser-preview {
-      position: absolute;
-      inset: 10%;
-      z-index: 1;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #f8fafc;
-      border: 2px solid rgba(15,23,42,0.35);
-      box-shadow: 0 12px 28px rgba(15,23,42,0.24);
-    }
-    .browser-preview-bar {
-      height: 28px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 0 9px;
-      background: #e2e8f0;
-    }
-    .browser-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #ef4444;
-    }
-    .browser-dot:nth-child(2) { background: #f59e0b; }
-    .browser-dot:nth-child(3) { background: #22c55e; }
-    .browser-url {
-      flex: 1;
-      height: 14px;
-      margin-left: 8px;
-      border-radius: 999px;
-      background: #fff;
-    }
-    .browser-page-lines {
-      display: grid;
-      gap: 8px;
-      padding: 15px;
-    }
-    .browser-line {
-      height: 10px;
-      border-radius: 999px;
-      background: #94a3b8;
-    }
-    .browser-line.short { width: 58%; }
-    .browser-line.mid { width: 78%; }
 
     /* ── Staggered card entrance ── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(18px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .card:nth-child(1) { animation: fadeUp 0.35s ease 0.04s both; }
-    .card:nth-child(2) { animation: fadeUp 0.35s ease 0.12s both; }
-    .card:nth-child(3) { animation: fadeUp 0.35s ease 0.20s both; }
-    .card:nth-child(4) { animation: fadeUp 0.35s ease 0.28s both; }
-    .card:nth-child(5) { animation: fadeUp 0.35s ease 0.36s both; }
-    .card:nth-child(6) { animation: fadeUp 0.35s ease 0.44s both; }
-    .card:nth-child(7) { animation: fadeUp 0.35s ease 0.52s both; }
-    .card:nth-child(8) { animation: fadeUp 0.35s ease 0.60s both; }
+    .card:nth-child(1) { animation: fadeUp 0.40s ease 0.00s both; }
+    .card:nth-child(2) { animation: fadeUp 0.35s ease 0.08s both; }
+    .card:nth-child(3) { animation: fadeUp 0.35s ease 0.14s both; }
+    .card:nth-child(4) { animation: fadeUp 0.35s ease 0.20s both; }
+    .card:nth-child(5) { animation: fadeUp 0.35s ease 0.26s both; }
+    .card:nth-child(6) { animation: fadeUp 0.35s ease 0.32s both; }
+    .card:nth-child(7) { animation: fadeUp 0.35s ease 0.38s both; }
+    .card:nth-child(8) { animation: fadeUp 0.35s ease 0.44s both; }
+    .card:nth-child(9) { animation: fadeUp 0.35s ease 0.50s both; }
+    .card:nth-child(10){ animation: fadeUp 0.35s ease 0.56s both; }
+    .card:nth-child(11){ animation: fadeUp 0.35s ease 0.62s both; }
 
     /* ══════════════════════════════════════════════
        GAME SCREEN
@@ -405,7 +614,8 @@
     #game67 {
       max-width: 1060px;
       margin: 0 auto;
-      padding: 24px 24px 60px;
+      min-height: calc(100vh - var(--status-h));
+      padding: 24px 24px calc(60px + var(--status-h));
     }
 
     .game-top {
@@ -564,8 +774,9 @@
     #snakeGame {
       max-width: 1180px;
       margin: 0 auto;
-      padding: 20px 18px 70px;
-      min-height: 100vh;
+      padding: 20px 18px 18px;
+      height: calc(100vh - var(--status-h));
+      min-height: 0;
     }
 
     .snake-top {
@@ -587,7 +798,7 @@
       border-radius: 14px;
       overflow: hidden;
       background: var(--surface);
-      height: calc(100vh - 116px);
+      height: calc(100vh - 96px - var(--status-h));
       min-height: 560px;
       transition: background 0.25s, border-color 0.25s;
     }
@@ -598,20 +809,21 @@
       border: 0;
       display: block;
       background: #fff;
+      overflow: hidden;
     }
 
     /* ══════════════════════════════════════════════
        IDLE OVERLAY
     ══════════════════════════════════════════════ */
     #idlePhoto {
-      position: fixed; inset: 0; z-index: 9999;
-      background: #000; opacity: 1; pointer-events: auto;
+      position: fixed; inset: 0; z-index: 20000;
+      background: #fff; opacity: 1; pointer-events: auto; overflow:hidden; overscroll-behavior:none;
       transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
     }
     #idlePhoto.hidden { opacity: 0; pointer-events: none; }
     #idlePhoto.no-transition { transition: none !important; }
     #idlePhoto img {
-      width: 100%; height: 100%; object-fit: cover;
+      width: 100%; height: 100%; object-fit: fill;
       object-position: top center; display: block;
     }
 
@@ -623,7 +835,9 @@
       .game-wrap { grid-template-columns: 1fr; }
       .shop { max-height: none; }
       .pill { font-size: 12px; padding: 6px 13px; }
-      .snake-frame-wrap { height: 72vh; min-height: 420px; }
+      .snake-frame-wrap, .browser-shell iframe { height: calc(72vh - var(--status-h)); min-height: 420px; }
+      .friends-panel, .messages-panel { left:12px; width:auto; }
+      .messages-layout { grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -633,16 +847,76 @@
   <div id="dashboard">
 
     <header class="site-header">
-      <button class="pill pill-icon" id="themeToggle" type="button" title="Toggle dark mode">🌙</button>
-      <button class="pill" type="button">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
-        Get new posts
-      </button>
-      <span class="brand-name">alex.fun</span>
-      <span class="brand-tag">games and stuff</span>
+      <div class="header-side">
+        <button class="pill pill-icon" id="themeToggle" type="button" title="Toggle dark mode">🌙</button>
+      </div>
+      <div class="header-center">
+        <span class="brand-name">alex.fun</span>
+      </div>
+      <div class="header-side">
+        <button class="pill" id="settingsBtn" type="button" title="Settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </button>
+        <button class="pill" id="suggestionBtn" type="button" title="Send a site idea">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+          Suggest idea
+        </button>
+      </div>
     </header>
 
     <main class="grid">
+
+      <!-- ══ Spelling Bee — NEW ══ -->
+      <article class="card card-bee" onclick="location.href='./spelling-bee.html'" style="cursor:pointer;aspect-ratio:4.8/1;">
+        <span class="new-badge">✨ NEW</span>
+        <div class="card-bee-preview">
+          <!-- Inline SVG stickmen -->
+          <svg width="52" height="72" viewBox="0 0 52 72" fill="none" stroke="rgba(255,193,7,0.9)" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="26" cy="14" r="10" fill="rgba(255,193,7,0.15)"/>
+            <circle cx="22" cy="12" r="1.5" fill="rgba(255,193,7,0.9)" stroke="none"/>
+            <circle cx="30" cy="12" r="1.5" fill="rgba(255,193,7,0.9)" stroke="none"/>
+            <path d="M22 17 Q26 20 30 17" stroke-width="1.8"/>
+            <line x1="26" y1="24" x2="26" y2="46"/>
+            <line x1="26" y1="32" x2="10" y2="42"/>
+            <line x1="26" y1="32" x2="42" y2="38"/>
+            <line x1="26" y1="46" x2="14" y2="62"/>
+            <line x1="26" y1="46" x2="38" y2="62"/>
+          </svg>
+          <div style="text-align:center;">
+            <div style="font-size:44px;line-height:1;margin-bottom:6px;">🐝</div>
+            <div style="font-size:13px;font-weight:900;color:rgba(255,193,7,0.9);letter-spacing:2px;text-transform:uppercase;">Spelling Bee</div>
+          </div>
+          <svg width="52" height="72" viewBox="0 0 52 72" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="26" cy="14" r="10" fill="rgba(255,255,255,0.08)"/>
+            <circle cx="22" cy="12" r="1.5" fill="rgba(255,255,255,0.7)" stroke="none"/>
+            <circle cx="30" cy="12" r="1.5" fill="rgba(255,255,255,0.7)" stroke="none"/>
+            <path d="M22 17 Q26 20 30 17" stroke-width="1.8"/>
+            <line x1="26" y1="24" x2="26" y2="46"/>
+            <line x1="26" y1="32" x2="10" y2="38"/>
+            <line x1="26" y1="32" x2="42" y2="42"/>
+            <line x1="26" y1="46" x2="14" y2="62"/>
+            <line x1="26" y1="46" x2="38" y2="62"/>
+          </svg>
+        </div>
+        <h3 class="card-title" style="font-size:clamp(22px,3vw,40px);">🐝 Spelling Bee</h3>
+      </article>
+
+      <!-- Pico Park rope game -->
+      <article class="card card-pico" onclick="location.href='./pico-park.html'" style="cursor:pointer">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:24px;z-index:1;padding:16px;">
+          <!-- P1 square -->
+          <div style="width:44px;height:52px;background:#f97316;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(249,115,22,.5);">😊</div>
+          <!-- Rope line -->
+          <svg width="70" height="14" viewBox="0 0 70 14" style="flex-shrink:0;">
+            <path d="M0,7 Q17,2 35,7 Q53,12 70,7" stroke="url(#rg)" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <defs><linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f97316"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs>
+          </svg>
+          <!-- P2 square -->
+          <div style="width:44px;height:52px;background:#3b82f6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(59,130,246,.5);">😊</div>
+        </div>
+        <h3 class="card-title">🪢 Rope Run</h3>
+      </article>
 
       <article class="card card-67" id="open67">
         <img src="./67.svg" alt="67 Clicker preview">
@@ -666,44 +940,111 @@
       </article>
 
       <article class="card card-snake" id="openSnake" style="cursor:pointer">
-        <div class="snake-preview">
-          <span class="snake-dot"></span>
-          <span class="snake-body"></span>
-          <span class="snake-body"></span>
-          <span class="snake-body"></span>
-          <span class="snake-food"></span>
-        </div>
-        <h3 class="card-title">Google Snake Mods</h3>
+        <img src="./snake-card.webp" alt="Google Snake preview">
+        <h3 class="card-title">Google Snake</h3>
       </article>
 
-      <article class="card card-slope" onclick="location.href='./slope.html'" style="cursor:pointer">
-        <div class="slope-preview" aria-hidden="true">
-          <span class="slope-road"></span>
-          <span class="slope-ball"></span>
-          <span class="slope-block one"></span>
-          <span class="slope-block two"></span>
-        </div>
-        <h3 class="card-title">Slope</h3>
-      </article>
-
-      <article class="card card-browser" onclick="location.href='./browser.html'" style="cursor:pointer">
-        <div class="browser-preview" aria-hidden="true">
-          <div class="browser-preview-bar">
-            <span class="browser-dot"></span>
-            <span class="browser-dot"></span>
-            <span class="browser-dot"></span>
-            <span class="browser-url"></span>
-          </div>
-          <div class="browser-page-lines">
-            <span class="browser-line"></span>
-            <span class="browser-line mid"></span>
-            <span class="browser-line short"></span>
-          </div>
-        </div>
+      <article class="card card-browser" id="openBrowser" style="cursor:pointer">
+        <div class="browser-preview"></div>
         <h3 class="card-title">Mini Browser</h3>
       </article>
+
+      <article class="card card-crossy" onclick="location.href='./crossy-road.html'" style="cursor:pointer">
+        <img src="./crossy-road-card.jpg" alt="Crossy Road preview">
+        <h3 class="card-title">Crossy Road</h3>
+      </article>
+
+      <article class="card card-solar" onclick="openSolarSmash()" style="cursor:pointer">
+        <img src="./solar-smash-cover.png" alt="Solar Smash preview">
+        <h3 class="card-title">Solar Smash</h3>
+      </article>
+
+      <a class="card card-retrobowl" href="./retrobowl.html" style="cursor:pointer">
+        <img src="./retrobowl-card.avif" alt="Retro Bowl preview">
+        <h3 class="card-title">Retro Bowl</h3>
+      </a>
+
+      <a class="card card-driftboss" href="./drift-boss.html" style="cursor:pointer">
+        <img src="./drift-boss-game.png" alt="Drift Boss preview">
+        <h3 class="card-title">Drift Boss</h3>
+      </a>
+
     </main>
   </div>
+
+  <button id="signOutBtn" class="signout-btn hidden" type="button">Sign out</button>
+  <button id="adminFab" class="admin-fab hidden" type="button">Admin Panel</button>
+  <div class="admin-panel hidden" id="alexAdminPanel">
+    <div class="panel-head">
+      <button id="adminBackBtn" class="panel-back" type="button">← Back</button>
+      <h3>Admin Panel</h3>
+    </div>
+    <div class="admin-grid">
+      <input id="adminTargetUser" type="text" placeholder="username">
+      <input id="adminReason" type="text" placeholder="reason required">
+    </div>
+    <div class="admin-grid" style="margin-top:10px;">
+      <input id="adminBanMinutes" type="number" min="0" step="1" placeholder="ban minutes blank=permanent">
+      <input id="adminUnbanReason" type="text" placeholder="unban reason optional">
+    </div>
+    <div class="admin-actions">
+      <button class="btn" id="adminBanBtn" type="button">Ban account</button>
+      <button class="btn" id="adminUnbanBtn" type="button">Unban account</button>
+      <button class="btn" id="adminWipeBtn" type="button">Wipe account</button>
+    </div>
+    <div class="admin-grid" style="margin-top:10px;">
+      <input id="adminPointAmount" type="number" min="0" step="1" placeholder="points amount">
+      <input id="adminMultiplierAmount" type="number" min="1" step="1" placeholder="multiplier">
+    </div>
+    <div class="admin-actions">
+      <button class="btn" id="adminSetPointsBtn" type="button">Set points (self)</button>
+      <button class="btn" id="adminAddPointsBtn" type="button">Add points (self)</button>
+      <button class="btn" id="adminSetMultiplierBtn" type="button">Set multiplier</button>
+      <button class="btn" id="adminUnlockAllBtn" type="button">Unlock everything</button>
+      <button class="btn" id="adminAchievementsBtn" type="button">Unlock achievements</button>
+    </div>
+    <div style="margin-top:10px;font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Give / Take Points (target user)</div>
+    <div class="admin-grid">
+      <input id="adminAdjustAmount" type="number" min="0" step="1" placeholder="amount">
+    </div>
+    <div class="admin-actions">
+      <button class="btn" id="adminGivePointsBtn" type="button">💰 Give Points</button>
+      <button class="btn" id="adminTakePointsBtn" type="button">💸 Take Points</button>
+    </div>
+    <div style="margin-top:10px;font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Global Announcement</div>
+    <textarea id="adminAnnouncement" rows="2" placeholder="Broadcast a message to all users..." style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--fg);font:inherit;font-size:12px;font-weight:800;resize:vertical;"></textarea>
+    <div class="admin-actions" style="margin-top:6px;">
+      <button class="btn" id="adminAnnounceBtn" type="button">📢 Broadcast</button>
+    </div>
+    <div class="cheat-grid" id="cheatGrid67"></div>
+  </div>
+  <div id="dashboardBar" class="dashboard-bottom-bar">
+    <span>Backspace = cover image</span>
+    <div class="dashboard-bottom-actions">
+      <button id="friendsBtn" type="button" title="Users">👤 Friends <span id="friendsBadge" class="button-badge"></span></button>
+      <button id="messagesBtn" type="button" title="Messages">✉ Messages <span id="messagesBadge" class="button-badge"></span></button>
+    </div>
+  </div>
+  <div id="statusBar" class="hidden">
+    <span class="sb-cover" onclick="showIdle(true)">⌫ Cover Image</span>
+    <span>v1.0.0</span>
+  </div>
+  <div id="noticeToast" class="notice-toast" role="status" aria-live="polite"></div>
+  <div id="notificationStack" class="notification-stack" aria-live="polite"></div>
+
+  <section id="banScreen" class="ban-screen" aria-hidden="true">
+    <div class="ban-card">
+      <h2>Account Banned</h2>
+      <p id="banReasonText">No reason provided.</p>
+      <p id="banTimeText">Duration unavailable.</p>
+      <textarea id="banAppealText" placeholder="Write an appeal message"></textarea>
+      <div class="ban-actions">
+        <button id="appealBanBtn" class="btn" type="button">Appeal ban</button>
+        <button id="deleteBannedAccountBtn" class="btn danger" type="button">Permanently delete account</button>
+        <button id="backToLoginBtn" class="btn" type="button">Back to login</button>
+      </div>
+    </div>
+  </section>
 
   <!-- ══ 67 Clicker ═════════════════════════════════════════════ -->
   <section id="game67" class="hidden">
@@ -711,7 +1052,9 @@
     <div class="game-top">
       <button id="backToDash"    class="btn" type="button">← Back</button>
       <button id="fullscreenBtn" class="btn" type="button">Fullscreen</button>
+      <button id="leaderboardBtn" class="btn" type="button">Leaderboard</button>
       <button id="resetGame"     class="btn" type="button">Reset Game</button>
+      <button id="saveGameBtn"   class="btn" type="button">💾 Save</button>
     </div>
 
     <div class="game-wrap">
@@ -727,7 +1070,18 @@
             </div>
           </div>
           <button id="big67" type="button">67</button>
+          <div class="rebirth-panel">
+            <div class="rebirth-title">Rebirth</div>
+            <div class="rebirth-row">
+              <span><strong id="rebirthCount">0</strong> rebirths</span>
+              <span><strong id="rebirthBoost">1x</strong> boost</span>
+              <button class="btn" id="rebirthBtn" type="button">Rebirth at 1B</button>
+            </div>
+          </div>
         </div>
+        <button id="masonBonus" class="mason-bonus" type="button" title="Mason bonus">
+          <img src="./mason67.png" alt="Floating Mason 67 bonus">
+        </button>
       </div>
 
       <aside class="shop">
@@ -741,13 +1095,13 @@
   <section id="snakeGame" class="hidden">
     <div class="snake-top">
       <button id="backFromSnake" class="btn" type="button">← Back</button>
-      <div class="snake-title">Google Snake Mods</div>
+      <div class="snake-title">Google Snake</div>
     </div>
     <div class="snake-frame-wrap">
       <iframe
         id="snakeFrame"
-        title="Google Snake Mods"
-        src="./snake/index.html"
+        title="Google Snake"
+        src="./snake/index.html?v=3"
         loading="lazy"
         allowfullscreen
         referrerpolicy="no-referrer-when-downgrade">
@@ -755,13 +1109,376 @@
     </div>
   </section>
 
+  <!-- ══ Mini Browser ════════════════════════════════════════════ -->
+  <section id="miniBrowser" class="mini-browser hidden">
+    <div class="browser-top">
+      <button id="backFromBrowser" class="btn" type="button">← Back</button>
+      <input id="browserAddress" type="text" value="" placeholder="Search or enter a URL">
+      <button id="browserGo" class="btn" type="button">Go</button>
+      <button id="browserCoverBtn" class="btn" type="button">Cover Image</button>
+    </div>
+    <div class="browser-shell">
+      <div class="browser-safe-note">Type a site or search above, then press Go. Sandboxed iframe mode blocks popups and most ad redirects.</div>
+      <iframe id="browserFrame" title="Mini Browser" src="about:blank" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>
+    </div>
+  </section>
+
+  <div id="leaderboardModal" class="leaderboard-modal" aria-hidden="true">
+    <div class="leaderboard-card">
+      <h2>67 Clicker Leaderboard</h2>
+      <div id="leaderboardRows"></div>
+      <button class="btn" id="closeLeaderboard" type="button" style="margin-top:14px;width:100%;">Close</button>
+    </div>
+  </div>
+
+  <aside id="friendsPanel" class="friends-panel" aria-hidden="true">
+    <div class="panel-head">
+      <button id="friendsBackBtn" class="panel-back" type="button">← Back</button>
+      <h3>Users</h3>
+    </div>
+    <input id="userSearch" type="text" placeholder="Search users">
+    <div id="friendRequestsList"></div>
+    <div id="userList" class="user-list"></div>
+  </aside>
+
+  <aside id="messagesPanel" class="messages-panel" aria-hidden="true">
+    <div class="panel-head">
+      <button id="messagesBackBtn" class="panel-back" type="button">← Back</button>
+      <h3>Messages</h3>
+    </div>
+    <div class="messages-layout">
+      <div>
+        <input id="messageSearch" type="text" placeholder="Search friends">
+        <div id="friendList" class="user-list"></div>
+      </div>
+      <div>
+        <div id="messageThread" class="message-thread">Choose a friend to start messaging.</div>
+        <textarea id="messageText" rows="3" placeholder="Write a message"></textarea>
+        <div class="admin-actions">
+          <button class="btn" id="sendMessageBtn" type="button">Send</button>
+          <button class="btn" id="closeMessagesBtn" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ Settings modal ════════════════════════════════════════ -->
+  <div id="settingsModal" class="settings-modal" aria-hidden="true">
+    <div class="settings-card">
+      <h2>⚙️ Settings</h2>
+      <div class="settings-row">
+        <span class="settings-label">Dark Mode<small>Switch between light and dark theme</small></span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="settingsDarkMode">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Cover Image shortcut<small>Press Backspace to show cover image</small></span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="settingsCoverShortcut" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="settings-row settings-row-block">
+        <span class="settings-label">Tab disguise<small>Sets the tab title, favicon &amp; cover image</small></span>
+        <div class="disguise-grid" id="disguiseGrid"></div>
+      </div>
+      <div class="settings-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;justify-content:center;flex-direction:column;align-items:center;text-align:center;gap:4px;">
+        <span style="font-size:13px;font-weight:800;">alex.fun</span>
+        <span style="font-size:11px;font-weight:600;color:var(--muted);">v1.0.0</span>
+      </div>
+      <button class="btn" id="settingsCloseBtn" type="button" style="width:100%;margin-top:14px;">Done</button>
+    </div>
+  </div>
+
+  <div id="authOverlay" class="auth-overlay hidden">
+    <form class="auth-card" id="authForm">
+      <h2>Sign in</h2>
+      <p>This saves your games to Supabase when connected, with local fallback.</p>
+      <label for="authUser">Username</label>
+      <input id="authUser" autocomplete="username" required maxlength="24" placeholder="bob123">
+      <label for="authPass">Password</label>
+      <input id="authPass" type="password" autocomplete="current-password" required maxlength="48" placeholder="Password">
+      <div class="auth-actions">
+        <button class="btn" type="submit">Log in / Sign up</button>
+      </div>
+      <div class="auth-note">Use a simple game password. Do not reuse an important password here.</div>
+    </form>
+  </div>
+
   <!-- ══ Idle photo ═════════════════════════════════════════════ -->
   <div id="idlePhoto" aria-hidden="true">
     <img src="./cleverpage.png" alt="Idle screen" />
   </div>
 
   <script>
-    // ── Dark mode ─────────────────────────────────────────────────
+    // ── Supabase username/password login ─────────────────────────
+    const APP_USERS_KEY = "alexFunUsersV1";
+    const ACTIVE_USER_KEY = "alexFunActiveUserV1";
+    const SESSION_TOKEN_KEY = "alexFunSessionTokenV1";
+    const supabaseClient = (window.supabase && window.ALEX_FUN_SUPABASE_URL && window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
+      ? window.supabase.createClient(window.ALEX_FUN_SUPABASE_URL, window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
+      : null;
+    let currentSessionToken = localStorage.getItem(SESSION_TOKEN_KEY) || "";
+    let activeUser = localStorage.getItem(ACTIVE_USER_KEY) || "guest";
+    function safeUserKey(){ return activeUser.replace(/[^a-z0-9_-]/gi, "_").toLowerCase() || "guest"; }
+    function profileKey(base){ return `${base}_${safeUserKey()}`; }
+    function normalizeUsername(username){
+      return username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    }
+
+    const authOverlay = document.getElementById("authOverlay");
+    const authForm = document.getElementById("authForm");
+    const authUser = document.getElementById("authUser");
+    const authPass = document.getElementById("authPass");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const openBrowserCard = document.getElementById("openBrowser");
+    const banScreen = document.getElementById("banScreen");
+    let pendingBannedLogin = { username:"", password:"" };
+
+    function isAlexAccount(){
+      return normalizeUsername(activeUser || "") === "alex";
+    }
+
+    function updateMiniBrowserAccess(){
+      const allowed = isAlexAccount();
+      if(openBrowserCard) openBrowserCard.classList.toggle("hidden", !allowed);
+      const browser = document.getElementById("miniBrowser");
+      const frame = document.getElementById("browserFrame");
+      if(!allowed && browser && !browser.classList.contains("hidden")){
+        browser.classList.add("hidden");
+        document.body.classList.remove("no-page-scroll");
+        frame.src = "about:blank";
+        setGameStatusVisible(false);
+        document.getElementById("dashboard").classList.remove("hidden");
+      }
+    }
+
+    function updateSignOutButton(){
+      signOutBtn.classList.toggle("hidden", !localStorage.getItem(ACTIVE_USER_KEY));
+      updateMiniBrowserAccess();
+      updateAdminPanelVisibility();
+    }
+
+    function formatBanDuration(status){
+      if(!status || !status.banned) return "Ban expired.";
+      if(!status.ban_expires_at) return "Permanent ban.";
+      const seconds = Number(status.remaining_seconds || 0);
+      if(seconds <= 0) return "Ban expires soon.";
+      const days = Math.floor(seconds / 86400);
+      const hours = Math.floor((seconds % 86400) / 3600);
+      const minutes = Math.ceil((seconds % 3600) / 60);
+      if(days > 0) return `Expires in ${days}d ${hours}h.`;
+      if(hours > 0) return `Expires in ${hours}h ${minutes}m.`;
+      return `Expires in ${minutes}m.`;
+    }
+
+    async function fetchBanStatus(username){
+      if(!supabaseClient) return null;
+      try{
+        const { data, error } = await supabaseClient.rpc("get_ban_status", { p_username: username });
+        if(error) return null;
+        return firstRpcRow(data);
+      }catch{
+        return null;
+      }
+    }
+
+    async function showBanScreen(username, password, fallbackMessage){
+      pendingBannedLogin = { username, password };
+      const status = await fetchBanStatus(username);
+      document.getElementById("banReasonText").textContent = `Reason: ${(status && status.reason) || fallbackMessage || "No reason provided."}`;
+      document.getElementById("banTimeText").textContent = formatBanDuration(status) || "Duration unavailable.";
+      authOverlay.classList.add("hidden");
+      banScreen.classList.add("show");
+      banScreen.setAttribute("aria-hidden", "false");
+    }
+
+    function hideBanScreen(){
+      banScreen.classList.remove("show");
+      banScreen.setAttribute("aria-hidden", "true");
+    }
+
+    function loadUsers(){
+      try { return JSON.parse(localStorage.getItem(APP_USERS_KEY) || "{}"); } catch { return {}; }
+    }
+    function saveUsers(users){ localStorage.setItem(APP_USERS_KEY, JSON.stringify(users)); }
+    function loginWithLocalProfile(username, password){
+      const users = loadUsers();
+      if(users[username] && users[username].password !== password){
+        throw new Error("That username exists with a different password on this device.");
+      }
+      users[username] = { password, lastLogin: Date.now() };
+      saveUsers(users);
+      activeUser = username;
+      localStorage.setItem(ACTIVE_USER_KEY, username);
+      updateSignOutButton();
+    }
+    function isLocalTestingHost(){
+      return ["localhost", "127.0.0.1", ""].includes(location.hostname);
+    }
+    function showAuthIfNeeded(){
+      if(localStorage.getItem(ACTIVE_USER_KEY) && !supabaseClient) return;
+      authOverlay.classList.remove("hidden");
+      setTimeout(()=>authUser.focus(), 50);
+    }
+    function firstRpcRow(data){
+      return Array.isArray(data) ? data[0] : data;
+    }
+    async function rpcLoginOrRegister(username, password){
+      if(!supabaseClient) return null;
+      let result = await supabaseClient.rpc("login_player", { p_username: username, p_password: password });
+      if(result.error){
+        if(/banned/i.test(result.error.message || "")){
+          throw result.error;
+        }
+        result = await supabaseClient.rpc("register_player", { p_username: username, p_password: password });
+      }
+      if(result.error) throw result.error;
+      const row = firstRpcRow(result.data);
+      if(!row || !row.session_token) throw new Error("Login did not return a session token.");
+      currentSessionToken = row.session_token;
+      activeUser = row.username || normalizeUsername(username);
+      localStorage.setItem(SESSION_TOKEN_KEY, currentSessionToken);
+      localStorage.setItem(ACTIVE_USER_KEY, activeUser);
+      updateSignOutButton();
+      return row;
+    }
+    async function initializeAuth(){
+      if(supabaseClient && currentSessionToken){
+        try{
+          reset67StateToDefaults();
+          const loadedCloud = await loadGameFromCloud();
+          if(loadedCloud){
+            authOverlay.classList.add("hidden");
+            updateUI();
+            updateLeaderboard();
+            startSocialPolling();
+            return;
+          }
+        }catch(e){
+          console.log("Saved session restore failed:", e);
+          if(/banned/i.test(e && e.message ? e.message : "")){
+            await showBanScreen(activeUser, "", e.message);
+            currentSessionToken = "";
+            localStorage.removeItem(SESSION_TOKEN_KEY);
+            updateSignOutButton();
+            return;
+          }
+          currentSessionToken = "";
+          localStorage.removeItem(SESSION_TOKEN_KEY);
+        }
+      }
+      showAuthIfNeeded();
+      updateSignOutButton();
+      if(localStorage.getItem(ACTIVE_USER_KEY)) startSocialPolling();
+    }
+    authForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const username = normalizeUsername(authUser.value);
+      const password = authPass.value;
+      if(!username || !password) return;
+      try{
+        if(supabaseClient){
+          await rpcLoginOrRegister(username, password);
+        } else {
+          loginWithLocalProfile(username, password);
+        }
+        authOverlay.classList.add("hidden");
+        updateSignOutButton();
+        reset67StateToDefaults();
+        const loadedCloud = await loadGameFromCloud();
+        if(!loadedCloud) loadGame();
+        updateUI();
+        updateLeaderboard();
+        startSocialPolling();
+      }catch(err){
+        console.log("Login failed:", err);
+        if(/banned/i.test(err && err.message ? err.message : "")){
+          await showBanScreen(username, password, err.message);
+          return;
+        }
+        if(isLocalTestingHost()){
+          try{
+            loginWithLocalProfile(username, password);
+            authOverlay.classList.add("hidden");
+            updateSignOutButton();
+            reset67StateToDefaults();
+            loadGame();
+            updateUI();
+            updateLeaderboard();
+            startSocialPolling();
+            return;
+          }catch(localErr){
+            alert(localErr.message || "Local sign in failed.");
+            return;
+          }
+        }
+        alert(err.message || "Could not sign in right now.");
+      }
+    });
+    signOutBtn.addEventListener("click", () => {
+      currentSessionToken = "";
+      activeUser = "guest";
+      localStorage.removeItem(SESSION_TOKEN_KEY);
+      localStorage.removeItem(ACTIVE_USER_KEY);
+      clearInterval(socialPollTimer);
+      socialState = null;
+      updateSignOutButton();
+      reset67StateToDefaults();
+      loadGame();
+      updateUI();
+      updateLeaderboard();
+      authPass.value = "";
+      authOverlay.classList.remove("hidden");
+      setTimeout(()=>authUser.focus(), 50);
+    });
+    document.getElementById("backToLoginBtn").addEventListener("click", () => {
+      hideBanScreen();
+      authOverlay.classList.remove("hidden");
+    });
+    document.getElementById("appealBanBtn").addEventListener("click", async () => {
+      const message = document.getElementById("banAppealText").value.trim();
+      if(!pendingBannedLogin.username || !message) return;
+      if(!supabaseClient){
+        alert("Appeals require Supabase to be connected.");
+        return;
+      }
+      const { error } = await supabaseClient.rpc("submit_ban_appeal", {
+        p_username: pendingBannedLogin.username,
+        p_message: message
+      });
+      if(error) alert(error.message || "Appeal failed.");
+      else {
+        document.getElementById("banAppealText").value = "";
+        alert("Appeal sent.");
+      }
+    });
+    document.getElementById("deleteBannedAccountBtn").addEventListener("click", async () => {
+      if(!pendingBannedLogin.username) return;
+      const password = pendingBannedLogin.password || prompt("Enter your password to permanently delete this account:");
+      if(!password) return;
+      if(!confirm("Permanently delete this account and all saved data? This cannot be undone.")) return;
+      if(!supabaseClient){
+        alert("Account deletion requires Supabase to be connected.");
+        return;
+      }
+      const { error } = await supabaseClient.rpc("delete_player_account", {
+        p_username: pendingBannedLogin.username,
+        p_password: password
+      });
+      if(error) alert(error.message || "Account deletion failed.");
+      else {
+        localStorage.removeItem(SESSION_TOKEN_KEY);
+        localStorage.removeItem(ACTIVE_USER_KEY);
+        hideBanScreen();
+        authOverlay.classList.remove("hidden");
+        alert("Account deleted.");
+      }
+    });
+    updateSignOutButton();
+
     const themeToggle = document.getElementById('themeToggle');
     const savedTheme  = localStorage.getItem('theme') || 'light';
     if (savedTheme === 'dark') {
@@ -781,21 +1498,151 @@
       }
     });
 
-    // ── Idle logic ────────────────────────────────────────────────
+    // ── Settings modal ────────────────────────────────────────────
+    let coverShortcutEnabled = localStorage.getItem("alexFunCoverShortcut") !== "off";
+    const settingsModal = document.getElementById("settingsModal");
+    const settingsDarkModeToggle = document.getElementById("settingsDarkMode");
+    const settingsCoverToggle = document.getElementById("settingsCoverShortcut");
+
+    function openSettings() {
+      settingsDarkModeToggle.checked = document.documentElement.getAttribute("data-theme") === "dark";
+      settingsCoverToggle.checked = coverShortcutEnabled;
+      settingsModal.classList.add("show");
+      settingsModal.setAttribute("aria-hidden", "false");
+    }
+    function closeSettings() {
+      settingsModal.classList.remove("show");
+      settingsModal.setAttribute("aria-hidden", "true");
+    }
+    document.getElementById("settingsBtn").addEventListener("click", openSettings);
+    document.getElementById("settingsCloseBtn").addEventListener("click", closeSettings);
+    settingsModal.addEventListener("click", e => { if(e.target === settingsModal) closeSettings(); });
+
+    settingsDarkModeToggle.addEventListener("change", () => {
+      const isDark = settingsDarkModeToggle.checked;
+      if(isDark){
+        document.documentElement.setAttribute("data-theme","dark");
+        themeToggle.textContent = "☀️";
+        localStorage.setItem("theme","dark");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+        themeToggle.textContent = "🌙";
+        localStorage.setItem("theme","light");
+      }
+    });
+    settingsCoverToggle.addEventListener("change", () => {
+      coverShortcutEnabled = settingsCoverToggle.checked;
+      localStorage.setItem("alexFunCoverShortcut", coverShortcutEnabled ? "on" : "off");
+    });
+
+    // ── Disguise picker ───────────────────────────────────────────
+    (function buildDisguisePicker(){
+      const grid = document.getElementById("disguiseGrid");
+      if(!grid || !window.alexFunProfiles) return;
+
+      const profiles = window.alexFunProfiles;
+
+      // Include a "Random" option
+      const allOptions = [
+        { key:"random", title:"Random", icon:"🎲", iconIsEmoji:true },
+        ...profiles
+      ];
+
+      function currentKey(){
+        return localStorage.getItem("alexFunCoverProfileKey") || "random";
+      }
+
+      function renderGrid(){
+        const active = currentKey();
+        grid.innerHTML = "";
+        allOptions.forEach(opt => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "disguise-opt" + (opt.key === active ? " active" : "");
+          btn.title = opt.title;
+
+          // Icon
+          if(opt.iconIsEmoji){
+            const em = document.createElement("span");
+            em.style.cssText = "font-size:18px;line-height:1;flex-shrink:0;width:20px;text-align:center;";
+            em.textContent = opt.icon;
+            btn.appendChild(em);
+          } else {
+            const img = document.createElement("img");
+            img.src = /^https?:\/\//i.test(opt.icon) ? opt.icon : new URL(opt.icon, location.href).href;
+            img.alt = "";
+            img.onerror = () => { img.style.display = "none"; };
+            btn.appendChild(img);
+          }
+
+          // Name
+          const name = document.createElement("span");
+          name.className = "disguise-opt-name";
+          name.textContent = opt.title;
+          btn.appendChild(name);
+
+          btn.addEventListener("click", () => {
+            if(opt.key === "random"){
+              localStorage.removeItem("alexFunCoverProfileKey");
+              sessionStorage.removeItem("alexFunCoverProfile");
+              // Pick a new random profile now
+              const rand = profiles[Math.floor(Math.random() * profiles.length)];
+              window.alexFunSetProfile(rand.key);
+              localStorage.removeItem("alexFunCoverProfileKey"); // keep it random
+            } else {
+              window.alexFunSetProfile(opt.key);
+            }
+            renderGrid();
+          });
+
+          grid.appendChild(btn);
+        });
+      }
+
+      // Re-render whenever settings opens so active state is fresh
+      document.getElementById("settingsBtn").addEventListener("click", renderGrid);
+
+      renderGrid();
+    })();
+
+    // Patch keydown to respect coverShortcutEnabled
+    // (The main keydown listener below checks this variable)
+
+    document.getElementById("suggestionBtn").addEventListener("click", async () => {
+      const ideas = [
+        "Add a boss fight to 67 Clicker",
+        "Add daily challenges",
+        "Add secret codes on the dashboard",
+        "Add a music toggle",
+        "Add custom themes for each game"
+      ];
+      const starter = ideas[Math.floor(Math.random() * ideas.length)];
+      const idea = prompt("Send a suggestion for alex.fun:", starter);
+      if(!idea || !idea.trim()) return;
+      if(supabaseClient && currentSessionToken){
+        const { error } = await supabaseClient.rpc("submit_suggestion", {
+          p_token: currentSessionToken,
+          p_idea: idea.trim()
+        });
+        if(!error){
+          alert("Suggestion saved.");
+          return;
+        }
+        console.log("Suggestion save failed:", error);
+      }
+      const subject = encodeURIComponent("alex.fun suggestion");
+      const body = encodeURIComponent(`My suggestion: ${idea.trim()}`);
+      location.href = `mailto:?subject=${subject}&body=${body}`;
+    });
+
+    // ── Cover image / idle logic ──────────────────────────────────────
     const IDLE_MS   = 5000;
     const idlePhoto = document.getElementById("idlePhoto");
     let   idleTimer = null;
 
     function showIdle(instant) {
-      if (instant) {
-        idlePhoto.classList.add("no-transition");
-        idlePhoto.classList.remove("hidden");
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          idlePhoto.classList.remove("no-transition");
-        }));
-      } else {
-        idlePhoto.classList.remove("hidden");
-      }
+      idlePhoto.classList.remove("no-transition");
+      idlePhoto.classList.remove("hidden");
       clearTimeout(idleTimer);
     }
 
@@ -804,12 +1651,51 @@
       return snake && !snake.classList.contains("hidden");
     }
 
-    function hideIdleAndArmTimer() {
-      idlePhoto.classList.add("hidden");
+    function isMiniBrowserActive() {
+      const browser = document.getElementById("miniBrowser");
+      return browser && !browser.classList.contains("hidden");
+    }
+
+    function isIdleVisible() {
+      return !idlePhoto.classList.contains("hidden");
+    }
+
+    function isTypingField(event) {
+      const active = document.activeElement;
+      const target = event && event.target;
+      return Boolean(
+        (active && active.closest("input, textarea, select, [contenteditable='true']")) ||
+        (target && target.closest && target.closest("input, textarea, select, [contenteditable='true']"))
+      );
+    }
+
+    function dismissIdleCover() {
       clearTimeout(idleTimer);
-      if (isEmbeddedGameActive()) return;
+      idlePhoto.classList.add("hidden");
+      if (!document.hidden && document.hasFocus()) {
+        idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
+      }
+    }
+
+    function hideIdleAndArmTimer() {
+      if (isIdleVisible()) {
+        return;
+      }
+      clearTimeout(idleTimer);
+      if (document.hidden || !document.hasFocus()) {
+        return;
+      }
       idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
     }
+
+    idlePhoto.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      dismissIdleCover();
+    });
+    ["wheel","touchmove"].forEach(evt => {
+      idlePhoto.addEventListener(evt, e => e.preventDefault(), { passive: false });
+    });
 
     // Show clever picture on fresh visits; skip it when coming back from a game
     function isFromGame() {
@@ -823,7 +1709,9 @@
     if (isFromGame()) {
       // Back from a game — go straight to dashboard, arm idle timer normally
       idlePhoto.classList.add("hidden");
-      idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
+      if (!document.hidden && document.hasFocus()) {
+        idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
+      }
     } else {
       // Fresh visit — show clever picture first
       showIdle(true);
@@ -834,7 +1722,15 @@
     });
 
     window.addEventListener("keydown", e => {
-      if (e.key === "Backspace") {
+      if (isTypingField(e)) {
+        hideIdleAndArmTimer();
+        return;
+      }
+      if (isIdleVisible()) {
+        if (e.key === "Backspace") e.preventDefault();
+        return;
+      }
+      if (e.key === "Backspace" && coverShortcutEnabled) {
         e.preventDefault();
         showIdle(true);
         return;
@@ -847,10 +1743,14 @@
       showIdle(true);
     });
 
-    window.addEventListener("blur", () => {
-      if (!isEmbeddedGameActive()) return;
+    function pauseIdleCoverForTabSwitch() {
       idlePhoto.classList.add("hidden");
       clearTimeout(idleTimer);
+    }
+
+    window.addEventListener("blur", pauseIdleCoverForTabSwitch);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) pauseIdleCoverForTabSwitch();
     });
 
     // ── Screen switching ──────────────────────────────────────────
@@ -858,27 +1758,58 @@
     const game67El  = document.getElementById("game67");
     const snakeGame = document.getElementById("snakeGame");
     const snakeFrame = document.getElementById("snakeFrame");
+    const miniBrowser = document.getElementById("miniBrowser");
+    const browserFrame = document.getElementById("browserFrame");
+    const browserAddress = document.getElementById("browserAddress");
+    const statusBar = document.getElementById("statusBar");
+
+    function setGameStatusVisible(visible) {
+      statusBar.classList.toggle("hidden", !visible);
+      document.body.classList.toggle("game-active", visible);
+    }
+
+    function openSolarSmash() {
+      if (location.protocol === "file:") {
+        location.href = "http://127.0.0.1:8765/solar-smash.html";
+        return;
+      }
+      location.href = "./solar-smash.html";
+    }
 
     document.getElementById("open67").addEventListener("click", () => {
+      show67BalanceUpdateNotice();
       dashboard.classList.add("hidden");
       snakeGame.classList.add("hidden");
+      miniBrowser.classList.add("hidden");
+      document.body.classList.remove("no-page-scroll");
       game67El.classList.remove("hidden");
+      setGameStatusVisible(true);
+      scheduleMasonBonus();
     });
 
     document.getElementById("backToDash").addEventListener("click", () => {
       game67El.classList.add("hidden");
+      masonBonus?.classList.remove("visible");
+      document.body.classList.remove("no-page-scroll");
+      setGameStatusVisible(false);
       dashboard.classList.remove("hidden");
+      hideIdleAndArmTimer();
     });
 
     document.getElementById("openSnake").addEventListener("click", () => {
       dashboard.classList.add("hidden");
       game67El.classList.add("hidden");
+      miniBrowser.classList.add("hidden");
       snakeGame.classList.remove("hidden");
+      document.body.classList.add("no-page-scroll");
+      setGameStatusVisible(true);
       hideIdleAndArmTimer();
     });
 
     document.getElementById("backFromSnake").addEventListener("click", () => {
       snakeGame.classList.add("hidden");
+      document.body.classList.remove("no-page-scroll");
+      setGameStatusVisible(false);
       dashboard.classList.remove("hidden");
       hideIdleAndArmTimer();
     });
@@ -905,50 +1836,246 @@
 
     snakeFrame.addEventListener("load", installSnakeCoverHook);
 
+    openBrowserCard.addEventListener("click", () => {
+      if(!isAlexAccount()){
+        updateMiniBrowserAccess();
+        return;
+      }
+      dashboard.classList.add("hidden");
+      game67El.classList.add("hidden");
+      snakeGame.classList.add("hidden");
+      miniBrowser.classList.remove("hidden");
+      document.body.classList.remove("no-page-scroll");
+      setGameStatusVisible(true);
+      hideIdleAndArmTimer();
+    });
+    document.getElementById("backFromBrowser").addEventListener("click", () => {
+      miniBrowser.classList.add("hidden");
+      setGameStatusVisible(false);
+      dashboard.classList.remove("hidden");
+      hideIdleAndArmTimer();
+    });
+    function normalizeBrowserUrl(value){
+      const trimmed = value.trim();
+      if(!trimmed) return "about:blank";
+      if(/^https?:\/\//i.test(trimmed)) return trimmed;
+      if(trimmed.includes(".") && !trimmed.includes(" ")) return "https://" + trimmed;
+      return "https://www.google.com/search?igu=1&q=" + encodeURIComponent(trimmed);
+    }
+    document.getElementById("browserGo").addEventListener("click", () => {
+      browserFrame.src = normalizeBrowserUrl(browserAddress.value);
+    });
+    document.getElementById("browserCoverBtn").addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      showIdle(true);
+    });
+    browserAddress.addEventListener("keydown", e => {
+      if(e.key === "Enter") { e.preventDefault(); browserFrame.src = normalizeBrowserUrl(browserAddress.value); }
+    });
+
     // ── Upgrade definitions ───────────────────────────────────────
     const upgradeConfig = [
-      { key:"multi",      icon:"🖱️",  name:"Multiple Clickers", desc:"+1 point per click",       cost:25,              scale:1.18, onBuy:()=>{ clickPower+=1; } },
-      { key:"auto",       icon:"🤖",  name:"Autoclicker",        desc:"+1 point/sec",              cost:50,              scale:1.22, onBuy:()=>{ perSec+=1; } },
-      { key:"factory",    icon:"🏭",  name:"67 Factory",         desc:"+8 points/sec",             cost:400,             scale:1.25, onBuy:()=>{ perSec+=8; } },
-      { key:"mine",       icon:"⛏️",  name:"67 Mine",            desc:"+47 points/sec",            cost:4_000,           scale:1.28, onBuy:()=>{ perSec+=47; } },
-      { key:"lab",        icon:"🔬",  name:"67 Laboratory",      desc:"+260 points/sec",           cost:40_000,          scale:1.3,  onBuy:()=>{ perSec+=260; } },
-      { key:"powerclick", icon:"⚡",  name:"Power Click",        desc:"+10 points per click",      cost:100_000,         scale:1.32, onBuy:()=>{ clickPower+=10; } },
-      { key:"dimension",  icon:"🌀",  name:"67 Dimension",       desc:"+1,600 points/sec",         cost:500_000,         scale:1.34, onBuy:()=>{ perSec+=1_600; } },
-      { key:"empire",     icon:"👑",  name:"67 Empire",          desc:"+10,000 points/sec",        cost:7_000_000,       scale:1.36, onBuy:()=>{ perSec+=10_000; } },
-      { key:"galaxy",     icon:"🌌",  name:"67 Galaxy",          desc:"+65,000 points/sec",        cost:100_000_000,     scale:1.38, onBuy:()=>{ perSec+=65_000; } },
-      { key:"mason",      icon:"🧱",  name:"Mason 67",           desc:"+400,000 points/sec",       cost:1_000_000_000,   scale:1.4,  onBuy:()=>{ perSec+=400_000; } },
-      { key:"god",        icon:"✨",  name:"67 God",             desc:"+2,500,000 points/sec",     cost:1_000_000_000_000, scale:1.45, onBuy:()=>{ perSec+=2_500_000; } }
+      { key:"multi",      icon:"🖱️", name:"Multiple Clickers",       desc:"+1 point per click",        cost:20,              scale:1.12, onBuy:()=>{ clickPower+=1; } },
+      { key:"auto",       icon:"🤖", name:"Autoclicker",             desc:"+1 point/sec",              cost:40,              scale:1.14, onBuy:()=>{ perSec+=1; } },
+      { key:"factory",    icon:"🏭", name:"67 Factory",              desc:"+8 points/sec",             cost:300,             scale:1.15, onBuy:()=>{ perSec+=8; } },
+      { key:"mine",       icon:"⛏️", name:"67 Mine",                 desc:"+47 points/sec",            cost:3_000,           scale:1.16, onBuy:()=>{ perSec+=47; } },
+      { key:"lab",        icon:"🔬", name:"67 Laboratory",           desc:"+260 points/sec",           cost:28_000,          scale:1.17, onBuy:()=>{ perSec+=260; } },
+      { key:"powerclick", icon:"⚡", name:"Power Click",             desc:"+1,000 points per click",    cost:75_000,          scale:1.18, onBuy:()=>{ clickPower+=1_000; } },
+      { key:"dimension",  icon:"🌀", name:"67 Dimension",            desc:"+5,000 points/sec",         cost:420_000,         scale:1.18, onBuy:()=>{ perSec+=5_000; } },
+      { key:"sahur",      icon:"🥁", name:"Tung Tung Tung Sahur",    desc:"+5,000 points/sec",         cost:1_000_000,           scale:1.19, onBuy:()=>{ perSec+=5_000; } },
+      { key:"empire",     icon:"👑", name:"67 Empire",               desc:"+20,000 points/sec",        cost:5_000_000,           scale:1.19, onBuy:()=>{ perSec+=20_000; } },
+      { key:"galaxy",     icon:"🌌", name:"67 Galaxy",               desc:"+100,000 points/sec",       cost:75_000_000,          scale:1.20, onBuy:()=>{ perSec+=100_000; } },
+      { key:"patapim",    icon:"🌳", name:"Brr Brr Patapim",         desc:"+500,000 points/sec",       cost:400_000_000,         scale:1.20, onBuy:()=>{ perSec+=500_000; } },
+      { key:"mason",      icon:"🧱", name:"Mason 67",                desc:"+3,000,000 points/sec",     cost:750_000_000,         scale:1.21, onBuy:()=>{ perSec+=3_000_000; } },
+      { key:"hoopify",    icon:"🏀", name:"Hoopify",                 desc:"+5,000,000 points/sec",     cost:10_000_000_000,      scale:1.21, onBuy:()=>{ perSec+=5_000_000; } },
+      { key:"fourtwenty", icon:"🍃", name:"420",                     desc:"+50,000,000 points/sec",    cost:10_000_000_000,      scale:1.22, onBuy:()=>{ perSec+=50_000_000; } },
+      { key:"god",        icon:"✨", name:"67 God",                  desc:"+100,000,000 points/sec",   cost:50_000_000_000,      scale:1.22, onBuy:()=>{ perSec+=100_000_000; } },
+      { key:"rebirthClick", icon:"6️⃣", name:"61",                   desc:"+1,000,000 points per click", cost:200_000_000_000, scale:1.24, requiresRebirth:1, onBuy:()=>{ clickPower+=1_000_000; } },
+      { key:"sixtynine",  icon:"6️⃣9️⃣", name:"69",                  desc:"+5,000,000,000 points/sec", cost:500_000_000_000,     scale:1.24, onBuy:()=>{ perSec+=5_000_000_000; } },
+      { key:"rebirthEngine", icon:"4️⃣", name:"41",                  desc:"+1,000,000,000 points/sec", cost:500_000_000_000,     scale:1.25, requiresRebirth:1, onBuy:()=>{ perSec+=1_000_000_000; } },
+      { key:"rebirthCore", icon:"🏀", name:"Lebron 67",              desc:"+10,000,000,000 points/sec", cost:100_000_000_000_000, scale:1.26, requiresRebirth:2, onBuy:()=>{ perSec+=10_000_000_000; } },
+      { key:"ronaldo",    icon:"⚽", name:"Ronaldo",                 desc:"+50,000,000,000 points/sec", cost:500_000_000_000_000, scale:1.28, onBuy:()=>{ perSec+=50_000_000_000; } }
     ];
 
     let points     = 0;
     let clickPower = 1;
     let perSec     = 0;
+    let rebirths   = 0;
+    let maxPoints  = 0;
+    let unlockedAchievements67 = [];
+    let achievementBuffUntil = 0;
+    let adminMultiplier = 1;
+    let lastSpaceClickTimes = [];
+    let lastSavedAt = Date.now();
+
+    function achievementMultiplier(){ return Date.now() < achievementBuffUntil ? 1.25 : 1; }
+    function rebirthMultiplier(){ return 1 + rebirths * 0.5; }
+    function effectiveClickPower(){ return clickPower * rebirthMultiplier() * achievementMultiplier() * adminMultiplier; }
+    function effectivePerSec(){ return perSec * rebirthMultiplier() * achievementMultiplier() * adminMultiplier; }
 
     const state = {};
     upgradeConfig.forEach(cfg => { state[cfg.key] = { count:0, cost:cfg.cost }; });
 
-    const SAVE_KEY = "alexFun67ClickerSaveV1";
+    const SAVE_KEY_BASE = "alexFun67ClickerSaveV3";
+    const LEADERBOARD_KEY = "alexFun67LeaderboardV2";
+    const CLICKER_UPDATE_ID = "balance-2026-05-13";
+    const CLICKER_UPDATE_ACK_KEY = "alexFun67BalanceNoticeV1";
+    const LEADERBOARD_RESET_AT = 1778701200000;
     let saveDirty = false;
+
+    localStorage.removeItem("alexFun67LeaderboardV1");
+
+    function mark67BalanceUpdateSeen(){
+      localStorage.setItem(profileKey(CLICKER_UPDATE_ACK_KEY), CLICKER_UPDATE_ID);
+    }
+
+    function hasSeen67BalanceUpdate(){
+      if(localStorage.getItem(profileKey(CLICKER_UPDATE_ACK_KEY)) === CLICKER_UPDATE_ID) return true;
+      try{
+        const raw = localStorage.getItem(getSaveKey());
+        if(raw){
+          const saved = JSON.parse(raw);
+          if(saved && (saved.updateNoticeSeenId === CLICKER_UPDATE_ID || saved.updateId === CLICKER_UPDATE_ID)){
+            mark67BalanceUpdateSeen();
+            return true;
+          }
+        }
+      }catch(e){
+        console.log("Could not read 67 Clicker update notice state:", e);
+      }
+      return false;
+    }
+
+    function show67BalanceUpdateNotice(){
+      if(hasSeen67BalanceUpdate()) return;
+      reset67StateToDefaults();
+      localStorage.removeItem(getSaveKey());
+      localStorage.removeItem(LEADERBOARD_KEY);
+      mark67BalanceUpdateSeen();
+      markSaveDirty();
+      saveGame();
+      alert("67 Clicker was updated because users were abusing bugs. The game is now more balanced, and all 67 Clicker progress and leaderboard scores were wiped.");
+    }
+
+    function getSaveKey(){ return profileKey(SAVE_KEY_BASE); }
+    function reset67StateToDefaults(){
+      points = 0; clickPower = 1; perSec = 0; rebirths = 0; maxPoints = 0; unlockedAchievements67 = []; achievementBuffUntil = 0; adminMultiplier = 1; lastSpaceClickTimes = []; lastSavedAt = Date.now();
+      upgradeConfig.forEach(cfg => { state[cfg.key] = { count:0, cost:cfg.cost }; });
+    }
 
     function markSaveDirty() {
       saveDirty = true;
     }
 
+    function buildSavePayload() {
+      const upgrades = {};
+      upgradeConfig.forEach(cfg => {
+        upgrades[cfg.key] = {
+          count: state[cfg.key].count,
+          cost: state[cfg.key].cost
+        };
+      });
+      return {
+        updateId: CLICKER_UPDATE_ID,
+        updateNoticeSeenId: CLICKER_UPDATE_ID,
+        points,
+        clickPower,
+        perSec,
+        rebirths,
+        maxPoints,
+        unlockedAchievements67,
+        adminMultiplier,
+        lastSavedAt: Date.now(),
+        upgrades
+      };
+    }
+
+    function applySavedGame(saved) {
+      if(!saved) return false;
+      if(saved.updateNoticeSeenId === CLICKER_UPDATE_ID || saved.updateId === CLICKER_UPDATE_ID) {
+        mark67BalanceUpdateSeen();
+      }
+      if(saved.updateId !== CLICKER_UPDATE_ID) {
+        reset67StateToDefaults();
+        markSaveDirty();
+        return true;
+      }
+      if (Number.isFinite(saved.points)) points = saved.points;
+      if (Number.isFinite(saved.clickPower)) clickPower = saved.clickPower;
+      if (Number.isFinite(saved.perSec)) perSec = saved.perSec;
+      if (Number.isFinite(saved.rebirths)) rebirths = saved.rebirths;
+      if (Number.isFinite(saved.maxPoints)) maxPoints = saved.maxPoints;
+      if (Array.isArray(saved.unlockedAchievements67)) unlockedAchievements67 = saved.unlockedAchievements67;
+      if (Number.isFinite(saved.adminMultiplier)) adminMultiplier = Math.max(1, saved.adminMultiplier);
+      if (Number.isFinite(saved.lastSavedAt) && perSec > 0) {
+        const elapsed = Math.min(21600, Math.max(0, (Date.now() - saved.lastSavedAt) / 1000));
+        if (elapsed > 5) points += effectivePerSec() * elapsed;
+      }
+      upgradeConfig.forEach(cfg => {
+        const savedUpgrade = saved.upgrades && saved.upgrades[cfg.key];
+        if (!savedUpgrade) return;
+        if (Number.isFinite(savedUpgrade.count)) state[cfg.key].count = savedUpgrade.count;
+        if (Number.isFinite(savedUpgrade.cost)) state[cfg.key].cost = savedUpgrade.cost;
+      });
+      return true;
+    }
+
+    async function syncGameToSupabase(payload) {
+      if(!supabaseClient || !currentSessionToken) return;
+      try{
+        const { error } = await supabaseClient.rpc("save_clicker", {
+          p_token: currentSessionToken,
+          p_save: payload,
+          p_max_points: Math.floor(Math.max(maxPoints || 0, points || 0))
+        });
+        if(error) console.log("Cloud save failed:", error);
+      }catch(e){
+        console.log("Cloud save failed:", e);
+      }
+    }
+
+    async function loadGameFromCloud() {
+      if(!supabaseClient || !currentSessionToken) return false;
+      try{
+        const { data, error } = await supabaseClient.rpc("get_clicker_save", { p_token: currentSessionToken });
+        if(error){
+          console.log("Cloud load failed:", error);
+          return false;
+        }
+        const row = firstRpcRow(data);
+        if(!row) return false;
+        if(row.username){
+          activeUser = row.username;
+          localStorage.setItem(ACTIVE_USER_KEY, activeUser);
+          updateSignOutButton();
+        }
+        if(!row.save) return true;
+        const loaded = applySavedGame(row.save);
+        if(row.save && row.save.updateId === CLICKER_UPDATE_ID && Number.isFinite(Number(row.max_points))) maxPoints = Math.max(maxPoints, Number(row.max_points));
+        localStorage.setItem(getSaveKey(), JSON.stringify(buildSavePayload()));
+        return loaded;
+      }catch(e){
+        console.log("Cloud load failed:", e);
+        return false;
+      }
+    }
+
+    async function deleteCloudSave() {
+      if(!supabaseClient || !currentSessionToken) return;
+      try{
+        await supabaseClient.rpc("delete_clicker_save", { p_token: currentSessionToken });
+      }catch(e){
+        console.log("Cloud reset failed:", e);
+      }
+    }
+
     function saveGame() {
       try {
-        const upgrades = {};
-        upgradeConfig.forEach(cfg => {
-          upgrades[cfg.key] = {
-            count: state[cfg.key].count,
-            cost: state[cfg.key].cost
-          };
-        });
-        localStorage.setItem(SAVE_KEY, JSON.stringify({
-          points,
-          clickPower,
-          perSec,
-          upgrades
-        }));
+        const payload = buildSavePayload();
+        localStorage.setItem(getSaveKey(), JSON.stringify(payload));
+        updateLeaderboard();
+        syncGameToSupabase(payload);
         saveDirty = false;
       } catch(e) {
         console.log("Could not save 67 Clicker:", e);
@@ -957,26 +2084,18 @@
 
     function loadGame() {
       try {
-        const raw = localStorage.getItem(SAVE_KEY);
-        if (!raw) return;
-        const saved = JSON.parse(raw);
-        if (Number.isFinite(saved.points)) points = saved.points;
-        if (Number.isFinite(saved.clickPower)) clickPower = saved.clickPower;
-        if (Number.isFinite(saved.perSec)) perSec = saved.perSec;
-        upgradeConfig.forEach(cfg => {
-          const savedUpgrade = saved.upgrades && saved.upgrades[cfg.key];
-          if (!savedUpgrade) return;
-          if (Number.isFinite(savedUpgrade.count)) state[cfg.key].count = savedUpgrade.count;
-          if (Number.isFinite(savedUpgrade.cost)) state[cfg.key].cost = savedUpgrade.cost;
-        });
+        const raw = localStorage.getItem(getSaveKey());
+        if (!raw) return false;
+        return applySavedGame(JSON.parse(raw));
       } catch(e) {
         console.log("Could not load 67 Clicker save:", e);
+        return false;
       }
     }
 
     loadGame();
 
-    // ── Build shop DOM ────────────────────────────────────────────
+    // ── Build shop DOM    // ── Build shop DOM ────────────────────────────────────────────
     const shopEl = document.querySelector(".shop");
     upgradeConfig.forEach(cfg => {
       const div = document.createElement("div");
@@ -1005,21 +2124,30 @@
 
     function updateUI() {
       document.getElementById("points").textContent   = formatNum(points);
-      document.getElementById("perClick").textContent = formatNum(clickPower);
-      document.getElementById("perSec").textContent   = formatNum(perSec);
+      if(points > maxPoints) maxPoints = points;
+      document.getElementById("perClick").textContent = formatNum(effectiveClickPower());
+      document.getElementById("perSec").textContent   = formatNum(effectivePerSec());
+      document.getElementById("rebirthCount").textContent = rebirths;
+      document.getElementById("rebirthBoost").textContent = rebirthMultiplier().toFixed(2).replace(/\.00$/, "") + "x";
+      document.getElementById("rebirthBtn").disabled = points < 1_000_000_000;
+      updateAchievements67();
       upgradeConfig.forEach(cfg => {
         const u = state[cfg.key];
-        const canBuy = points >= u.cost;
+        const locked = Boolean(cfg.requiresRebirth && rebirths < cfg.requiresRebirth);
+        const canBuy = points >= u.cost && !locked;
         document.getElementById("count_"+cfg.key).textContent = u.count;
         document.getElementById("cost_" +cfg.key).textContent = formatNum(u.cost);
         document.getElementById("buy_"  +cfg.key).disabled    = !canBuy;
         document.getElementById("upg_"  +cfg.key).classList.toggle("affordable", canBuy);
+        document.getElementById("upg_"  +cfg.key).classList.toggle("locked", locked);
       });
+      updateAdminPanelVisibility();
     }
 
     function buyUpgrade(key) {
       const cfg = upgradeConfig.find(c => c.key === key);
       const u   = state[key];
+      if (cfg.requiresRebirth && rebirths < cfg.requiresRebirth) return;
       if (points < u.cost) return;
       points  -= u.cost;
       u.count += 1;
@@ -1038,13 +2166,14 @@
     const playArea = document.getElementById("playArea");
 
     function click67(clientX, clientY) {
-      points += clickPower;
+      const gained = effectiveClickPower();
+      points += gained;
       updateUI();
       markSaveDirty();
       const rect = playArea.getBoundingClientRect();
       const span = document.createElement("span");
       span.className   = "float-text";
-      span.textContent = "+" + formatNum(clickPower);
+      span.textContent = "+" + formatNum(gained);
       span.style.left  = (clientX - rect.left + (Math.random()*36-18)) + "px";
       span.style.top   = (clientY - rect.top  - 8) + "px";
       playArea.appendChild(span);
@@ -1065,13 +2194,677 @@
       }
     });
 
-    document.getElementById("resetGame").addEventListener("click", () => {
-      if (!confirm("Reset all progress?")) return;
-      points=0; clickPower=1; perSec=0;
+
+    const achievements67 = [
+      { id:"first", label:"First 67", test:()=>maxPoints>=67 },
+      { id:"thousand", label:"1K Club", test:()=>maxPoints>=1_000 },
+      { id:"million", label:"Millionaire", test:()=>maxPoints>=1_000_000 },
+      { id:"billion", label:"Billion 67", test:()=>maxPoints>=1_000_000_000 },
+      { id:"rebirth", label:"Reborn", test:()=>rebirths>=1 },
+      { id:"mason", label:"Mason Energy", test:()=>state.mason && state.mason.count>=1 },
+      { id:"god", label:"67 God Mode", test:()=>state.god && state.god.count>=1 },
+      { id:"space", label:"Spacebar Clicker", test:()=>clickPower>=1_000 }
+    ];
+
+    function showNotice(message){
+      const toast = document.getElementById("noticeToast");
+      if(!toast) return;
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showNotice.timer);
+      showNotice.timer = setTimeout(() => toast.classList.remove("show"), 4200);
+    }
+
+    function updateAchievements67(){
+      const list = document.getElementById("achievementList67");
+      achievements67.forEach(a => {
+        if(a.test() && !unlockedAchievements67.includes(a.id)) {
+          unlockedAchievements67.push(a.id);
+          achievementBuffUntil = Date.now() + 60_000;
+          showNotice(`Achievement unlocked: ${a.label}. 1.25x points for 1 minute.`);
+          markSaveDirty();
+        }
+      });
+      if(!list) return;
+      list.innerHTML = achievements67.map(a => {
+        const unlocked = unlockedAchievements67.includes(a.id);
+        return `<span class="achievement-chip ${unlocked ? 'unlocked' : 'locked'}">${unlocked ? '✓ ' + a.label : 'Locked'}</span>`;
+      }).join("");
+    }
+
+    document.getElementById("rebirthBtn").addEventListener("click", () => {
+      if(points < 1_000_000_000) return;
+      if(!confirm("Rebirth resets your 67 points and upgrades, but gives a permanent +50% boost. Do it?")) return;
+      rebirths += 1;
+      points = 0; clickPower = 1; perSec = 0; achievementBuffUntil = 0; lastSpaceClickTimes = [];
+      if(masonBonus) masonBonus.classList.remove("visible");
+      clearTimeout(masonBonusTimer);
       upgradeConfig.forEach(cfg => { state[cfg.key].count=0; state[cfg.key].cost=cfg.cost; });
-      localStorage.removeItem(SAVE_KEY);
+      markSaveDirty(); saveGame(); updateUI();
+      scheduleMasonBonus();
+    });
+
+    const masonBonus = document.getElementById("masonBonus");
+    let masonBonusTimer = null;
+
+    function masonBonusAmount(){
+      const wealthBase = Math.max(points, 0);
+      const incomeBase = Math.max(perSec * 4, 0);
+      const percentBonus = wealthBase * (0.006 + Math.random() * 0.014);
+      return Math.max(67, Math.floor(percentBonus + incomeBase));
+    }
+
+    function moveMasonBonus(){
+      const area = playArea.getBoundingClientRect();
+      const size = 78;
+      const x = 18 + Math.random() * Math.max(20, area.width - size - 36);
+      const y = 18 + Math.random() * Math.max(20, area.height - size - 36);
+      masonBonus.style.left = x + "px";
+      masonBonus.style.top = y + "px";
+    }
+
+    function scheduleMasonBonus(){
+      clearTimeout(masonBonusTimer);
+      masonBonusTimer = setTimeout(() => {
+        if(game67El.classList.contains("hidden") || !masonBonus) {
+          scheduleMasonBonus();
+          return;
+        }
+        moveMasonBonus();
+        masonBonus.classList.add("visible");
+        setTimeout(() => {
+          masonBonus.classList.remove("visible");
+          scheduleMasonBonus();
+        }, 4200);
+      }, 25000 + Math.random() * 20000);
+    }
+
+    masonBonus.addEventListener("click", e => {
+      e.stopPropagation();
+      if(!masonBonus.classList.contains("visible")) return;
+      masonBonus.classList.remove("visible");
+      const bonus = masonBonusAmount();
+      points += bonus;
+      updateUI(); markSaveDirty(); saveGame();
+      const rect = masonBonus.getBoundingClientRect();
+      const span = document.createElement("span");
+      span.className = "float-text";
+      span.textContent = "+" + formatNum(bonus);
+      const area = playArea.getBoundingClientRect();
+      span.style.left = (rect.left - area.left + 18) + "px";
+      span.style.top = (rect.top - area.top - 8) + "px";
+      playArea.appendChild(span);
+      span.addEventListener("animationend", () => span.remove());
+      scheduleMasonBonus();
+    });
+
+    function loadLeaderboard(){
+      try {
+        return JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || "[]")
+          .filter(row => (row.when || 0) >= LEADERBOARD_RESET_AT && (row.max || 0) > 0);
+      } catch { return []; }
+    }
+    function removeLocalLeaderboardEntry(name){
+      const rows = loadLeaderboard().filter(row => row.name !== name);
+      localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(rows));
+    }
+    function updateLeaderboard(){
+      const name = activeUser || "guest";
+      const best = Math.floor(maxPoints || points || 0);
+      if (best <= 0) return;
+      const rows = loadLeaderboard().filter(r => r.name !== name);
+      rows.push({ name, max: best, when: Date.now() });
+      rows.sort((a,b)=>b.max-a.max);
+      localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(rows.slice(0, 20)));
+    }
+    async function fetchCloudLeaderboard(){
+      if(!supabaseClient) return null;
+      try{
+        const { data, error } = await supabaseClient.rpc("get_clicker_leaderboard");
+        if(error) throw error;
+        return (data || []).map(row => ({
+          name: row.username || "guest",
+          max: Number(row.max_points) || 0,
+          when: row.updated_at ? Date.parse(row.updated_at) : Date.now()
+        })).filter(row => row.when >= LEADERBOARD_RESET_AT && row.max > 0);
+      }catch(e){
+        console.log("Leaderboard cloud fetch failed:", e);
+        return null;
+      }
+    }
+    async function showLeaderboard(){
+      const cloudRows = await fetchCloudLeaderboard();
+      const rows = (cloudRows && cloudRows.length ? cloudRows : loadLeaderboard().slice(0, 10));
+      document.getElementById("leaderboardRows").innerHTML = rows.length ? rows.map((r,i)=>`<div class="leader-row"><span>#${i+1} ${leaderboardNameHtml(r.name)}</span><span>${formatNum(r.max)}</span></div>`).join("") : "<p>No scores yet.</p>";
+      document.getElementById("leaderboardModal").classList.add("show");
+    }
+    document.getElementById("leaderboardBtn").addEventListener("click", showLeaderboard);
+    document.getElementById("closeLeaderboard").addEventListener("click", () => document.getElementById("leaderboardModal").classList.remove("show"));
+
+    function escapeHtml(value){
+      return String(value || "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+    }
+
+    function leaderboardNameHtml(name){
+      const clean = escapeHtml(name || "guest");
+      return clean === "alex" ? `${clean}<span class="owner-tag">Owner</span>` : clean;
+    }
+
+    function updateAdminPanelVisibility(){
+      const panel = document.getElementById("alexAdminPanel");
+      const fab = document.getElementById("adminFab");
+      const allowed = isAlexAccount();
+      if(panel) panel.classList.toggle("hidden", !allowed || !panel.classList.contains("open"));
+      if(fab) fab.classList.toggle("hidden", !allowed);
+    }
+
+    const cheatNames67 = [
+      "Starter Points", "Tiny Score Rain", "Click Tap Boost", "Mini Auto Flow", "Five Second Fuel",
+      "Lucky 402", "Point Shower", "Factory Pulse", "Click Surge", "Auto Burst",
+      "Small Bank", "Click Booster", "Score Stack", "Bonus Roll", "CPS Kick",
+      "Point Drop", "67 Sprinkle", "Click Amp", "Score Ladder", "Auto Engine",
+      "Mason Nudge", "Point Packet", "Score Refill", "Click Charge", "Income Jet",
+      "Bonus Bag", "Click Lift", "Point Bloom", "Score Beam", "CPS Rocket",
+      "Lucky Vault", "Point Wave", "Click Storm", "Score Cannon", "Income Core",
+      "Tap Multiplier", "Bonus Crate", "Point Comet", "Click Reactor", "Auto Reactor",
+      "67 Cache", "Point Volcano", "Score Supercharge", "Click Overdrive", "CPS Overdrive",
+      "Bonus Meteor", "Point Treasury", "Click Galaxy", "Score Galaxy", "Income Galaxy",
+      "Mason Blessing", "Point Portal", "Click Dimension", "Score Dimension", "CPS Dimension",
+      "Bonus Nebula", "Point Universe", "Click Universe", "Score Universe", "Income Universe",
+      "Rebirth Prep", "Mega Tap", "Mega Points", "Mega Score", "Mega Income",
+      "God Spark", "Ultimate 67"
+    ];
+
+    function cheatName(index){
+      return cheatNames67[index - 1] || `Cheat ${index}`;
+    }
+
+    function buildCheatPanel(){
+      const grid = document.getElementById("cheatGrid67");
+      if(!grid || grid.children.length) return;
+      for(let i = 1; i <= 67; i += 1){
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = cheatName(i);
+        btn.title = `Developer cheat ${i}: ${cheatName(i)}`;
+        btn.addEventListener("click", () => runCheatCommand(i));
+        grid.appendChild(btn);
+      }
+    }
+
+    function runCheatCommand(index){
+      if(!isAlexAccount()) return;
+      if(index % 5 === 0) perSec += index * 67;
+      else if(index % 3 === 0) clickPower += index * 67;
+      else points += index * 67_000;
+      if(index === 67) points += 67_000_000;
+      showNotice(`${cheatName(index)} applied.`);
+      updateUI(); markSaveDirty(); saveGame();
+    }
+
+    function adminActionErrorMessage(error, action){
+      const message = error && error.message ? error.message : "";
+      if(action === "wipe" && /admin_wipe_player|schema cache/i.test(message)){
+        return "Wipe is not installed in Supabase yet. Run the latest supabase-schema.sql in the Supabase SQL Editor, then try wiping again.";
+      }
+      if(action === "ban" && /admin_ban_player|schema cache/i.test(message)){
+        return "Ban is not installed in Supabase yet. Run the latest supabase-schema.sql in the Supabase SQL Editor, then try banning again.";
+      }
+      if(action === "unban" && /admin_unban_player|schema cache/i.test(message)){
+        return "Unban is not installed in Supabase yet. Run the latest supabase-schema.sql in the Supabase SQL Editor, then try unbanning again.";
+      }
+      return message || "Admin action failed.";
+    }
+
+    async function runAdminAction(action){
+      if(!isAlexAccount()) return;
+      const target = normalizeUsername(document.getElementById("adminTargetUser").value);
+      const reason = (action === "unban" ? document.getElementById("adminUnbanReason").value.trim() : document.getElementById("adminReason").value.trim()) || "admin action";
+      if(!target || !reason){
+        alert("Enter a username and a reason first.");
+        return;
+      }
+      if(!supabaseClient || !currentSessionToken){
+        alert("Admin actions require Supabase to be connected.");
+        return;
+      }
+      const rpcName = action === "ban" ? "admin_ban_player" : action === "unban" ? "admin_unban_player" : "admin_wipe_player";
+      const args = {
+        p_token: currentSessionToken,
+        p_target_username: target,
+        p_reason: reason
+      };
+      if(action === "ban"){
+        const minutes = Number(document.getElementById("adminBanMinutes").value);
+        args.p_duration_minutes = Number.isFinite(minutes) && minutes > 0 ? Math.floor(minutes) : null;
+      }
+      const { error } = await supabaseClient.rpc(rpcName, args);
+      if(error){
+        alert(adminActionErrorMessage(error, action));
+        return;
+      }
+      showNotice(`${target} ${action === "ban" ? "banned" : action === "unban" ? "unbanned" : "wiped"}: ${reason}`);
+      updateLeaderboard();
+    }
+
+    document.getElementById("adminBanBtn").addEventListener("click", () => runAdminAction("ban"));
+    document.getElementById("adminUnbanBtn").addEventListener("click", () => runAdminAction("unban"));
+    document.getElementById("adminWipeBtn").addEventListener("click", () => runAdminAction("wipe"));
+    document.getElementById("adminFab").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      const panel = document.getElementById("alexAdminPanel");
+      panel.classList.toggle("open");
+      updateAdminPanelVisibility();
+      if(panel.classList.contains("open")) panel.scrollTop = 0;
+    });
+    document.getElementById("adminBackBtn").addEventListener("click", () => {
+      const panel = document.getElementById("alexAdminPanel");
+      panel.classList.remove("open");
+      updateAdminPanelVisibility();
+    });
+    function readAdminNumber(id, fallback = 0){
+      const value = Number(document.getElementById(id).value);
+      return Number.isFinite(value) ? Math.max(0, value) : fallback;
+    }
+    document.getElementById("adminSetPointsBtn").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      points = readAdminNumber("adminPointAmount", points);
+      maxPoints = Math.max(maxPoints, points);
+      updateUI(); markSaveDirty(); saveGame();
+    });
+    document.getElementById("adminAddPointsBtn").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      points += readAdminNumber("adminPointAmount", 0);
+      maxPoints = Math.max(maxPoints, points);
+      updateUI(); markSaveDirty(); saveGame();
+    });
+    document.getElementById("adminSetMultiplierBtn").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      adminMultiplier = Math.max(1, readAdminNumber("adminMultiplierAmount", 1));
+      showNotice(`Admin multiplier set to ${formatNum(adminMultiplier)}x.`);
+      updateUI(); markSaveDirty(); saveGame();
+    });
+    document.getElementById("adminAchievementsBtn").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      unlockedAchievements67 = achievements67.map(a => a.id);
+      achievementBuffUntil = Date.now() + 60_000;
+      updateUI(); markSaveDirty(); saveGame();
+    });
+    async function runAdminAdjustPoints(direction){
+      if(!isAlexAccount()) return;
+      const target = normalizeUsername(document.getElementById("adminTargetUser").value);
+      const amount = Number(document.getElementById("adminAdjustAmount").value);
+      if(!target){ alert("Enter a target username first."); return; }
+      if(!Number.isFinite(amount) || amount <= 0){ alert("Enter a valid positive amount."); return; }
+      if(!supabaseClient || !currentSessionToken){
+        alert("This action requires Supabase to be connected.");
+        return;
+      }
+      const rpcName = direction === "give" ? "admin_give_points" : "admin_take_points";
+      const { error } = await supabaseClient.rpc(rpcName, {
+        p_token: currentSessionToken,
+        p_target_username: target,
+        p_amount: Math.floor(amount)
+      });
+      if(error){
+        alert(error.message || `Could not ${direction} points. Make sure the RPC exists in Supabase.`);
+        return;
+      }
+      showNotice(`${direction === "give" ? "Gave" : "Took"} ${formatNum(amount)} points ${direction === "give" ? "to" : "from"} ${target}.`);
+    }
+    document.getElementById("adminGivePointsBtn").addEventListener("click", () => runAdminAdjustPoints("give"));
+    document.getElementById("adminTakePointsBtn").addEventListener("click", () => runAdminAdjustPoints("take"));
+
+    document.getElementById("adminAnnounceBtn").addEventListener("click", async () => {
+      if(!isAlexAccount()) return;
+      const message = document.getElementById("adminAnnouncement").value.trim();
+      if(!message){ alert("Type an announcement message first."); return; }
+      if(!supabaseClient || !currentSessionToken){
+        alert("Broadcasts require Supabase to be connected.");
+        return;
+      }
+      const { error } = await supabaseClient.rpc("admin_broadcast", {
+        p_token: currentSessionToken,
+        p_message: message
+      });
+      if(error){
+        alert(error.message || "Broadcast failed. Make sure admin_broadcast RPC exists in Supabase.");
+        return;
+      }
+      document.getElementById("adminAnnouncement").value = "";
+      showNotice("📢 Announcement broadcast!");
+    });
+
+    document.getElementById("adminUnlockAllBtn").addEventListener("click", () => {
+      if(!isAlexAccount()) return;
+      points = Math.max(points, 1_000_000_000_000_000);
+      maxPoints = Math.max(maxPoints, points);
+      clickPower = Math.max(clickPower, 1_000_000_000);
+      perSec = Math.max(perSec, 10_000_000_000);
+      rebirths = Math.max(rebirths, 10);
+      adminMultiplier = Math.max(adminMultiplier, 1_000_000);
+      unlockedAchievements67 = achievements67.map(a => a.id);
+      upgradeConfig.forEach(cfg => {
+        state[cfg.key].count = Math.max(state[cfg.key].count, 1);
+        state[cfg.key].cost = Math.ceil(cfg.cost * cfg.scale);
+      });
+      updateUI(); markSaveDirty(); saveGame();
+    });
+    buildCheatPanel();
+
+    const SOCIAL_KEY_BASE = "alexFunSocialV1";
+    let selectedMessageFriend = "";
+    let socialState = null;
+    let socialPollTimer = null;
+    function getSocialKey(){ return profileKey(SOCIAL_KEY_BASE); }
+    function loadSocial(){
+      try { return JSON.parse(localStorage.getItem(getSocialKey()) || '{"friends":[],"blocked":[],"messages":{},"incomingRequests":[],"outgoingRequests":[],"notifications":[]}'); }
+      catch { return { friends:[], blocked:[], messages:{}, incomingRequests:[], outgoingRequests:[], notifications:[] }; }
+    }
+    function saveSocial(social){ localStorage.setItem(getSocialKey(), JSON.stringify(social)); }
+    function normalizeSocialState(raw){
+      const fallback = loadSocial();
+      const state = raw || fallback;
+      const messagesByFriend = {};
+      if(Array.isArray(state.messages)){
+        state.messages.forEach(msg => {
+          const other = msg.mine ? msg.to : msg.from;
+          if(!other) return;
+          messagesByFriend[other] = messagesByFriend[other] || [];
+          messagesByFriend[other].push(msg);
+        });
+      }else{
+        Object.assign(messagesByFriend, state.messages || {});
+      }
+      return {
+        users: Array.isArray(state.users) ? state.users : [],
+        friends: Array.isArray(state.friends) ? state.friends : (fallback.friends || []),
+        blocked: Array.isArray(state.blocked) ? state.blocked : (fallback.blocked || []),
+        incomingRequests: Array.isArray(state.incomingRequests) ? state.incomingRequests : [],
+        outgoingRequests: Array.isArray(state.outgoingRequests) ? state.outgoingRequests : [],
+        messages: messagesByFriend,
+        notifications: Array.isArray(state.notifications) ? state.notifications : []
+      };
+    }
+    function currentSocial(){ return socialState || normalizeSocialState(loadSocial()); }
+    function showTopNotification(title, body){
+      const stack = document.getElementById("notificationStack");
+      const card = document.createElement("div");
+      card.className = "notification-card";
+      card.innerHTML = `<strong>${escapeHtml(title)}</strong>${escapeHtml(body)}`;
+      stack.prepend(card);
+      setTimeout(()=>card.remove(), 6500);
+    }
+    function updateSocialBadges(){
+      const social = currentSocial();
+      const requestCount = social.incomingRequests.length;
+      const unreadMessages = Object.values(social.messages).flat().filter(msg => !msg.mine && !msg.read_at).length;
+      const friendsBadge = document.getElementById("friendsBadge");
+      const messagesBadge = document.getElementById("messagesBadge");
+      friendsBadge.textContent = requestCount;
+      messagesBadge.textContent = unreadMessages;
+      friendsBadge.classList.toggle("show", requestCount > 0);
+      messagesBadge.classList.toggle("show", unreadMessages > 0);
+    }
+    async function refreshSocial(options = {}){
+      if(supabaseClient && currentSessionToken){
+        try{
+          const { data, error } = await supabaseClient.rpc("list_social_state", { p_token: currentSessionToken });
+          if(!error && data){
+            socialState = normalizeSocialState(data);
+            saveSocial(socialState);
+            if(options.notify) showUnreadNotifications();
+            updateSocialBadges();
+            if(document.getElementById("friendsPanel").classList.contains("show")) renderUsers();
+            if(document.getElementById("messagesPanel").classList.contains("show")) { renderFriends(); renderThread(); }
+            return socialState;
+          }
+          if(error && /banned/i.test(error.message || "")){
+            await showBanScreen(activeUser, "", error.message);
+            currentSessionToken = "";
+            localStorage.removeItem(SESSION_TOKEN_KEY);
+            return normalizeSocialState(loadSocial());
+          }
+        }catch(e){
+          if(/banned/i.test(e && e.message ? e.message : "")){
+            await showBanScreen(activeUser, "", e.message);
+            currentSessionToken = "";
+            localStorage.removeItem(SESSION_TOKEN_KEY);
+            return normalizeSocialState(loadSocial());
+          }
+          console.log("Social refresh failed:", e);
+        }
+      }
+      socialState = normalizeSocialState(loadSocial());
+      updateSocialBadges();
+      return socialState;
+    }
+    function showUnreadNotifications(){
+      const social = currentSocial();
+      const seenKey = profileKey("alexFunNotificationSeenAtV1");
+      const lastSeen = Number(localStorage.getItem(seenKey) || 0);
+      let newest = lastSeen;
+      social.notifications
+        .slice()
+        .sort((a,b)=>Date.parse(a.created_at || 0) - Date.parse(b.created_at || 0))
+        .forEach(note => {
+          const when = Date.parse(note.created_at || 0);
+          if(when > lastSeen && !note.read_at){
+            showTopNotification(note.kind === "message" ? "Message" : "Notification", note.body || "New notification");
+          }
+          if(when > newest) newest = when;
+        });
+      if(newest > lastSeen) localStorage.setItem(seenKey, String(newest));
+    }
+    function startSocialPolling(){
+      clearInterval(socialPollTimer);
+      refreshSocial({ notify:true });
+      socialPollTimer = setInterval(()=>refreshSocial({ notify:true }), 10000);
+    }
+    async function fetchUsersForSocial(){
+      if(socialState && socialState.users.length) return socialState.users;
+      if(supabaseClient){
+        try{
+          const { data, error } = await supabaseClient.rpc("list_public_players", { p_token: currentSessionToken || "" });
+          if(!error && data) return data.map(row => row.username).filter(Boolean);
+        }catch(e){ console.log("User list failed:", e); }
+      }
+      const localNames = Object.keys(loadUsers());
+      const boardNames = loadLeaderboard().map(row => row.name);
+      return [...new Set([activeUser, "alex", ...localNames, ...boardNames].filter(Boolean))];
+    }
+    async function renderUsers(){
+      const list = document.getElementById("userList");
+      const requests = document.getElementById("friendRequestsList");
+      const query = document.getElementById("userSearch").value.trim().toLowerCase();
+      const social = currentSocial();
+      const users = (await fetchUsersForSocial())
+        .filter(name => normalizeUsername(name) !== safeUserKey())
+        .filter(name => !query || name.toLowerCase().includes(query))
+        .sort((a,b)=>a.localeCompare(b));
+      requests.innerHTML = social.incomingRequests.length ? `<h3>Requests</h3>` + social.incomingRequests.map(req => `
+        <div class="request-row" data-request="${req.id}">
+          <strong>${leaderboardNameHtml(req.username)}</strong>
+          <div class="user-actions">
+            <button class="btn accept-request" type="button">Accept</button>
+            <button class="btn decline-request" type="button">Decline</button>
+          </div>
+        </div>`).join("") : "";
+      list.innerHTML = users.length ? users.map(name => `
+        <div class="user-row" data-user="${escapeHtml(name)}">
+          <strong>${leaderboardNameHtml(name)}</strong>
+          <div class="user-actions">
+            <button class="btn add-user" type="button">${social.friends.includes(name) ? "Friends" : social.outgoingRequests.includes(name) ? "Requested" : "Add"}</button>
+            <button class="btn msg-user" type="button">Message</button>
+            <button class="btn block-user" type="button">${social.blocked.includes(name) ? "Blocked" : "Block"}</button>
+          </div>
+        </div>`).join("") : "<p>No users found.</p>";
+    }
+    async function addFriend(name){
+      const social = loadSocial();
+      if(supabaseClient && currentSessionToken){
+        const { error } = await supabaseClient.rpc("send_friend_request", { p_token: currentSessionToken, p_target_username: name });
+        if(error) { alert(error.message || "Friend request failed."); return; }
+        showNotice(`Friend request sent to ${name}.`);
+        await refreshSocial();
+        return;
+      }
+      if(!social.friends.includes(name)) social.friends.push(name);
+      social.blocked = social.blocked.filter(user => user !== name);
+      saveSocial(social); socialState = normalizeSocialState(social); renderUsers(); renderFriends(); updateSocialBadges();
+    }
+    function blockUser(name){
+      const social = loadSocial();
+      if(!social.blocked.includes(name)) social.blocked.push(name);
+      social.friends = social.friends.filter(user => user !== name);
+      saveSocial(social); socialState = normalizeSocialState(social); renderUsers(); renderFriends(); updateSocialBadges();
+    }
+    function openMessageWith(name){
+      selectedMessageFriend = name;
+      const panel = document.getElementById("messagesPanel");
+      panel.classList.add("show");
+      panel.setAttribute("aria-hidden", "false");
+      panel.scrollTop = 0;
+      renderFriends();
+      renderThread();
+    }
+    function renderFriends(){
+      const social = currentSocial();
+      const query = document.getElementById("messageSearch").value.trim().toLowerCase();
+      const messageNames = Object.keys(social.messages || {});
+      const friends = [...new Set([...social.friends, ...messageNames])].filter(name => !query || name.toLowerCase().includes(query));
+      document.getElementById("friendList").innerHTML = friends.length ? friends.map(name => `<div class="user-row" data-friend="${escapeHtml(name)}"><strong>${leaderboardNameHtml(name)}</strong></div>`).join("") : "<p>No friends yet.</p>";
+    }
+    function renderThread(){
+      const social = currentSocial();
+      const thread = selectedMessageFriend ? (social.messages[selectedMessageFriend] || []) : [];
+      document.getElementById("messageThread").innerHTML = selectedMessageFriend
+        ? `<strong>${leaderboardNameHtml(selectedMessageFriend)}</strong>` + (thread.length ? thread.map(msg => {
+            const text = typeof msg === "string" ? msg : msg.body;
+            const mine = msg && msg.mine;
+            const sender = mine ? (activeUser || "You") : ((msg && msg.from) || selectedMessageFriend);
+            return `<div class="message-bubble ${mine ? "mine" : "theirs"}"><span class="message-sender">${escapeHtml(sender)}</span>${escapeHtml(text || "")}</div>`;
+          }).join("") : "<p>No messages yet.</p>")
+        : "Choose a friend to start messaging.";
+      const box = document.getElementById("messageThread");
+      box.scrollTop = box.scrollHeight;
+    }
+    document.getElementById("friendsBtn").addEventListener("click", async () => {
+      const panel = document.getElementById("friendsPanel");
+      panel.classList.toggle("show");
+      panel.setAttribute("aria-hidden", panel.classList.contains("show") ? "false" : "true");
+      if(panel.classList.contains("show")) {
+        panel.scrollTop = 0;
+        await refreshSocial();
+        await renderUsers();
+      }
+    });
+    document.getElementById("messagesBtn").addEventListener("click", async () => {
+      const panel = document.getElementById("messagesPanel");
+      panel.classList.toggle("show");
+      panel.setAttribute("aria-hidden", panel.classList.contains("show") ? "false" : "true");
+      if(panel.classList.contains("show")) panel.scrollTop = 0;
+      await refreshSocial();
+      renderFriends(); renderThread();
+      if(supabaseClient && currentSessionToken && panel.classList.contains("show")){
+        supabaseClient.rpc("mark_notifications_read", { p_token: currentSessionToken }).then(()=>refreshSocial());
+      }
+    });
+    document.getElementById("friendsBackBtn").addEventListener("click", () => {
+      const panel = document.getElementById("friendsPanel");
+      panel.classList.remove("show");
+      panel.setAttribute("aria-hidden", "true");
+    });
+    document.getElementById("messagesBackBtn").addEventListener("click", () => {
+      const panel = document.getElementById("messagesPanel");
+      panel.classList.remove("show");
+      panel.setAttribute("aria-hidden", "true");
+    });
+    document.getElementById("userSearch").addEventListener("input", renderUsers);
+    document.getElementById("messageSearch").addEventListener("input", renderFriends);
+    document.getElementById("friendRequestsList").addEventListener("click", async e => {
+      const row = e.target.closest(".request-row");
+      if(!row || !supabaseClient || !currentSessionToken) return;
+      const accept = e.target.classList.contains("accept-request");
+      const decline = e.target.classList.contains("decline-request");
+      if(!accept && !decline) return;
+      const { error } = await supabaseClient.rpc("respond_friend_request", {
+        p_token: currentSessionToken,
+        p_request_id: Number(row.dataset.request),
+        p_accept: accept
+      });
+      if(error) alert(error.message || "Could not respond to request.");
+      await refreshSocial();
+    });
+    document.getElementById("userList").addEventListener("click", e => {
+      const row = e.target.closest(".user-row");
+      if(!row) return;
+      const name = row.dataset.user;
+      if(e.target.classList.contains("block-user")) blockUser(name);
+      else if(e.target.classList.contains("msg-user")) openMessageWith(name);
+      else addFriend(name);
+    });
+    document.getElementById("friendList").addEventListener("click", e => {
+      const row = e.target.closest(".user-row");
+      if(!row) return;
+      selectedMessageFriend = row.dataset.friend;
+      renderThread();
+    });
+    document.getElementById("sendMessageBtn").addEventListener("click", async () => {
+      const text = document.getElementById("messageText").value.trim();
+      if(!selectedMessageFriend || !text) return;
+      if(supabaseClient && currentSessionToken){
+        const { error } = await supabaseClient.rpc("send_direct_message", {
+          p_token: currentSessionToken,
+          p_recipient_username: selectedMessageFriend,
+          p_body: text
+        });
+        if(error) { alert(error.message || "Message failed."); return; }
+        document.getElementById("messageText").value = "";
+        await refreshSocial();
+        renderThread();
+        return;
+      }
+      const social = loadSocial();
+      social.messages[selectedMessageFriend] = social.messages[selectedMessageFriend] || [];
+      social.messages[selectedMessageFriend].push({ body:text, mine:true, created_at:new Date().toISOString() });
+      saveSocial(social);
+      socialState = normalizeSocialState(social);
+      document.getElementById("messageText").value = "";
+      renderThread();
+    });
+    document.getElementById("closeMessagesBtn").addEventListener("click", () => {
+      const panel = document.getElementById("messagesPanel");
+      panel.classList.remove("show");
+      panel.setAttribute("aria-hidden", "true");
+    });
+
+    document.getElementById("saveGameBtn").addEventListener("click", () => {
+      saveGame();
+      const btn = document.getElementById("saveGameBtn");
+      const orig = btn.textContent;
+      btn.textContent = "✓ Saved!";
+      btn.style.borderColor = "#22c55e";
+      btn.style.color = "#166534";
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.style.borderColor = "";
+        btn.style.color = "";
+      }, 1600);
+    });
+
+    document.getElementById("resetGame").addEventListener("click", async () => {
+      if (!confirm("Reset all progress?")) return;
+      reset67StateToDefaults();
+      localStorage.removeItem(getSaveKey());
+      removeLocalLeaderboardEntry(activeUser || "guest");
+      await deleteCloudSave();
+      markSaveDirty();
+      saveGame();
       saveDirty = false;
       updateUI();
+      updateLeaderboard();
+      showNotice("67 Clicker stats reset.");
     });
 
     document.getElementById("fullscreenBtn").addEventListener("click", async () => {
@@ -1083,7 +2876,7 @@
 
     setInterval(() => {
       if (perSec > 0) {
-        points += perSec/10;
+        points += effectivePerSec()/10;
         updateUI();
         markSaveDirty();
       }
@@ -1091,11 +2884,13 @@
 
     setInterval(() => {
       if (saveDirty) saveGame();
-    }, 2000);
+    }, 10_000);
 
     window.addEventListener("beforeunload", saveGame);
 
+    initializeAuth();
     updateUI();
+    scheduleMasonBonus();
   </script>
 
 </body>

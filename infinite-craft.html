@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Infinite Craft — alex.fun</title>
   <link rel="icon" type="image/png" href="./clever1.png"/>
+  <script src="./cover-profiles.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -24,8 +27,11 @@
       font-family:"Martel Sans",Arial,sans-serif;
       background:var(--bg);color:var(--fg);
       height:100vh;display:flex;flex-direction:column;overflow:hidden;
+      padding-bottom:26px;
       transition:background .25s,color .25s;
+      animation:pageIn .32s ease both;
     }
+    @keyframes pageIn{from{opacity:0}to{opacity:1}}
 
     /* ── Top bar ── */
     .top-bar{
@@ -66,7 +72,7 @@
       border-bottom:1px solid var(--bg);
       transition:color .25s,border-color .25s;
     }
-    .sb-list{flex:1;overflow-y:auto;padding:8px;
+    .sb-list{flex:1;overflow-y:auto;padding:8px 8px 42px;
       scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
     .sb-list::-webkit-scrollbar{width:4px;}
     .sb-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
@@ -80,7 +86,8 @@
     .sb-item:hover{background:var(--hover);transform:translateX(2px);}
     .sb-item:active{transform:translateX(0) scale(.97);}
     .sb-item.sb-new{
-      background:#fffbea;border-color:#ffd700;
+      background:#fff3b8;border-color:#d6b600;color:#241b00;
+      box-shadow:0 0 0 1px rgba(214,182,0,.18) inset;
       animation:sbPop .4s ease;
     }
     @keyframes sbPop{0%{transform:scale(1.08)}50%{transform:scale(.97)}100%{transform:scale(1)}}
@@ -154,7 +161,7 @@
       60%{transform:translateX(-4px)}
       80%{transform:translateX(4px)}
     }
-    .ws-tile.tile-new{background:#fffbea;border-color:#ffd700;}
+    .ws-tile.tile-new{background:#fff3b8;border-color:#d6b600;color:#241b00;}
     .tile-emoji{font-size:18px;line-height:1;}
     .tile-remove{
       font-size:10px;color:#ccc;margin-left:2px;cursor:pointer;
@@ -179,7 +186,7 @@
 
     /* ── Toast ── */
     #toast{
-      position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+      position:fixed;bottom:50px;left:50%;transform:translateX(-50%) translateY(20px);
       background:#1a1a1a;color:#fff;font-size:14px;font-weight:800;
       padding:10px 20px;border-radius:100px;
       pointer-events:none;opacity:0;
@@ -201,9 +208,19 @@
 
     /* ── Cover overlay ── */
     #coverOverlay{
-      display:none;position:fixed;inset:0;z-index:9998;cursor:pointer;
+      position:fixed;inset:0;z-index:9998;cursor:pointer;background:#fff;
+      opacity:0;pointer-events:none;transition:opacity .55s cubic-bezier(.4,0,.2,1);
     }
-    #coverOverlay img{width:100%;height:100%;object-fit:cover;display:block;}
+    #coverOverlay.show{opacity:1;pointer-events:auto;}
+    #coverOverlay img{width:100%;height:100%;object-fit:fill;object-position:top center;display:block;}
+
+    .ic-achievements{display:none;position:fixed;inset:0;z-index:9997;place-items:center;background:rgba(0,0,0,.45);padding:20px;}
+    .ic-achievements.show{display:grid;}
+    .ic-ach-card{width:min(460px,100%);background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.3);}
+    .ic-ach-card h2{font-size:22px;font-weight:900;margin-bottom:12px;}
+    .ic-ach-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px;}
+    .ic-ach{border:1.5px solid var(--border);border-radius:12px;padding:9px;font-size:12px;font-weight:900;color:var(--muted);}
+    .ic-ach.unlocked{background:#fff3b8;border-color:#d6b600;color:#241b00;}
 
     /* Mobile */
     @media(max-width:600px){
@@ -213,7 +230,7 @@
     @media(max-width:420px){
       .layout{flex-direction:column;}
       .sidebar{width:100%;max-height:35vh;border-right:none;border-bottom:1.5px solid var(--border);}
-      .sb-list{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:6px;}
+      .sb-list{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:6px 6px 34px;}
       .sb-item{flex-shrink:0;}
     }
   </style>
@@ -223,6 +240,7 @@
 <div class="top-bar">
   <button class="btn" onclick="location.href='./index.html'">← Back</button>
   <h1>Infinite Craft <span id="counter">4 discovered</span></h1>
+  <button class="btn" id="achievementsBtn">Achievements</button>
   <button class="btn" id="clearBoardBtn">Clear Board</button>
   <button class="btn btn-danger" id="resetBtn">Reset</button>
   <button class="btn" id="themeToggle" title="Toggle dark mode" style="padding:6px 10px;font-size:15px;">🌙</button>
@@ -249,6 +267,14 @@
 
 <div id="coverOverlay" onclick="hideCover()">
   <img src="./cleverpage.png" alt="Cover"/>
+</div>
+
+<div id="icAchievements" class="ic-achievements">
+  <div class="ic-ach-card">
+    <h2>Infinite Craft Achievements</h2>
+    <div id="icAchievementList" class="ic-ach-list"></div>
+    <button class="btn" id="closeAchievementsBtn" style="width:100%;">Close</button>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -283,862 +309,214 @@
 //  Cover overlay
 // ─────────────────────────────────────────────
 function showCover(){
-  document.getElementById('coverOverlay').style.display='block';
+  document.getElementById('coverOverlay').classList.add('show');
+  clearTimeout(coverTimer);
 }
 function hideCover(){
-  document.getElementById('coverOverlay').style.display='none';
+  document.getElementById('coverOverlay').classList.remove('show');
+  armCoverTimer();
+}
+let coverTimer = null;
+function isTypingField(){
+  const active = document.activeElement;
+  return active && active.closest("input, textarea, select, [contenteditable='true']");
+}
+function armCoverTimer(){
+  clearTimeout(coverTimer);
+  coverTimer = setTimeout(showCover, 5000);
+}
+function handleCoverActivity(){
+  if(document.getElementById('coverOverlay').classList.contains('show')) return;
+  else armCoverTimer();
 }
 document.addEventListener('keydown',function(e){
-  if(e.key==='Backspace'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){
-    e.preventDefault();
-    showCover();
+  if(e.key !== 'Backspace'){
+    armCoverTimer();
+    return;
   }
+  if(isTypingField()){
+    armCoverTimer();
+    return;
+  }
+  e.preventDefault();
+  showCover();
 });
+["mousemove","mousedown","touchstart","click","wheel"].forEach(evt=>{
+  window.addEventListener(evt, handleCoverActivity, { passive:true });
+});
+armCoverTimer();
 
 // ─────────────────────────────────────────────
 //  RECIPES  [a, b, emoji, name]
 // ─────────────────────────────────────────────
 const RECIPES = [
-["Earth","Fire","🌋","Lava"],
-["Earth","Water","🌱","Plant"],
-["Earth","Wind","🌫️","Dust"],
+// Verified core recipes from real Neal.fun Infinite Craft paths.
+// This list focuses on accuracy over random fake quantity.
 ["Fire","Water","💨","Steam"],
-["Fire","Wind","💨","Smoke"],
-["Water","Wind","🌊","Wave"],
-["Earth","Earth","⛰️","Mountain"],
-["Fire","Fire","🌋","Volcano"],
+["Earth","Wind","🌫️","Dust"],
+["Earth","Water","🌱","Plant"],
+["Earth","Fire","🌋","Lava"],
 ["Water","Water","🏞️","Lake"],
 ["Wind","Wind","🌪️","Tornado"],
-["Earth","Steam","💩","Mud"],
-["Fire","Steam","⚙️","Engine"],
-["Steam","Water","🌊","Flood"],
-["Steam","Wind","☁️","Cloud"],
-["Steam","Steam","💨","Pressure"],
-["Earth","Mud","🏺","Clay"],
-["Fire","Mud","🧱","Brick"],
-["Mud","Water","🌿","Swamp"],
-["Mud","Wind","🏜️","Quicksand"],
-["Mud","Mud","🌿","Bog"],
-["Earth","Wave","🏖️","Beach"],
-["Fire","Wave","🌫️","Mist"],
-["Wave","Wind","🌊","Tsunami"],
-["Wave","Wave","🌊","Ocean"],
-["Earth","Lava","🪨","Rock"],
-["Lava","Water","🖤","Obsidian"],
-["Lava","Wind","🌑","Ash"],
-["Lava","Lava","🌋","Volcano"],
-["Earth","Smoke","⬛","Coal"],
-["Smoke","Water","🌫️","Fog"],
-["Smoke","Wind","🌫️","Haze"],
-["Smoke","Smoke","🌑","Darkness"],
-["Dust","Earth","🏜️","Desert"],
+["Fire","Fire","🌋","Volcano"],
+["Earth","Earth","⛰️","Mountain"],
+["Water","Wind","🌊","Wave"],
+["Dust","Earth","🪐","Planet"],
+["Dust","Water","💩","Mud"],
+["Dust","Fire","🌑","Ash"],
 ["Dust","Dust","🏖️","Sand"],
-["Dust","Water","🟫","Silt"],
 ["Dust","Wind","🌪️","Sandstorm"],
-["Dust","Fire","✨","Ember"],
-["Earth","Mountain","🏔️","Canyon"],
-["Mountain","Water","💦","Waterfall"],
-["Mountain","Fire","🌋","Volcano"],
-["Mountain","Wind","❄️","Avalanche"],
-["Mountain","Mountain","🏔️","Range"],
-["Earth","Lake","💧","Pond"],
-["Lake","Wind","🏞️","River"],
-["Lake","Fire","♨️","Hot Spring"],
-["Lake","Mountain","💦","Waterfall"],
-["Earth","Storm","🌍","Earthquake"],
-["Fire","Storm","⚡","Lightning"],
-["Storm","Water","❄️","Ice"],
-["Storm","Wave","🌀","Whirlpool"],
-["Storm","Wind","🌀","Hurricane"],
-["Storm","Storm","🌩️","Superstorm"],
-["Earth","Volcano","🌋","Volcanic Island"],
-["Volcano","Water","🏝️","Island"],
-["Volcano","Ice","💨","Steam"],
-["Cloud","Water","🌧️","Rain"],
-["Cloud","Fire","🌈","Rainbow"],
-["Cloud","Wind","🌪️","Tornado"],
-["Cloud","Earth","🌫️","Fog"],
-["Cloud","Cloud","☁️","Sky"],
-["Cloud","Ice","🧊","Hail"],
-["Cloud","Storm","⛈️","Thundercloud"],
-["Ice","Earth","🧊","Permafrost"],
-["Ice","Fire","💧","Water"],
-["Ice","Mountain","🧊","Glacier"],
-["Ice","Ocean","🧊","Arctic"],
-["Ice","Wind","❄️","Blizzard"],
-["Ice","Ice","❄️","Snowflake"],
-["Ice","Cloud","🌨️","Snow"],
-["Ice","Rain","🌨️","Sleet"],
-["Snow","Earth","🌨️","Tundra"],
-["Snow","Wind","❄️","Blizzard"],
-["Snow","Mountain","⛷️","Ski Resort"],
-["Snow","Fire","💧","Slush"],
-["Snow","Human","⛄","Snowman"],
-["Rain","Earth","🌊","Erosion"],
-["Rain","Fire","🌈","Rainbow"],
-["Rain","Sand","🌴","Oasis"],
-["Rain","Wind","🌦️","Drizzle"],
-["Rain","Mountain","💦","Waterfall"],
-["Rain","Cloud","🌧️","Monsoon"],
-["Rain","Desert","🌴","Oasis"],
-["Rain","Ice","🌨️","Sleet"],
-["Rain","Snow","🌨️","Freezing Rain"],
-["Sky","Fire","☀️","Sun"],
-["Sky","Earth","🌑","Night"],
-["Sky","Water","🌈","Rainbow"],
-["Sky","Wind","🌤️","Clear Sky"],
-["Night","Sky","🌙","Moon"],
-["Sun","Night","⭐","Star"],
-["Sun","Earth","☀️","Day"],
-["Sun","Water","💧","Evaporation"],
-["Sun","Ice","💧","Melt"],
-["Sun","Cloud","🌤️","Sunshine"],
-["Sun","Fire","💥","Supernova"],
-["Sun","Plant","🌻","Sunflower"],
-["Moon","Water","🌊","Tide"],
-["Moon","Sky","🌙","Night"],
-["Moon","Magic","🔮","Moonstone"],
-["Moon","Wolf","🐺","Werewolf"],
-["Moon","Human","🌙","Lunatic"],
-["Star","Star","✨","Constellation"],
-["Star","Earth","💫","Meteor"],
-["Star","Magic","🌟","Wish"],
-["Star","Life","👽","Alien"],
-["Star","Death","🕳️","Black Hole"],
-["Star","Dust","✨","Stardust"],
+["Earth","Wave","🏖️","Sand"],
+["Sand","Water","🏖️","Beach"],
 ["Sand","Fire","🪟","Glass"],
-["Sand","Water","🏜️","Quicksand"],
-["Sand","Earth","🏖️","Beach"],
-["Sand","Rock","🪨","Sandstone"],
-["Sand","Human","🏰","Sandcastle"],
-["Sand","Wind","🌪️","Sandstorm"],
-["Glass","Fire","💎","Crystal"],
-["Glass","Water","🐠","Aquarium"],
-["Glass","Wind","🎵","Wind Chime"],
-["Glass","Rock","🔍","Lens"],
-["Glass","Light","🌈","Prism"],
-["Glass","Human","🪟","Window"],
-["Glass","Sand","⏳","Hourglass"],
-["Glass","Metal","🔭","Telescope"],
-["Rock","Fire","⚙️","Metal"],
-["Rock","Water","🪨","Stone"],
-["Rock","Wind","🪨","Pebble"],
-["Rock","Earth","🪨","Boulder"],
-["Rock","Human","🔥","Flint"],
-["Rock","Metal","⛏️","Pickaxe"],
-["Rock","Life","🦴","Fossil"],
-["Rock","Time","🦴","Fossil"],
-["Metal","Fire","🔥","Molten Metal"],
-["Metal","Water","🔩","Rust"],
-["Metal","Wind","🔔","Bell"],
-["Metal","Earth","🪨","Ore"],
-["Metal","Metal","🔩","Steel"],
-["Metal","Human","⚔️","Weapon"],
-["Metal","Wood","🪓","Axe"],
-["Metal","Lightning","⚡","Electricity"],
-["Metal","Rock","🔩","Alloy"],
-["Metal","Magic","✨","Enchanted Metal"],
-["Obsidian","Fire","🗡️","Blade"],
-["Obsidian","Human","🗡️","Obsidian Sword"],
-["Coal","Fire","💎","Diamond"],
-["Coal","Earth","⛏️","Mine"],
-["Coal","Metal","🔩","Steel"],
-["Ash","Water","🌿","Fertilizer"],
-["Ash","Earth","🌱","Rich Soil"],
-["Ash","Wind","🌫️","Dust"],
-["Ash","Life","🌱","Rebirth"],
-["Ocean","Fire","🌋","Underwater Volcano"],
-["Ocean","Wind","🌀","Typhoon"],
-["Ocean","Earth","🏝️","Island"],
-["Ocean","Ice","🧊","Arctic"],
-["Ocean","Storm","🌀","Hurricane"],
-["Ocean","Life","🐟","Fish"],
-["Ocean","Lightning","🧫","Primordial Soup"],
-["Ocean","Moon","🌊","Tide"],
-["Ocean","Mountain","🏝️","Archipelago"],
-["Beach","Fire","🔥","Bonfire"],
-["Beach","Human","🏄","Surfing"],
-["Beach","Wind","🏰","Sandcastle"],
-["Island","Fire","🌋","Volcanic Island"],
-["Island","Human","🏝️","Resort"],
-["Desert","Fire","🌡️","Heat Wave"],
-["Desert","Water","🌴","Oasis"],
-["Desert","Wind","🌪️","Sandstorm"],
-["Desert","Life","🌵","Cactus"],
-["Desert","Human","🐪","Nomad"],
-["Desert","Ice","🌡️","Mirage"],
-["Oasis","Life","🌴","Palm Tree"],
-["Oasis","Human","🏕️","Camp"],
-["Swamp","Life","🐊","Alligator"],
-["Swamp","Plant","🌿","Mangrove"],
-["Swamp","Fire","🔥","Peat Fire"],
-["Swamp","Human","🏚️","Shack"],
-["Volcano","Water","🏝️","Island"],
-["Volcano","Wind","☁️","Ash Cloud"],
-["Volcano","Ice","💨","Steam"],
-["Glacier","Fire","🌊","Flood"],
-["Glacier","Earth","🏔️","Valley"],
-["Glacier","Ocean","🧊","Iceberg"],
-["Arctic","Life","🐻‍❄️","Polar Bear"],
-["Arctic","Human","🧭","Explorer"],
-["Lightning","Metal","⚡","Electricity"],
-["Lightning","Water","💀","Electrocution"],
-["Lightning","Tree","🔥","Wildfire"],
-["Lightning","Human","⚡","Shock"],
-["Lightning","Sand","🪟","Fulgurite"],
-["Electricity","Glass","💡","Light Bulb"],
-["Electricity","Water","💧","Electrolysis"],
-["Electricity","Wind","🌀","Wind Turbine"],
-["Electricity","Sun","☀️","Solar Panel"],
-["Electricity","Metal","🔌","Wire"],
-["Electricity","Computer","💻","Power"],
-["Light Bulb","Human","💡","Idea"],
-["Light Bulb","Dark","🌓","Contrast"],
-["Light Bulb","Magic","✨","Enchanted Light"],
-["Primordial Soup","Time","🌱","Life"],
-["Primordial Soup","Heat","🌱","Life"],
-["Primordial Soup","Lightning","🌱","Life"],
-["Life","Earth","🌱","Plant"],
-["Life","Fire","🐾","Animal"],
-["Life","Water","🔬","Cell"],
-["Life","Wind","🌱","Spore"],
-["Life","Ocean","🐟","Fish"],
-["Life","Rock","🦴","Fossil"],
-["Life","Death","👻","Ghost"],
-["Life","Human","👶","Baby"],
-["Life","Metal","🤖","Cyborg"],
-["Life","Magic","🧚","Fairy"],
-["Life","Star","👽","Alien"],
-["Life","Time","🦕","Evolution"],
-["Life","Lightning","🧟","Frankenstein"],
-["Cell","Cell","🔬","Organism"],
-["Cell","Water","🩸","Blood"],
-["Cell","Fire","🌡️","Fever"],
-["Cell","Time","🧬","Mutation"],
-["Cell","Earth","🦠","Bacteria"],
-["Bacteria","Bacteria","🦠","Virus"],
-["Bacteria","Water","🦠","Plague"],
-["Bacteria","Fire","💊","Antibiotic"],
-["Plant","Earth","🌲","Tree"],
-["Plant","Water","🌸","Flower"],
-["Plant","Wind","🌼","Dandelion"],
-["Plant","Fire","🔥","Campfire"],
-["Plant","Ice","🌲","Pine Tree"],
-["Plant","Sand","🌵","Cactus"],
-["Plant","Rock","🌿","Moss"],
-["Plant","Ocean","🌿","Seaweed"],
-["Plant","Rain","🍄","Mushroom"],
-["Plant","Sun","🌻","Sunflower"],
-["Plant","Human","🌿","Herb"],
-["Plant","Magic","🌿","Mandrake"],
-["Plant","Death","🍂","Dead Plant"],
-["Plant","Time","🌳","Ancient Tree"],
-["Plant","Swamp","🪷","Lily"],
-["Plant","Desert","🌾","Tumbleweed"],
-["Tree","Earth","🌲","Forest"],
-["Tree","Fire","🔥","Wildfire"],
-["Tree","Wind","🍂","Fallen Leaves"],
-["Tree","Ice","🎄","Christmas Tree"],
-["Tree","Sun","🍎","Fruit Tree"],
-["Tree","Human","🪵","Wood"],
-["Tree","Lightning","🔥","Burning Tree"],
-["Tree","Water","🌴","Mangrove"],
-["Tree","Metal","🪓","Lumber"],
-["Tree","Rain","🌳","Rainforest"],
-["Flower","Water","🌸","Perfume"],
-["Flower","Wind","🌸","Petal"],
-["Flower","Earth","🌷","Garden"],
-["Flower","Bee","🍯","Honey"],
-["Flower","Human","💐","Bouquet"],
-["Flower","Sun","🌻","Sunflower"],
-["Flower","Fire","🌸","Incense"],
-["Flower","Moon","🌸","Night Bloom"],
-["Forest","Fire","🔥","Wildfire"],
-["Forest","Water","🌿","Jungle"],
-["Forest","Human","🌲","Lumberjack"],
-["Forest","Animal","🐺","Wolf"],
-["Forest","Rain","🌳","Amazon"],
-["Forest","Magic","🧙","Enchanted Forest"],
-["Mushroom","Earth","🍄","Truffle"],
-["Mushroom","Rain","🍄","Fungi"],
-["Mushroom","Human","🍄","Poison"],
-["Mushroom","Magic","🍄","Fairy Ring"],
-["Mushroom","Fire","🍄","Smoked Mushroom"],
-["Grass","Wind","🌾","Prairie"],
-["Grass","Earth","🌾","Plains"],
-["Grass","Water","🌿","Lawn"],
-["Grass","Fire","🔥","Wildfire"],
-["Grass","Human","🌾","Hay"],
-["Grass","Ice","❄️","Frost Grass"],
-["Grass","Farm","🌾","Wheat"],
-["Wheat","Fire","🍞","Bread"],
-["Wheat","Water","🍞","Dough"],
-["Wheat","Wind","⚙️","Windmill"],
-["Wheat","Human","🌾","Harvest"],
-["Cactus","Water","🌵","Blooming Cactus"],
-["Cactus","Human","🤕","Sting"],
-["Palm Tree","Ocean","🏝️","Beach Resort"],
-["Palm Tree","Human","🌴","Tropical"],
-["Seaweed","Rock","🪸","Coral"],
-["Coral","Ocean","🐠","Reef"],
-["Coral","Fish","🐠","Aquarium"],
-["Coral","Human","🤿","Scuba Diving"],
-["Animal","Water","🐟","Fish"],
-["Animal","Wind","🐦","Bird"],
-["Animal","Earth","🦎","Reptile"],
-["Animal","Ice","🐻‍❄️","Polar Bear"],
-["Animal","Ocean","🐋","Whale"],
-["Animal","Mountain","🐐","Goat"],
-["Animal","Desert","🐪","Camel"],
-["Animal","Swamp","🐊","Alligator"],
-["Animal","Night","🦇","Bat"],
-["Animal","Magic","🦄","Unicorn"],
-["Animal","Human","🐾","Pet"],
-["Animal","Fire","🦎","Salamander"],
-["Animal","Farm","🐄","Livestock"],
-["Animal","Forest","🐺","Wolf"],
-["Fish","Fire","🍣","Grilled Fish"],
-["Fish","Wind","🐟","Flying Fish"],
-["Fish","Ocean","🦈","Shark"],
-["Fish","River","🐟","Salmon"],
-["Fish","Lightning","🐍","Electric Eel"],
-["Fish","Human","🍣","Sushi"],
-["Fish","Magic","🧜","Mermaid"],
-["Fish","Ice","🐟","Frozen Fish"],
-["Fish","Shell","🦪","Oyster"],
-["Bird","Water","🦆","Duck"],
-["Bird","Fire","🔥","Phoenix"],
-["Bird","Wind","🦅","Eagle"],
-["Bird","Earth","🦤","Ostrich"],
-["Bird","Ice","🐧","Penguin"],
-["Bird","Ocean","🐦","Seagull"],
-["Bird","Mountain","🦅","Condor"],
-["Bird","Night","🦉","Owl"],
-["Bird","Jungle","🦜","Parrot"],
-["Bird","Magic","🦄","Pegasus"],
-["Bird","Song","🎵","Songbird"],
-["Bird","Lake","🦩","Flamingo"],
-["Bird","Flower","🐦","Hummingbird"],
-["Bird","Human","✍️","Feather Pen"],
-["Reptile","Fire","🐉","Dragon"],
-["Reptile","Water","🐊","Crocodile"],
-["Reptile","Desert","🦎","Lizard"],
-["Reptile","Ocean","🐢","Sea Turtle"],
-["Reptile","Swamp","🐊","Alligator"],
-["Reptile","Earth","🐢","Turtle"],
-["Reptile","Ancient","🦕","Dinosaur"],
-["Reptile","Time","🦕","Dinosaur"],
-["Reptile","Magic","🐉","Dragon"],
-["Wolf","Forest","🐺","Wolf Pack"],
-["Wolf","Moon","🐺","Werewolf"],
-["Wolf","Ice","🐺","Arctic Wolf"],
-["Wolf","Fire","🔥","Hellhound"],
-["Wolf","Human","🐕","Dog"],
-["Bear","Mountain","🐻","Grizzly Bear"],
-["Bear","Ice","🐻‍❄️","Polar Bear"],
-["Bear","Honey","🧸","Teddy Bear"],
-["Bear","Cave","😴","Hibernating Bear"],
-["Bear","Human","🐻","Hunting"],
-["Lion","Savanna","🦁","Pride"],
-["Lion","Human","🦁","Tamer"],
-["Lion","Eagle","🦁","Griffin"],
-["Horse","Human","🏇","Rider"],
-["Horse","Metal","⚔️","Knight"],
-["Horse","Magic","🦄","Unicorn"],
-["Horse","Horn","🦄","Unicorn"],
-["Horse","Wing","🦄","Pegasus"],
-["Cow","Human","🥛","Milk"],
-["Cow","Fire","🥩","Beef"],
-["Cow","Grass","🐄","Pasture"],
-["Dog","Human","🐕","Loyalty"],
-["Dog","Fire","🌭","Hotdog"],
-["Cat","Night","🐈‍⬛","Black Cat"],
-["Cat","Magic","🐈‍⬛","Witch's Cat"],
-["Rabbit","Moon","🌙","Moon Rabbit"],
-["Rabbit","Hat","🎩","Magic Trick"],
-["Shark","Ocean","🦈","Great White"],
-["Shark","Human","⚠️","Danger"],
-["Whale","Song","🎵","Whale Song"],
-["Whale","Ocean","🐋","Blue Whale"],
-["Octopus","Ocean","🦑","Kraken"],
-["Octopus","Ink","🖊️","Ink"],
-["Octopus","Human","🦑","Calamari"],
-["Snake","Desert","🐍","Rattlesnake"],
-["Snake","Apple","🍎","Eden"],
-["Snake","Human","☠️","Venom"],
-["Bee","Flower","🍯","Honey"],
-["Bee","Human","🐝","Sting"],
-["Bee","Hive","🐝","Colony"],
-["Butterfly","Flower","🌷","Garden"],
-["Butterfly","Wind","🦋","Migration"],
-["Spider","Web","🕸️","Trap"],
-["Spider","Human","😱","Fear"],
-["Bat","Night","🦇","Vampire Bat"],
-["Bat","Cave","🦇","Bat Colony"],
-["Goat","Mountain","🐐","Mountain Goat"],
-["Camel","Desert","🐪","Caravan"],
-["Penguin","Ice","🐧","Antarctica"],
-["Penguin","Ocean","🐧","Penguin Colony"],
-["Dragon","Fire","🔥","Inferno Dragon"],
-["Dragon","Water","🐉","Sea Dragon"],
-["Dragon","Ice","🐉","Frost Dragon"],
-["Dragon","Human","⚔️","Dragon Slayer"],
-["Dragon","Gold","💰","Dragon's Hoard"],
-["Dragon","Magic","🐉","Arcane Dragon"],
-["Dragon","Lightning","⚡","Thunder Dragon"],
-["Dragon","Earth","🌍","Earth Dragon"],
-["Phoenix","Fire","🔥","Rebirth"],
-["Phoenix","Ash","🔥","Rebirth"],
-["Phoenix","Human","✨","Legend"],
-["Phoenix","Ice","💧","Water"],
-["Dinosaur","Earth","🦴","Fossil"],
-["Dinosaur","Human","🦕","Museum"],
-["Dinosaur","Meteor","☄️","Extinction"],
-["Dinosaur","Fire","🔥","T-Rex"],
-["Dinosaur","Ocean","🦕","Plesiosaur"],
-["Human","Earth","🧑‍🌾","Farmer"],
-["Human","Fire","🧑‍🍳","Cook"],
-["Human","Water","🏊","Swimmer"],
-["Human","Wind","⛵","Sailor"],
-["Human","Ice","🏔️","Ice Climber"],
-["Human","Rock","🗿","Sculptor"],
-["Human","Metal","⚒️","Blacksmith"],
-["Human","Wood","🪵","Carpenter"],
-["Human","Plant","🌿","Herbalist"],
-["Human","Animal","🏹","Hunter"],
-["Human","Tool","🔧","Craftsman"],
-["Human","Magic","🧙","Wizard"],
-["Human","Night","🌙","Thief"],
-["Human","War","⚔️","Soldier"],
-["Human","Love","❤️","Family"],
-["Human","Music","🎤","Singer"],
-["Human","Art","🎨","Painter"],
-["Human","Science","🔬","Scientist"],
-["Human","Knowledge","📚","Scholar"],
-["Human","Power","👑","Leader"],
-["Human","Gold","💰","Merchant"],
-["Human","Forest","🧝","Elf"],
-["Human","Mountain","⛏️","Dwarf"],
-["Human","Ocean","🧜","Mermaid"],
-["Human","Death","⚱️","Funeral"],
-["Human","Time","👴","Elder"],
-["Human","Shadow","🥷","Ninja"],
-["Human","Dream","💭","Dreamer"],
-["Human","Book","📚","Reader"],
-["Human","Computer","💻","Programmer"],
-["Wood","Fire","🔥","Campfire"],
-["Wood","Water","🪵","Driftwood"],
-["Wood","Wind","🍂","Splinter"],
-["Wood","Metal","⚒️","Saw"],
-["Wood","Human","🏠","Shelter"],
-["Shelter","Stone","🏰","Castle"],
-["Shelter","Metal","🏭","Factory"],
-["Shelter","Wood","🏠","House"],
-["House","House","🏘️","Village"],
-["Village","Market","🏙️","Town"],
-["Village","Castle","👑","Kingdom"],
-["Village","Farm","🌾","Farm Town"],
-["Town","Tower","🌆","City"],
-["City","Water","⚓","Port"],
-["City","Metal","🌆","Metropolis"],
-["City","Future","🌃","Cyberpunk"],
-["City","Magic","✨","Magical City"],
-["City","Ruin","🏛️","Ancient City"],
-["Castle","King","👑","Kingdom"],
-["Castle","Dragon","🏰","Dragon's Lair"],
-["Castle","Siege","⚔️","Battle"],
-["Castle","Princess","👸","Fairy Tale"],
-["Kingdom","War","⚔️","Empire"],
-["Kingdom","Dragon","🐉","Dragon Kingdom"],
-["King","Gold","💰","Treasury"],
-["King","War","⚔️","Conqueror"],
-["Tool","Rock","🪓","Axe"],
-["Tool","Metal","⚔️","Sword"],
-["Tool","Wood","🔨","Hammer"],
-["Tool","Fire","🔥","Forge"],
-["Axe","Human","🪓","Lumberjack"],
-["Sword","Fire","🔥","Flaming Sword"],
-["Sword","Magic","⚔️","Excalibur"],
-["Sword","Human","⚔️","Warrior"],
-["Shield","Metal","🛡️","Armor"],
-["Shield","Magic","🛡️","Magic Shield"],
-["Bow","Arrow","🏹","Archery"],
-["Bow","Human","🏹","Archer"],
-["Bow","Elf","🧝","Elven Archer"],
-["Armor","Knight","⚔️","Paladin"],
-["Arrow","Human","🏹","Ranger"],
-["Farm","Water","💧","Irrigation"],
-["Farm","Animal","🐄","Ranch"],
-["Farm","Human","🧑‍🌾","Farmer"],
-["Farm","Fire","🔥","Burnt Farm"],
-["Farm","Magic","🌾","Enchanted Farm"],
-["Farm","Robot","🤖","Robot Farm"],
-["Farm","Wheat","⚙️","Windmill"],
-["Meat","Fire","🥩","Grilled Meat"],
-["Meat","Salt","🥩","Jerky"],
-["Fish","Salt","🐟","Salted Fish"],
-["Egg","Fire","🍳","Fried Egg"],
-["Egg","Water","🥚","Boiled Egg"],
-["Egg","Dragon","🐉","Dragon Egg"],
-["Milk","Fire","🧀","Cheese"],
-["Milk","Sugar","🍦","Ice Cream"],
-["Wheat","Sugar","🍪","Cookie"],
-["Dough","Fire","🍞","Bread"],
-["Bread","Cheese","🧀","Grilled Cheese"],
-["Bread","Butter","🥪","Sandwich"],
-["Fruit","Fire","🍓","Jam"],
-["Fruit","Water","🍹","Juice"],
-["Fruit","Ice","🥤","Smoothie"],
-["Fruit","Sugar","🍬","Candy"],
-["Sugar","Fire","🍮","Caramel"],
-["Sugar","Water","🍯","Syrup"],
-["Honey","Water","🍺","Mead"],
-["Honey","Bread","🍯","Honeybread"],
-["Honey","Bear","🧸","Winnie the Pooh"],
-["Coffee","Ice","☕","Iced Coffee"],
-["Coffee","Milk","☕","Latte"],
-["Tea","Ice","🧋","Iced Tea"],
-["Tea","Milk","🧋","Milk Tea"],
-["Chocolate","Ice","🍫","Chocolate Ice Cream"],
-["Chocolate","Milk","☕","Hot Chocolate"],
-["Popcorn","Movie","🎬","Cinema"],
-["Wine","Age","🍷","Fine Wine"],
-["Beer","Grain","🍺","Brewery"],
-["Pizza","Fire","🔥","Wood Fire Pizza"],
-["Sugar","Plant","🌾","Sugar Cane"],
-["Coal","Pressure","💎","Diamond"],
-["Diamond","Fire","💎","Brilliant"],
-["Diamond","Human","💎","Jeweler"],
-["Diamond","Ring","💍","Engagement Ring"],
-["Metal","Sun","☀️","Gold"],
-["Gold","Human","💰","Rich"],
-["Gold","Dragon","💰","Treasure Hoard"],
-["Gold","Fire","🔥","Molten Gold"],
-["Gold","Magic","⚗️","Alchemy"],
-["Gold","Rainbow","🍀","Leprechaun"],
-["Metal","Moon","🌙","Silver"],
-["Silver","Magic","✨","Enchanted Silver"],
-["Silver","Weapon","💎","Silver Bullet"],
-["Crystal","Water","🔮","Crystal Ball"],
-["Crystal","Magic","🔮","Scrying"],
-["Crystal","Ice","❄️","Ice Crystal"],
-["Crystal","Light","🌈","Prism"],
-["Pearl","Ocean","🦪","Oyster"],
-["Pearl","Human","💎","Necklace"],
-["Engine","Metal","🚗","Car"],
-["Engine","Water","🚢","Ship"],
-["Engine","Wind","✈️","Airplane"],
-["Engine","Fire","🚂","Train"],
-["Car","Fire","💥","Crash"],
-["Car","Future","⚡","Electric Car"],
-["Car","Race","🏎️","Formula 1"],
-["Ship","Ocean","⚓","Fleet"],
-["Ship","War","⚓","Navy"],
-["Ship","Gold","💰","Treasure Ship"],
-["Ship","Storm","🌊","Shipwreck"],
-["Airplane","War","✈️","Fighter Jet"],
-["Airplane","Human","✈️","Pilot"],
-["Airplane","Future","🚀","Space Shuttle"],
-["Rocket","Human","👨‍🚀","Astronaut"],
-["Rocket","Fire","🚀","Launch"],
-["Rocket","Space","🛸","Spacecraft"],
-["Rocket","Moon","🌙","Moon Landing"],
-["Computer","Internet","🌐","Web Browser"],
-["Computer","AI","🤖","Superintelligence"],
-["Computer","Game","🎮","Video Game"],
-["Computer","Music","🎵","Digital Music"],
-["Computer","Art","🎨","Digital Art"],
-["Computer","Robot","🤖","Android"],
-["Robot","Human","🤖","Cyborg"],
-["Robot","War","🤖","Terminator"],
-["Robot","AI","🤖","Sentient Robot"],
-["Robot","Factory","🏭","Assembly Line"],
-["Robot","Dog","🤖","Robot Dog"],
-["Internet","Human","📱","Social Media"],
-["Internet","Shop","🛒","E-commerce"],
-["Internet","Cat","😹","Meme"],
-["Internet","Music","🎵","Streaming"],
-["AI","Art","🎨","Generative Art"],
-["AI","War","🤖","Drone Warfare"],
-["AI","Human","🤖","Singularity"],
-["Space","Earth","🪐","Planet"],
-["Space","Ice","☄️","Comet"],
-["Space","Rock","💫","Meteor"],
-["Space","Life","👽","Alien"],
-["Space","Human","🚀","Astronaut"],
-["Space","Gas","🌌","Nebula"],
-["Planet","Planet","🌍","Solar System"],
-["Planet","Water","🌊","Ocean Planet"],
-["Planet","Fire","🌋","Volcanic Planet"],
-["Planet","Life","🌍","Inhabited Planet"],
-["Planet","Human","🚀","Colonization"],
-["Black Hole","Star","🕳️","Galactic Center"],
-["Alien","Human","👽","Encounter"],
-["Alien","Technology","🛸","UFO"],
-["Galaxy","Galaxy","🌌","Universe"],
-["Supernova","Earth","💫","Stardust"],
-["Magic","Fire","🔥","Pyromancer"],
-["Magic","Water","💧","Water Mage"],
-["Magic","Wind","💨","Air Mage"],
-["Magic","Earth","🌍","Geomancer"],
-["Magic","Ice","❄️","Ice Mage"],
-["Magic","Lightning","⚡","Storm Mage"],
-["Magic","Death","💀","Necromancer"],
-["Magic","Book","📖","Spellbook"],
-["Magic","Potion","🧪","Spell"],
-["Magic","Animal","🐾","Familiar"],
-["Magic","Plant","🌿","Mandrake"],
-["Magic","Rock","🪨","Philosopher's Stone"],
-["Magic","Shadow","🥷","Shadow Magic"],
-["Magic","Time","⏰","Time Travel"],
-["Magic","Human","🧙","Witch"],
-["Magic","Dream","🌙","Dreamscape"],
-["Magic","Love","💕","Love Potion"],
-["Magic","Rainbow","🍀","Luck Charm"],
-["Wizard","Dragon","🧙","Dragon Tamer"],
-["Wizard","Lightning","⚡","Electromancer"],
-["Wizard","Book","📖","Ancient Knowledge"],
-["Wizard","Ice","❄️","Frost Mage"],
-["Witch","Broomstick","🧙","Flying Witch"],
-["Witch","Cauldron","🧪","Potion"],
-["Witch","Cat","🐈‍⬛","Familiar"],
-["Witch","Fire","🔥","Bonfire Ritual"],
-["Mermaid","Ocean","🧜","Siren"],
-["Mermaid","Human","🧜","Half-Human"],
-["Unicorn","Forest","🦄","Enchanted Forest"],
-["Unicorn","Magic","✨","Unicorn Magic"],
-["Pegasus","Sky","🦄","Flying"],
-["Griffin","Castle","🦁","Guardian"],
-["Griffin","Gold","🦁","Treasure Guard"],
-["Kraken","Ocean","🦑","Sea Monster"],
-["Kraken","Ship","🌊","Shipwreck"],
-["Vampire","Human","🧛","Vampire Bite"],
-["Vampire","Night","🌙","Undead"],
-["Vampire","Sun","☀️","Ash"],
-["Vampire","Castle","🏰","Castle Dracula"],
-["Zombie","Human","🧟","Plague"],
-["Zombie","Brain","🧠","Smart Zombie"],
-["Zombie","Army","🧟","Undead Army"],
-["Ghost","House","👻","Haunted House"],
-["Ghost","Night","🌙","Specter"],
-["Ghost","Human","👻","Haunting"],
-["Elf","Forest","🧝","Woodland Elf"],
-["Elf","Magic","🧝","High Elf"],
-["Dwarf","Metal","⚒️","Blacksmith Dwarf"],
-["Dwarf","Gold","💰","Treasure Dwarf"],
-["Angel","Human","👼","Saint"],
-["Angel","Demon","⚔️","Holy War"],
-["Angel","Heaven","🌤️","Paradise"],
-["Angel","Fire","🔥","Seraph"],
-["Demon","Fire","🔥","Hellfire"],
-["Demon","Ice","❄️","Frozen Hell"],
-["Demon","Human","😈","Temptation"],
-["Demon","Magic","🪄","Dark Magic"],
-["Giant","Rock","🪨","Troll"],
-["Giant","Human","⛰️","Goliath"],
-["Troll","Bridge","🌉","Toll Troll"],
-["Fairy","Flower","🧚","Fairy Garden"],
-["Fairy","Magic","✨","Fairy Dust"],
-["Fairy","Human","🧚","Fairy Godmother"],
-["Centaur","Bow","🏹","Centaur Archer"],
-["Minotaur","Labyrinth","🐂","Legend"],
-["Knight","Dragon","⚔️","Dragon Slayer"],
-["Knight","Castle","⚔️","Guard"],
-["Knight","Horse","🏇","Cavalry"],
-["Pirate","Ship","☠️","Pirate Ship"],
-["Pirate","Ocean","⛵","Buccaneer"],
-["Pirate","Gold","💰","Plunder"],
-["Ninja","Shadow","🥷","Stealth"],
-["Ninja","Sword","⚔️","Katana"],
-["Samurai","Sword","⚔️","Katana Master"],
-["Samurai","Honor","⚔️","Bushido"],
-["Viking","Ship","⛵","Longship"],
-["Viking","Axe","🪓","Berserker"],
-["Viking","Thunder","⚡","Thor"],
-["Thor","Lightning","⚡","Mjolnir"],
-["Excalibur","King","⚔️","King Arthur"],
-["King Arthur","Magic","🧙","Camelot"],
-["Death","Life","🧟","Undead"],
-["Death","Magic","💀","Necromancer"],
-["Death","Fire","🔥","Cremation"],
-["Time","Rock","🦴","Fossil"],
-["Time","Wine","🍷","Vintage"],
-["Time","Metal","🔩","Rust"],
-["Light","Dark","🌓","Balance"],
-["Love","Hate","❤️‍🔥","Conflict"],
-["Love","Magic","💕","Love Potion"],
-["Love","Human","💘","Cupid"],
-["Peace","War","🕊️","Ceasefire"],
-["Peace","Magic","✨","Harmony"],
-["War","Dragon","🐉","Dragon War"],
-["War","Magic","⚔️","Magical War"],
-["Chaos","Order","⚖️","Balance"],
-["Chaos","Magic","🪄","Wild Magic"],
-["Truth","Magic","🔮","Oracle"],
-["Truth","Lie","🤯","Paradox"],
-["Lie","Magic","🪄","Illusion"],
-["Freedom","Bird","🐦","Flight"],
-["Memory","Time","📚","History"],
-["Future","Magic","🔮","Prophecy"],
-["Wisdom","Dragon","🐉","Ancient Dragon"],
-["Knowledge","Magic","📖","Ancient Wisdom"],
-["Power","Magic","✨","Sorcerer"],
-["Fear","Monster","👹","Phobia"],
-["Courage","Magic","⚔️","Paladin"],
-["Friendship","Animal","🐾","Best Friend"],
-["Greed","Gold","💰","Hoarder"],
-["Rainbow","Human","🌈","Joy"],
-["Dream","Night","😱","Nightmare"],
-["Dream","Monster","👹","Dream Monster"],
-["Shadow","Night","🌑","Darkness"],
-["Shadow","Fire","🕯️","Flickering"],
-["Luck","Gold","💰","Jackpot"],
-["Luck","Game","🎲","Win"],
-["Human","Ball","⚽","Sport"],
-["Ball","Water","🏊","Swimming"],
-["Ball","Fire","🔥","Flaming Ball"],
-["Sport","Ice","⛸️","Ice Skating"],
-["Sport","Mountain","🧗","Climbing"],
-["Sport","Sky","🪂","Skydiving"],
-["Game","Card","🃏","Card Game"],
-["Game","Dice","🎲","Board Game"],
-["Music","Fire","🔥","Guitar Solo"],
-["Music","Water","🌊","Waterfall Music"],
-["Movie","Monster","👹","Horror Movie"],
-["Movie","Magic","✨","Fantasy Film"],
-["Book","Fire","🔥","Burning Book"],
-["Book","Magic","📖","Spellbook"],
-["Book","Knowledge","📚","Encyclopedia"],
-["Stadium","Sport","🏟️","Arena"],
-["Stadium","Fire","🔥","Torch Ceremony"],
-["Library","Magic","📖","Restricted Section"],
-["Library","Computer","💻","Digital Library"],
-["School","Magic","🧙","Hogwarts"],
-["Hospital","Magic","✨","Healing Magic"],
-["Hospital","Robot","🤖","Medical Robot"],
-["Temple","Fire","🔥","Ritual"],
-["Temple","Magic","🪄","Sacred Magic"],
-["Church","Lightning","⚡","Act of God"],
-["Pyramid","Desert","🏜️","Egyptian Pyramid"],
-["Pyramid","Magic","🔮","Ancient Magic"],
-["Laboratory","Monster","🧟","Frankenstein's Lab"],
-["Laboratory","Fire","🔥","Chemical Fire"],
-["Laboratory","Magic","⚗️","Alchemy Lab"],
-["Factory","Robot","🤖","Automated Factory"],
-["Factory","Fire","🔥","Industrial Fire"],
-["Mine","Diamond","💎","Diamond Mine"],
-["Mine","Gold","⛏️","Gold Mine"],
-["Mine","Human","⛏️","Miner"],
-["Bank","Future","₿","Cryptocurrency"],
-["Market","Food","🍽️","Restaurant"],
-["Museum","Fossil","🦕","Natural History Museum"],
-["Museum","Art","🎨","Art Gallery"],
-["Tower","Magic","🏰","Wizard Tower"],
-["Tower","Fire","🔥","Beacon"],
-["Lighthouse","Ocean","⚓","Safe Harbor"],
-["Lighthouse","Storm","⚡","Warning Light"],
-["Bridge","Water","🌉","Aqueduct"],
-["Bridge","Magic","🌈","Rainbow Bridge"],
-["Wall","Fire","🔥","Firewall"],
-["Wall","Magic","🛡️","Magic Barrier"],
-["Prison","Magic","🔓","Escape"],
-["Harbor","Fish","🐟","Fishing Port"],
-["Market","Magic","🪄","Magical Bazaar"],
-["Treasure","Pirate","☠️","Pirate Treasure"],
-["Treasure","Ocean","💰","Sunken Treasure"],
-["Treasure","Map","🗺️","Treasure Hunt"],
-["Map","Human","🗺️","Explorer"],
-["Map","Ocean","⛵","Navigation"],
-["Compass","Magic","🧭","Magic Compass"],
-["Key","Door","🗝️","Unlock"],
-["Key","Magic","🗝️","Skeleton Key"],
-["Crown","Gold","👑","Royal Crown"],
-["Crown","Dragon","👑","Dragon King"],
-["Crown","Human","👑","King"],
-["Potion","Health","🧪","Healing Potion"],
-["Potion","Fire","🔥","Fire Potion"],
-["Lantern","Fire","🏮","Light"],
-["Lantern","Magic","🪄","Magic Lantern"],
-["Cauldron","Fire","🧪","Brew"],
-["Cauldron","Magic","🧙","Potion Making"],
-["Hourglass","Time","⏳","Timer"],
-["Telescope","Star","🔭","Astronomer"],
-["Microscope","Cell","🔬","Biology"],
-["Microscope","Water","🦠","Microbes"],
-["Flag","War","🚩","Battle Flag"],
-["Flag","Country","🌍","Nation"],
-["Army","Dragon","🐉","Dragon Army"],
-["Nuclear","Fire","💥","Nuclear Explosion"],
-["Nuclear","Human","☢️","Nuclear Engineer"],
-["Laser","Metal","💡","Cut Metal"],
-["Laser","Rock","💡","Engraving"],
-["Hologram","Magic","✨","Illusion"],
-["Clone","Human","👥","Doppelganger"],
-["Dream","Human","💭","Daydream"],
-["Nightmare","Monster","👹","Boogeyman"],
-["Matrix","Computer","💻","Simulation"],
-["Harmony","Music","🎵","Symphony"],
-["Harmony","Nature","🌿","Eden"],
-["Harmony","Human","🌈","Utopia"],
-["Atlantis","Ocean","🌊","Lost City"],
-["Atlantis","Magic","🔮","Sunken Magic"],
-["Eden","Human","🍎","Temptation"],
-["Olympus","God","⛰️","Mount Olympus"],
-["God","Lightning","⚡","Zeus"],
-["God","Ocean","🌊","Poseidon"],
-["God","Death","💀","Hades"],
-["God","Fire","🔥","Prometheus"],
-["God","Sun","☀️","Apollo"],
-["God","Love","❤️","Aphrodite"],
-["God","War","⚔️","Ares"],
-["God","Wisdom","🦉","Athena"],
-["Heaven","Cloud","🌤️","Paradise"],
-["Heaven","Music","🎵","Choir"],
-["Hell","Ice","❄️","Frozen Hell"],
-["Hell","Human","😈","Damnation"],
-["Afterlife","Human","👼","Reincarnation"],
-["Utopia","Human","🌈","Perfect Society"],
-["Dystopia","Human","☠️","Dark Future"],
-["Future","Human","🔮","Prophet"],
-["Future","Technology","💡","Innovation"],
-["Past","Human","📚","Historian"],
-["Past","Technology","🏛️","Archaeology"],
-
-// Neal.fun-style corrections and early-game recipes.
-["Lake","Lake","🌊","Ocean"],
+["Earth","Glass","🍾","Bottle"],
+["Beach","Bottle","✉️","Message"],
+["Earth","Message","✉️","Letter"],
 ["Lake","Water","🌊","Ocean"],
+["Lake","Lake","🌊","Ocean"],
 ["Lake","Ocean","🌊","Sea"],
+["Earth","Ocean","🏝️","Island"],
 ["Ocean","Water","🐟","Fish"],
-["Earth","Dust","🪐","Planet"],
+["Ocean","Steampunk","☠️","Steampunk Pirate"],
+["Steam","Steampunk Pirate","🚢","Steampunk Pirate Ship"],
+["Steampunk Pirate Ship","Stone","🗿","Stonehenge"],
+["Steam","Stonehenge","⏰","Time"],
+["Planet","Steam","⚙️","Steampunk"],
+["Steampunk","Wind","🎈","Airship"],
+["Airship","Lava","🐉","Dragon"],
+["Airship","Fire","💥","Crash"],
+["Lava","Water","🪨","Stone"],
+["Lava","Sea","🪨","Stone"],
+["Lava","Earth","🪨","Stone"],
+["Volcano","Lake","🏝️","Island"],
+["Island","Volcano","🌺","Hawaii"],
+["Hawaii","Plant","🍍","Pineapple"],
+["Pineapple","Tornado","🍍","Pineapple Express"],
+["Pineapple","Pineapple Express","🎬","Seth Rogen"],
+["Pineapple","Seth Rogen","🎬","This Is The End"],
+["Fire","This Is The End","🔚","The End"],
+["Plant","Wind","🌼","Dandelion"],
+["Dandelion","Dandelion","🌼","Dandelion Patch"],
+["Dandelion","Water","🍷","Wine"],
+["Dandelion","Fire","🌑","Ash"],
+["Dandelion","Wind","🌱","Seed"],
+["Dandelion","Earth","🌸","Flower"],
+["Dandelion","Flower","🌱","Seed"],
+["Dandelion","Plant","🌿","Weed"],
+["Dandelion","Tree","💫","Wish"],
+["Dandelion","Dragon","🪰","Dragonfly"],
+["Dragonfly","Dust","🧚","Fairy"],
+["Earth","Fairy","🧙","Gnome"],
+["Dust","Fish","⭐","Starfish"],
+["Starfish","Fire","☀️","Sun"],
+["Dandelion","Planet","☀️","Sun"],
+["Planet","Fire","☀️","Sun"],
 ["Planet","Planet","⭐","Star"],
 ["Planet","Earth","🌙","Moon"],
-["Planet","Fire","☀️","Sun"],
-["Planet","Steam","⚙️","Steampunk"],
 ["Planet","Wind","🌩️","Storm"],
 ["Planet","Fog","♀️","Venus"],
 ["Planet","Sandstorm","♂️","Mars"],
-["Dandelion","Planet","☀️","Sun"],
-["Dandelion","Dandelion","🌼","Dandelion Patch"],
-["Lava","Water","🪨","Stone"],
-["Lake","Stone","🗼","Lighthouse"],
-["Lighthouse","Fire","🗼","Beacon"],
-["Beacon","Lighthouse","💡","Light"],
-["Light","Earth","☀️","Sun"],
-["Fire","Steam","🚗","Engine"],
-["Engine","Earth","🚜","Tractor"],
-["Plant","Steam","🍵","Tea"],
-["Dust","Lake","💩","Mud"],
-["Lake","Earth","🐊","Swamp"],
-["Swamp","Fire","🐉","Dragon"],
+["Mars","Earth","🌱","Life"],
+["Life","Dust","👤","Human"],
+["Life","Plant","🌳","Tree"],
 ["Plant","Plant","🌳","Tree"],
-["Plant","Wind","🌼","Dandelion"],
+["Earth","Plant","🌳","Tree"],
+["Plant","Water","🐊","Swamp"],
+["Earth","Lake","🐊","Swamp"],
+["Mud","Water","🐊","Swamp"],
+["Plant","Swamp","🪰","Venus Flytrap"],
+["Island","Venus Flytrap","♀️","Venus"],
+["Venus","Mud","👨","Adam"],
+["Adam","Fire","👩","Eve"],
+["Adam","Eve","👤","Human"],
+["Swamp","Fire","🐉","Dragon"],
+["Dragon","Dust","🪰","Dragonfly"],
+["Dragon","Lake","🐉","Loch Ness Monster"],
+["Island","Loch Ness Monster","🏴","Scotland"],
+["Dragon","Phoenix","☯️","Yin Yang"],
+["Wind","Yin Yang","🏯","Feng Shui"],
+["Dust","Feng Shui","🐰","Dust Bunny"],
+["Dust Bunny","Yin Yang","🔁","Opposite"],
+["Fire","Swamp","🐉","Dragon"],
+["Ash","Fire","🐦‍🔥","Phoenix"],
+["Phoenix","Fire","🔥","Rebirth"],
+["Phoenix","Ash","🔥","Rebirth"],
 ["Tree","Water","🌊","River"],
-["Dust","Fish","🐟","Starfish"],
-["Starfish","Fire","☀️","Sun"],
-["Sun","Fire","☀️","Solar"],
+["Earth","River","🔺","Delta"],
+["River","Tree","📄","Paper"],
+["Paper","Plant","📚","Book"],
+["Book","Delta","🔤","Alphabet"],
+["Alphabet","Book","📖","Dictionary"],
+["Book","Dictionary","📚","Thesaurus"],
+["River","Thesaurus","🔁","Synonym"],
+["Dust","Tree","🪵","Wood"],
+["Fire","Wood","🔥","Campfire"],
+["Campfire","Earth","🌑","Charcoal"],
+["Charcoal","Charcoal","⛏️","Coal"],
+["Coal","Gnome","👺","Goblin"],
+["Goblin","Wind","🧙","Hobbit"],
+["Hobbit","Plant","🚬","Pipe"],
+["Earth","Pipe","🚬","Tobacco"],
+["Earth","Tea","🫖","Teapot"],
+["Plant","Steam","🍵","Tea"],
+["Storm","Tea","🌪️","Tempest"],
+["Ocean","Tempest","🌊","Tsunami"],
+["Tea","Tempest","🌀","Typhoon"],
+["Fire","Typhoon","🌋","Volcano"],
+["Steam","Typhoon","☁️","Cloud"],
+["Cloud","Venus Flytrap","☁️","Cloud Trap"],
+["Cloud Trap","Sea","🐟","Fish"],
+["Swamp","Teapot","🧙","Witch"],
+["Dust","Witch","🧹","Broom"],
+["Broom","Dust","✨","Clean"],
+["Clean","Water","🥤","Drink"],
+["Crash","Drink","🤢","Hangover"],
+["Crash","Hangover","🎉","Party"],
+["Earth","Mountain","🏔️","Fjord"],
+["Lake","Mountain","🏔️","Fjord"],
+["Fjord","Fjord","🧊","Glacier"],
+["Earth","Fjord","🌍","Land"],
+["Earth","Land","🌎","Continent"],
+["Continent","Tea","🌏","Asia"],
+["Asia","Fire","🇨🇳","China"],
+["China","Party","☭","Communist"],
+["Communist","Cigarette","☭","Soviet Union"],
+["China","Soviet Union","👤","Mao"],
+["Farm","Time","🌾","Harvest"],
+["Earth","Family","🚜","Farm"],
+["Duck","Duckling","👪","Family"],
+["Dandelion Patch","Lake","🦆","Duck"],
+["Duck","Water","🐥","Duckling"],
+["Harvest","Tsunami","🍚","Rice"],
+["Lava","Rice","🍣","Sushi"],
+["Sushi","Venus Flytrap","🪤","Sushi Trap"],
+["Sushi Trap","Tobacco","🚬","Cigarette"],
+["Wine","Water","💧","Holy Water"],
+["Fire","Holy Water","🧛","Vampire"],
+["Vampire","Weed","🔢","Count"],
+["Count","Count","🔢","Number"],
+["Glass","Wave","🔍","Lens"],
+["Lens","Water","🔬","Microscope"],
+["Microscope","Wave","📻","Radio"],
+["Fire","Steam","🚗","Engine"],
+["Engine","Steam","🚂","Train"],
+["Engine","Engine","🚀","Rocket"],
+["Rocket","Train","🚄","Bullet Train"],
+["Rocket","Rocket","🛰️","Satellite"],
+["Bullet Train","Fire","🔫","Bullet"],
+["Bullet","Plant","💥","Gunpowder"],
+["Train","Water","🚢","Boat"],
+["Boat","Water","🚢","Ship"],
+["Ship","Fire","🚂","Steamship"],
+["Ship","Wind","⛵","Sailboat"],
 ["Sun","Ocean","🏖️","Beach"],
-["Sand","Water","🏖️","Beach"],
-["Sand","Fire","🥃","Glass"],
+["Sun","Fire","☀️","Solar"],
+["Tree","Wish","💰","Money"],
+["Dandelion","Money","💰","Wealth"],
+["Lake","Wealth","🛢️","Oil"],
+["Lake","Plant","🪷","Lily"],
+["Lily","Water","🏞️","Pond"],
+["Pond","Tornado","🌀","Whirlpool"]
 ];
 
 // ─────────────────────────────────────────────
@@ -1151,10 +529,192 @@ RECIPES.forEach(([a,b,emoji,name])=>{
 });
 function combine(a,b){ return COMBO_MAP[[a,b].sort().join('|')]||null; }
 
+const THIRD_PARTY_CACHE_KEY = 'infiniteCraft_thirdPartyRecipeCache_v1';
+const THIRD_PARTY_INDEX_URL = 'https://infinite-craft.com/recipes/data/index.json';
+const THIRD_PARTY_FETCH_TIMEOUT_MS = 2400;
+const SHARED_RECIPE_CACHE_TIMEOUT_MS = 850;
+let thirdPartyRecipeCache = {};
+let thirdPartyIndexPromise = null;
+let thirdPartyLookup = null;
+let lastThirdPartyLookupWasBlocked = false;
+const supabaseClient = (window.supabase && window.ALEX_FUN_SUPABASE_URL && window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
+  ? window.supabase.createClient(window.ALEX_FUN_SUPABASE_URL, window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
+  : null;
+const ACTIVE_USER_KEY = 'alexFunActiveUserV1';
+const SESSION_TOKEN_KEY = 'alexFunSessionTokenV1';
+
+function recipeKey(a,b){
+  return [a,b].sort().join('|');
+}
+
+function loadThirdPartyRecipeCache(){
+  try{
+    thirdPartyRecipeCache = JSON.parse(localStorage.getItem(THIRD_PARTY_CACHE_KEY) || '{}');
+  }catch{
+    thirdPartyRecipeCache = {};
+  }
+}
+
+function saveThirdPartyRecipeCache(){
+  localStorage.setItem(THIRD_PARTY_CACHE_KEY, JSON.stringify(thirdPartyRecipeCache));
+}
+
+async function loadSharedRecipeCache(a,b,key){
+  if(!supabaseClient) return null;
+  try{
+    const { data, error } = await supabaseClient
+      .from('recipe_cache')
+      .select('result_emoji,result_name,missing')
+      .eq('recipe_key', key)
+      .maybeSingle();
+    if(error || !data) return null;
+    if(data.missing) return { missing:true };
+    if(data.result_name) return { emoji:data.result_emoji || '✨', name:data.result_name };
+  }catch(e){
+    console.log('Shared recipe cache read failed:', e);
+  }
+  return null;
+}
+
+async function saveSharedRecipeCache(a,b,key,result){
+  if(!supabaseClient) return;
+  try{
+    await supabaseClient.from('recipe_cache').upsert({
+      recipe_key: key,
+      input_a: a,
+      input_b: b,
+      result_emoji: result && !result.missing ? result.emoji : null,
+      result_name: result && !result.missing ? result.name : null,
+      missing: !!(result && result.missing),
+      updated_at: new Date().toISOString()
+    }, { onConflict:'recipe_key' });
+  }catch(e){
+    console.log('Shared recipe cache save failed:', e);
+  }
+}
+
+function withTimeout(promise, ms, label){
+  let timeoutId;
+  const timeout = new Promise((_, reject)=>{
+    timeoutId = setTimeout(()=>reject(new Error(label || 'Timed out')), ms);
+  });
+  return Promise.race([promise, timeout]).finally(()=>clearTimeout(timeoutId));
+}
+
+async function fetchJson(url, timeoutMs = THIRD_PARTY_FETCH_TIMEOUT_MS){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(()=>controller.abort(), timeoutMs);
+  try{
+    const response = await fetch(url, { signal: controller.signal });
+    if(!response.ok) throw new Error('HTTP '+response.status);
+    const text = await response.text();
+    return JSON.parse(text);
+  }finally{
+    clearTimeout(timeoutId);
+  }
+}
+
+function sleep(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function loadThirdPartyIndex(){
+  if(thirdPartyLookup) return thirdPartyLookup;
+  if(thirdPartyIndexPromise) return thirdPartyIndexPromise;
+
+  const urls = [
+    THIRD_PARTY_INDEX_URL,
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(THIRD_PARTY_INDEX_URL),
+    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(THIRD_PARTY_INDEX_URL)
+  ];
+
+  thirdPartyIndexPromise = (async()=>{
+    const attempts = urls.map(url => fetchJson(url).catch(e=>{
+      console.log('Third-party recipe database load failed:', e);
+      throw e;
+    }));
+    const index = await Promise.any(attempts).catch(e=>{
+      throw (e && e.errors && e.errors[0]) || e || new Error('Recipe database unavailable');
+    });
+
+    const nameToIds = new Map();
+    const pairToResult = new Map();
+
+    Object.entries(index).forEach(([id, entry])=>{
+      const [emoji, name, cost, parentA, parentB] = entry;
+      if(!name) return;
+      const normalized = name.toLowerCase();
+      if(!nameToIds.has(normalized)) nameToIds.set(normalized, []);
+      nameToIds.get(normalized).push(id);
+
+      if(parentA && parentB && name !== 'Nothing'){
+        pairToResult.set(recipeKey(parentA, parentB), { emoji, name });
+      }
+    });
+
+    thirdPartyLookup = { nameToIds, pairToResult };
+    return thirdPartyLookup;
+  })();
+
+  return thirdPartyIndexPromise;
+}
+
+async function lookupThirdPartyRecipe(a,b){
+  const key = recipeKey(a,b);
+  if(thirdPartyRecipeCache[key]) {
+    if(thirdPartyRecipeCache[key].missing) return null;
+    return thirdPartyRecipeCache[key];
+  }
+
+  const sharedResult = await withTimeout(
+    loadSharedRecipeCache(a,b,key),
+    SHARED_RECIPE_CACHE_TIMEOUT_MS,
+    'Shared recipe cache timed out'
+  ).catch(e=>{
+    console.log('Shared recipe cache skipped:', e);
+    return null;
+  });
+  if(sharedResult){
+    thirdPartyRecipeCache[key] = sharedResult;
+    saveThirdPartyRecipeCache();
+    if(sharedResult.missing) return null;
+    COMBO_MAP[key] = sharedResult;
+    return sharedResult;
+  }
+
+  lastThirdPartyLookupWasBlocked = false;
+
+  try{
+    const lookup = await loadThirdPartyIndex();
+    const idsA = lookup.nameToIds.get(a.toLowerCase()) || [];
+    const idsB = lookup.nameToIds.get(b.toLowerCase()) || [];
+
+    for(const idA of idsA){
+      for(const idB of idsB){
+        const result = lookup.pairToResult.get(recipeKey(idA, idB));
+        if(!result) continue;
+        thirdPartyRecipeCache[key] = result;
+        COMBO_MAP[key] = result;
+        saveThirdPartyRecipeCache();
+        saveSharedRecipeCache(a,b,key,result);
+        return result;
+      }
+    }
+  }catch(e){
+    lastThirdPartyLookupWasBlocked = true;
+    console.log('Third-party recipe lookup failed:', e);
+  }
+
+  thirdPartyRecipeCache[key] = { missing:true, checkedAt:Date.now() };
+  saveThirdPartyRecipeCache();
+  saveSharedRecipeCache(a,b,key,{ missing:true });
+  return null;
+}
+
 // ─────────────────────────────────────────────
 //  State
 // ─────────────────────────────────────────────
-const SAVE_KEY = 'infiniteCraft_v3';
+const SAVE_KEY = 'infiniteCraft_v4_realRecipes';
 let discovered = [];
 let board = [];
 let nextId = 0;
@@ -1167,15 +727,108 @@ const workspace = document.getElementById('workspace');
 // ─────────────────────────────────────────────
 function getStarters(){ return [{emoji:"🌍",name:"Earth"},{emoji:"🔥",name:"Fire"},{emoji:"💧",name:"Water"},{emoji:"💨",name:"Wind"}]; }
 
+function getAccountName(){
+  return localStorage.getItem(ACTIVE_USER_KEY) || 'guest';
+}
+
+function getSessionToken(){
+  return localStorage.getItem(SESSION_TOKEN_KEY) || '';
+}
+
+function getSaveKey(){
+  return `${SAVE_KEY}_${getAccountName().replace(/[^a-z0-9_-]/gi, '_')}`;
+}
+
+function normalizeDiscoveries(value){
+  const byName = new Map(getStarters().map(item => [item.name, { emoji:item.emoji, name:item.name }]));
+  if(Array.isArray(value)){
+    for(const item of value){
+      if(!item || !item.name) continue;
+      byName.set(item.name, { emoji:item.emoji || '✨', name:String(item.name) });
+    }
+  }
+  return Array.from(byName.values());
+}
+
+function cleanDiscoveries(){
+  return normalizeDiscoveries(discovered);
+}
+
+function saveLocalDiscoveries(){
+  const clean = cleanDiscoveries();
+  localStorage.setItem(getSaveKey(), JSON.stringify(clean));
+  localStorage.setItem(SAVE_KEY, JSON.stringify(clean));
+}
+
 function load(){
-  try{ const s=localStorage.getItem(SAVE_KEY); if(s) discovered=JSON.parse(s); else discovered=getStarters(); }
+  try{
+    const s = localStorage.getItem(getSaveKey()) || localStorage.getItem(SAVE_KEY);
+    discovered = s ? normalizeDiscoveries(JSON.parse(s)) : getStarters();
+  }
   catch{ discovered=getStarters(); }
 }
-function save(){ localStorage.setItem(SAVE_KEY,JSON.stringify(discovered)); }
+
+let cloudSaveTimer = null;
+
+async function loadAccountDiscoveries(){
+  const token = getSessionToken();
+  if(!supabaseClient || !token) return false;
+  try{
+    const { data, error } = await supabaseClient.rpc('get_infinite_craft_save', { p_token: token });
+    if(error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if(!row || !Array.isArray(row.discoveries)) return false;
+    discovered = normalizeDiscoveries(row.discoveries);
+    saveLocalDiscoveries();
+    return true;
+  }catch(e){
+    console.log('Account discovery load failed:', e);
+    return false;
+  }
+}
+
+async function syncAccountDiscoveries(){
+  const token = getSessionToken();
+  if(!supabaseClient || !token) return;
+  try{
+    await supabaseClient.rpc('save_infinite_craft', {
+      p_token: token,
+      p_discoveries: cleanDiscoveries()
+    });
+  }catch(e){
+    console.log('Account discovery save failed:', e);
+  }
+}
+
+function queueAccountSave(){
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(syncAccountDiscoveries, 450);
+}
+
+function save(){
+  saveLocalDiscoveries();
+  queueAccountSave();
+}
 
 // ─────────────────────────────────────────────
 //  Sidebar
 // ─────────────────────────────────────────────
+const icAchievements = [
+  { id:'ten', label:'10 discoveries', test:()=>discovered.length>=10 },
+  { id:'twentyfive', label:'25 discoveries', test:()=>discovered.length>=25 },
+  { id:'fifty', label:'50 discoveries', test:()=>discovered.length>=50 },
+  { id:'hundred', label:'100 discoveries', test:()=>discovered.length>=100 },
+  { id:'life', label:'Create Life', test:()=>discovered.some(d=>d.name==='Life') },
+  { id:'human', label:'Create Human', test:()=>discovered.some(d=>d.name==='Human') },
+  { id:'internet', label:'Create Internet', test:()=>discovered.some(d=>d.name==='Internet') },
+  { id:'thirdparty', label:'Third-party finder', test:()=>Object.keys(thirdPartyRecipeCache).length>0 }
+];
+function renderAchievements(){
+  const list = document.getElementById('icAchievementList');
+  if(!list) return;
+  list.innerHTML = icAchievements.map(a=>`<div class="ic-ach ${a.test()?'unlocked':''}">${a.test()?'✓':'•'} ${a.label}</div>`).join('');
+}
+
 function renderSidebar(){
   const list = document.getElementById('sbList');
   const header = document.getElementById('sbHeader');
@@ -1183,6 +836,7 @@ function renderSidebar(){
   document.getElementById('counter').textContent = discovered.length + ' discovered';
 
   list.innerHTML = '';
+  renderAchievements();
   for(const el of discovered){
     const div = document.createElement('div');
     div.className = 'sb-item' + (el.isNew ? ' sb-new' : '');
@@ -1302,7 +956,7 @@ function findOverlap(dragId){
 // ─────────────────────────────────────────────
 //  Combine logic
 // ─────────────────────────────────────────────
-function tryCombine(idA, idB){
+async function tryCombine(idA, idB){
   const iA = board.find(i=>i.id===idA);
   const iB = board.find(i=>i.id===idB);
   if(!iA||!iB) return;
@@ -1315,7 +969,16 @@ function tryCombine(idA, idB){
   document.getElementById('tile-'+idB)?.remove();
   board = board.filter(i=>i.id!==idA&&i.id!==idB);
 
-  const result = combine(iA.name, iB.name);
+  let result = combine(iA.name, iB.name);
+  let checkedThirdParty = false;
+  if(!result){
+    checkedThirdParty = true;
+    showToast(`Checking third-party recipe websites: ${iA.name} + ${iB.name}...`);
+    const lookupStarted = Date.now();
+    result = await lookupThirdPartyRecipe(iA.name, iB.name);
+    const elapsed = Date.now() - lookupStarted;
+    if(elapsed < 80) await sleep(80 - elapsed);
+  }
 
   if(result){
     const newId = nextId++;
@@ -1333,6 +996,7 @@ function tryCombine(idA, idB){
 
     const isNew = addDiscovered(result.emoji, result.name);
     if(isNew) showToast(`✦ New: ${result.emoji} ${result.name}!`);
+    else if(checkedThirdParty) showToast(`Found in third-party recipes: ${result.emoji} ${result.name}`);
   } else {
     // No combo — put both back, shake
     const nA = nextId++, nB = nextId++;
@@ -1342,7 +1006,7 @@ function tryCombine(idA, idB){
     const tA=document.getElementById('tile-'+nA), tB=document.getElementById('tile-'+nB);
     tA?.classList.add('tile-shake'); tB?.classList.add('tile-shake');
     setTimeout(()=>{ tA?.classList.remove('tile-shake'); tB?.classList.remove('tile-shake'); }, 550);
-    showToast('No recipe for those two 🤷');
+    showToast(lastThirdPartyLookupWasBlocked ? 'Third-party recipe websites were blocked. Try again later.' : 'Checked third-party recipe websites: no recipe found 🤷');
   }
 }
 
@@ -1370,6 +1034,9 @@ function showToast(msg){
 // ─────────────────────────────────────────────
 //  Controls
 // ─────────────────────────────────────────────
+document.getElementById('achievementsBtn').addEventListener('click',()=>{ renderAchievements(); document.getElementById('icAchievements').classList.add('show'); });
+document.getElementById('closeAchievementsBtn').addEventListener('click',()=>document.getElementById('icAchievements').classList.remove('show'));
+
 document.getElementById('clearBoardBtn').addEventListener('click',()=>{
   board=[];
   workspace.querySelectorAll('.ws-tile').forEach(t=>t.remove());
@@ -1379,8 +1046,8 @@ document.getElementById('clearBoardBtn').addEventListener('click',()=>{
 
 document.getElementById('resetBtn').addEventListener('click',()=>{
   if(!confirm('Reset ALL discoveries and start over?')) return;
-  localStorage.removeItem(SAVE_KEY);
   discovered=getStarters();
+  save();
   board=[]; nextId=0;
   workspace.querySelectorAll('.ws-tile').forEach(t=>t.remove());
   const hint=document.getElementById('wsHint');
@@ -1391,8 +1058,14 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 // ─────────────────────────────────────────────
 //  Init
 // ─────────────────────────────────────────────
-load();
-renderSidebar();
+async function initGame(){
+  load();
+  loadThirdPartyRecipeCache();
+  loadThirdPartyIndex().catch(()=>{});
+  renderSidebar();
+  if(await loadAccountDiscoveries()) renderSidebar();
+}
+initGame();
 </script>
 </body>
 </html>

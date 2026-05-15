@@ -1,0 +1,1839 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rope Run — alex.fun</title>
+  <link rel="icon" type="image/png" href="./clever1.png"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
+  <script src="./cover-profiles.js"></script>
+  <script>
+    // Apply theme before paint to avoid flash
+    (function(){
+      const t = localStorage.getItem('theme');
+      if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Theme tokens ── */
+    :root {
+      --bg: #f0f4ff;
+      --fg: #1a1a1a;
+      --surface: #fff;
+      --border: #e0e0e0;
+      --muted: #888;
+      --hover: #f5f5f5;
+    }
+    [data-theme="dark"] {
+      --bg: #0d1117;
+      --fg: #ececec;
+      --surface: #161b22;
+      --border: #30363d;
+      --muted: #666;
+      --hover: #1c2128;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Martel Sans', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      transition: background .25s, color .25s;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      animation: pageIn .32s ease both;
+    }
+    @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ── Top bar ── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: var(--surface);
+      border-bottom: 1.5px solid var(--border);
+      flex-shrink: 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      transition: background .25s, border-color .25s;
+      z-index: 10;
+    }
+    .top-bar h1 {
+      font-size: 17px;
+      font-weight: 900;
+      flex: 1;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--fg);
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: background .13s, border-color .13s, transform .1s, color .25s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--hover); border-color: var(--muted); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    /* ── Canvas area ── */
+    #gameContainer {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: var(--bg);
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    /* ── Victory overlay ── */
+    #victoryOverlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(6px);
+      z-index: 50;
+    }
+    #victoryOverlay.show { display: flex; }
+
+    .victory-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 24px;
+      padding: 40px 52px;
+      text-align: center;
+      box-shadow: 0 24px 80px rgba(0,0,0,.35);
+      animation: popIn .4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(.7); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .victory-emoji { font-size: 64px; display: block; margin-bottom: 12px; }
+    .victory-title {
+      font-size: 36px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      color: var(--fg);
+    }
+    .victory-sub {
+      font-size: 16px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 28px;
+    }
+    .btn-big {
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 900;
+      padding: 14px 36px;
+      border-radius: 100px;
+      border: 2px solid var(--border);
+      background: var(--fg);
+      color: var(--bg);
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn-big:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.2); }
+    .btn-big:active { transform: translateY(0); }
+
+    /* ── Death overlay ── */
+    #deathOverlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(180,0,0,.55);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+    }
+    #deathOverlay.show { display: flex; }
+    .death-card {
+      background: var(--surface);
+      border: 2px solid #cc2222;
+      border-radius: 20px;
+      padding: 32px 44px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+      animation: popIn .35s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    .death-emoji { font-size: 52px; display: block; margin-bottom: 10px; }
+    .death-title { font-size: 28px; font-weight: 900; margin-bottom: 6px; color: #cc2222; }
+    .death-sub { font-size: 14px; color: var(--muted); font-weight: 700; margin-bottom: 22px; }
+
+    /* ── Status bar ── */
+    #statusBar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--muted);
+      z-index: 200;
+      transition: background .25s, border-color .25s, color .25s;
+    }
+    #statusBar .sb-cover { cursor: pointer; }
+    #statusBar .sb-cover:hover { color: var(--fg); }
+
+    /* ── Cover overlay ── */
+    #coverOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      cursor: pointer;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .55s cubic-bezier(.4,0,.2,1);
+    }
+    #coverOverlay.show { opacity: 1; pointer-events: auto; }
+    #coverOverlay img { width: 100%; height: 100%; object-fit: fill; object-position: top center; display: block; }
+
+    /* ensure body accounts for status bar */
+    body { padding-bottom: 26px; }
+
+    /* ── Mode-select screen ── */
+    .mode-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(8px);
+      gap: 24px;
+    }
+    .mode-screen.hidden { display: none; }
+
+    .mode-screen-title {
+      font-size: 32px;
+      font-weight: 900;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 16px rgba(0,0,0,0.6);
+    }
+    .mode-screen-sub {
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.65);
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .mode-cards {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .mode-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 40px;
+      text-align: center;
+      cursor: pointer;
+      min-width: 200px;
+      transition: border-color .18s, transform .18s, box-shadow .18s;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+    .mode-card:hover {
+      border-color: #ffc107;
+      transform: translateY(-4px);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.28);
+    }
+    .mode-card-icon {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 14px;
+    }
+    .mode-card-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--fg);
+      margin-bottom: 6px;
+    }
+    .mode-card-hint {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    /* ── Online lobby screen ── */
+    .lobby-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(8px);
+      gap: 20px;
+    }
+    .lobby-screen.hidden { display: none; }
+
+    .lobby-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 24px;
+      padding: 40px 52px;
+      text-align: center;
+      box-shadow: 0 24px 80px rgba(0,0,0,.35);
+      min-width: 340px;
+      max-width: 480px;
+      width: 90vw;
+    }
+    .lobby-title {
+      font-size: 26px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      color: var(--fg);
+    }
+    .lobby-sub {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+    .lobby-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .room-code-display {
+      font-family: 'Courier New', monospace;
+      font-size: 52px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 14px 24px;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg);
+      color: var(--fg);
+      margin: 12px auto 8px;
+      display: inline-block;
+    }
+
+    .lobby-input {
+      font-family: 'Courier New', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 10px 18px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg);
+      color: var(--fg);
+      width: 100%;
+      text-align: center;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .lobby-input:focus { border-color: #ffc107; }
+
+    .lobby-status {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--muted);
+      margin-top: 8px;
+      min-height: 20px;
+    }
+    .lobby-status.ok { color: #3db33d; }
+    .lobby-status.err { color: #cc2222; }
+
+    .lobby-divider {
+      border: none;
+      border-top: 1.5px solid var(--border);
+      margin: 20px 0;
+    }
+
+    /* ── Connection status badge (DOM element) ── */
+    #connBadge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 60;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 100px;
+      pointer-events: none;
+      font-family: 'Martel Sans', Arial, sans-serif;
+    }
+    #connBadge.show { display: flex; }
+    .conn-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .conn-dot.yellow { background: #ffc107; }
+    .conn-dot.green  { background: #4caf50; }
+    .conn-dot.red    { background: #f44336; }
+  </style>
+</head>
+<body>
+
+<!-- ── Top bar ── -->
+<div class="top-bar">
+  <button class="btn" id="backBtn">← Back</button>
+  <h1>🪢 Rope Run</h1>
+  <button class="btn" id="themeToggle" title="Toggle dark mode" style="padding:6px 10px;font-size:15px;">🌙</button>
+</div>
+
+<!-- ── Mode select screen ── -->
+<div class="mode-screen" id="modeScreen">
+  <div class="mode-screen-title">🪢 Rope Run</div>
+  <div class="mode-screen-sub">Choose how you want to play</div>
+  <div class="mode-cards">
+    <div class="mode-card" id="localModeBtn">
+      <span class="mode-card-icon">🖥️</span>
+      <div class="mode-card-title">Same Computer</div>
+      <div class="mode-card-hint">P1: WASD &nbsp;|&nbsp; P2: ↑ ← →</div>
+    </div>
+    <div class="mode-card" id="onlineModeBtn">
+      <span class="mode-card-icon">🌐</span>
+      <div class="mode-card-title">Online Co-op</div>
+      <div class="mode-card-hint">Invite a friend</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Online lobby screen ── -->
+<div class="lobby-screen hidden" id="lobbyScreen">
+  <div class="lobby-card">
+    <div class="lobby-title">🌐 Online Co-op</div>
+    <div class="lobby-sub">Play with a friend over the internet</div>
+
+    <div class="lobby-actions">
+      <button class="btn-big" id="createRoomBtn" style="font-size:14px;padding:11px 26px;">Create Room</button>
+      <button class="btn-big" id="showJoinBtn" style="font-size:14px;padding:11px 26px;background:var(--surface);color:var(--fg);">Join Room</button>
+    </div>
+
+    <!-- Create room section -->
+    <div id="createSection" style="display:none;">
+      <hr class="lobby-divider"/>
+      <div style="font-size:13px;font-weight:800;color:var(--muted);margin-bottom:6px;">Your room code</div>
+      <div class="room-code-display" id="roomCodeDisplay">——</div>
+      <div style="margin-top:8px;">
+        <button class="btn" id="copyCodeBtn">Copy Code</button>
+      </div>
+      <div class="lobby-status" id="createStatus">Waiting for P2 to join…</div>
+    </div>
+
+    <!-- Join room section -->
+    <div id="joinSection" style="display:none;">
+      <hr class="lobby-divider"/>
+      <div style="font-size:13px;font-weight:800;color:var(--muted);margin-bottom:8px;">Enter room code</div>
+      <input class="lobby-input" id="joinCodeInput" maxlength="6" placeholder="ABCDEF" autocomplete="off" spellcheck="false"/>
+      <div style="margin-top:12px;">
+        <button class="btn-big" id="connectBtn" style="font-size:14px;padding:11px 26px;">Connect</button>
+      </div>
+      <div class="lobby-status" id="joinStatus"></div>
+    </div>
+
+    <hr class="lobby-divider"/>
+    <button class="btn" id="lobbyBackBtn">← Back to mode select</button>
+  </div>
+</div>
+
+<!-- ── Game canvas ── -->
+<div id="gameContainer" style="display:none;">
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Connection status badge -->
+  <div id="connBadge">
+    <div class="conn-dot yellow" id="connDot"></div>
+    <span id="connText">Waiting…</span>
+  </div>
+
+  <!-- Victory overlay -->
+  <div id="victoryOverlay">
+    <div class="victory-card">
+      <span class="victory-emoji">🎉</span>
+      <div class="victory-title">You escaped!</div>
+      <div class="victory-sub" id="victoryLevel">Level 1 complete</div>
+      <div class="victory-sub" id="victoryTime">Time: 0.0s</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn-big" id="playAgainBtn">Retry Level</button>
+        <button class="btn-big" id="nextLevelBtn">Next Level</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Death overlay -->
+  <div id="deathOverlay">
+    <div class="death-card">
+      <span class="death-emoji">💥</span>
+      <div class="death-title">Rope Snapped!</div>
+      <div class="death-sub">The rope broke — try again!</div>
+      <button class="btn-big" id="tryAgainBtn">Try Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Status bar ── -->
+<div id="statusBar">
+  <span class="sb-cover" id="coverBtn">⌫ Cover Image</span>
+  <span id="levelStatus">Level 1 · v1.2.0</span>
+</div>
+
+<!-- ── Cover overlay ── -->
+<div id="coverOverlay" onclick="hideCover()">
+  <img src="./cleverpage.png" alt="Cover"/>
+</div>
+
+<script>
+'use strict';
+
+// ─────────────────────────────────────────────────────────
+//  Theme toggle
+// ─────────────────────────────────────────────────────────
+(function() {
+  const html = document.documentElement;
+  const btn  = document.getElementById('themeToggle');
+  function applyTheme(dark) {
+    if (dark) html.setAttribute('data-theme','dark');
+    else       html.removeAttribute('data-theme');
+    btn.textContent = dark ? '☀️' : '🌙';
+    localStorage.setItem('theme', dark ? 'dark' : 'light');
+  }
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  btn.textContent = isDark ? '☀️' : '🌙';
+  btn.addEventListener('click', () => {
+    applyTheme(html.getAttribute('data-theme') !== 'dark');
+  });
+})();
+
+// ─────────────────────────────────────────────────────────
+//  Back button — returns to mode select when in-game,
+//  otherwise back to index.html
+// ─────────────────────────────────────────────────────────
+function returnToModeSelect() {
+  // Stop the game loop
+  if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+  gameLoopStarted = false;
+
+  // Disconnect network
+  if (channel) { channel.unsubscribe(); channel = null; }
+  if (guestPingInterval) { clearInterval(guestPingInterval); guestPingInterval = null; }
+
+  // Hide game, show mode screen
+  document.getElementById('gameContainer').style.display = 'none';
+  document.getElementById('modeScreen').classList.remove('hidden');
+  document.getElementById('lobbyScreen').classList.add('hidden');
+  document.getElementById('victoryOverlay').classList.remove('show');
+  document.getElementById('deathOverlay').classList.remove('show');
+
+  // Reset state
+  gameMode = 'local';
+  guestConnected = false;
+  roomCode = null;
+  setConnStatus('hidden');
+  keysDown.clear();
+  remoteKeys.clear();
+
+  // Reset lobby UI
+  document.getElementById('createSection').style.display = 'none';
+  document.getElementById('joinSection').style.display = 'none';
+  document.getElementById('createStatus').textContent = 'Waiting for P2 to join…';
+  document.getElementById('joinStatus').textContent = '';
+  document.getElementById('joinStatus').className = 'lobby-status';
+  document.getElementById('roomCodeDisplay').textContent = '——';
+}
+
+document.getElementById('backBtn').addEventListener('click', () => {
+  const gc = document.getElementById('gameContainer');
+  if (gc.style.display && gc.style.display !== 'none') {
+    returnToModeSelect();
+  } else {
+    location.href = './index.html';
+  }
+});
+
+// ─────────────────────────────────────────────────────────
+//  Cover overlay
+// ─────────────────────────────────────────────────────────
+const coverOverlay = document.getElementById('coverOverlay');
+function showCover() { coverOverlay.classList.add('show'); }
+function hideCover() { coverOverlay.classList.remove('show'); }
+document.getElementById('coverBtn').addEventListener('click', showCover);
+window.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'Backspace') { e.preventDefault(); showCover(); }
+});
+
+// ─────────────────────────────────────────────────────────
+//  Canvas setup
+// ─────────────────────────────────────────────────────────
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+
+const DESIGN_W = 960;
+const DESIGN_H = 540;
+
+let scale  = 1;
+let offsetX = 0;
+let offsetY = 0;
+
+function resizeCanvas() {
+  const container = document.getElementById('gameContainer');
+  const cw = container.clientWidth;
+  const ch = container.clientHeight;
+
+  canvas.width  = cw;
+  canvas.height = ch;
+
+  // Letterbox: fit DESIGN_W×DESIGN_H inside cw×ch
+  const sx = cw / DESIGN_W;
+  const sy = ch / DESIGN_H;
+  scale   = Math.min(sx, sy);
+  offsetX = (cw - DESIGN_W * scale) / 2;
+  offsetY = (ch - DESIGN_H * scale) / 2;
+}
+
+window.addEventListener('resize', resizeCanvas);
+
+// ─────────────────────────────────────────────────────────
+//  Input
+// ─────────────────────────────────────────────────────────
+const keysDown  = new Set();
+const remoteKeys = new Set();  // P2 keys from network (host mode)
+
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  // Don't eat browser shortcuts
+  if (e.metaKey || e.ctrlKey) return;
+  // Prevent page scroll on arrow keys / space
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
+    e.preventDefault();
+  }
+  keysDown.add(e.key);
+});
+window.addEventListener('keyup',   e => keysDown.delete(e.key));
+
+// ─────────────────────────────────────────────────────────
+//  Platform & door data (in design-space pixels)
+// ─────────────────────────────────────────────────────────
+const LEVELS = [
+  {
+    name: 'Hill Climb',
+    platforms: [
+      { x:   0, y: 500, w: 960, h: 40 },
+      { x:  80, y: 408, w: 240, h: 18 },
+      { x: 360, y: 316, w: 200, h: 18 },
+      { x: 140, y: 224, w: 220, h: 18 },
+      { x: 530, y: 234, w: 220, h: 18 },
+      { x: 750, y: 142, w: 200, h: 18 },
+    ],
+    door: { x: 790, y: 67, w: 40, h: 75 }
+  },
+  {
+    name: 'Twin Steps',
+    platforms: [
+      { x:   0, y: 500, w: 960, h: 40 },
+      { x:  60, y: 420, w: 180, h: 18 },
+      { x: 275, y: 372, w: 150, h: 18 },
+      { x: 500, y: 322, w: 170, h: 18 },
+      { x: 720, y: 270, w: 160, h: 18 },
+      { x: 585, y: 180, w: 170, h: 18 },
+    ],
+    door: { x: 642, y: 105, w: 40, h: 75 }
+  },
+  {
+    name: 'Switchback',
+    platforms: [
+      { x:   0, y: 500, w: 960, h: 40 },
+      { x: 120, y: 424, w: 190, h: 18 },
+      { x: 560, y: 392, w: 220, h: 18 },
+      { x: 300, y: 302, w: 210, h: 18 },
+      { x:  80, y: 218, w: 190, h: 18 },
+      { x: 485, y: 154, w: 210, h: 18 },
+    ],
+    door: { x: 570, y: 79, w: 40, h: 75 }
+  },
+  {
+    name: 'Long Pull',
+    platforms: [
+      { x:   0, y: 500, w: 960, h: 40 },
+      { x: 150, y: 425, w: 110, h: 18 },
+      { x: 350, y: 400, w: 110, h: 18 },
+      { x: 550, y: 375, w: 110, h: 18 },
+      { x: 745, y: 345, w: 110, h: 18 },
+      { x: 675, y: 235, w: 190, h: 18 },
+    ],
+    door: { x: 750, y: 160, w: 40, h: 75 }
+  },
+  {
+    name: 'Sky Shelf',
+    platforms: [
+      { x:   0, y: 500, w: 960, h: 40 },
+      { x:  75, y: 410, w: 150, h: 18 },
+      { x: 300, y: 350, w: 140, h: 18 },
+      { x: 515, y: 290, w: 140, h: 18 },
+      { x: 730, y: 230, w: 140, h: 18 },
+      { x: 395, y: 155, w: 180, h: 18 },
+    ],
+    door: { x: 465, y: 80, w: 40, h: 75 }
+  },
+  {
+    name: 'Two Towers',
+    platforms: [
+      { x:   0, y: 500, w: 960, h: 40 },
+      { x:  70, y: 420, w: 145, h: 18 },
+      { x:  70, y: 330, w: 145, h: 18 },
+      { x: 300, y: 260, w: 155, h: 18 },
+      { x: 585, y: 330, w: 145, h: 18 },
+      { x: 745, y: 240, w: 145, h: 18 },
+      { x: 585, y: 145, w: 145, h: 18 },
+    ],
+    door: { x: 635, y: 70, w: 40, h: 75 }
+  },
+  {
+    name: 'Tension Bridge',
+    platforms: [
+      { x:   0, y: 500, w: 960, h: 40 },
+      { x: 100, y: 430, w: 130, h: 18 },
+      { x: 330, y: 370, w: 105, h: 18 },
+      { x: 525, y: 310, w: 105, h: 18 },
+      { x: 720, y: 250, w: 125, h: 18 },
+      { x: 790, y: 145, w: 120, h: 18 },
+    ],
+    door: { x: 830, y: 70, w: 40, h: 75 }
+  },
+  {
+    name: 'Final Climb',
+    platforms: [
+      { x:   0, y: 500, w: 960, h: 40 },
+      { x: 105, y: 430, w: 120, h: 18 },
+      { x: 305, y: 365, w: 120, h: 18 },
+      { x: 120, y: 300, w: 120, h: 18 },
+      { x: 500, y: 275, w: 115, h: 18 },
+      { x: 705, y: 210, w: 115, h: 18 },
+      { x: 450, y: 140, w: 130, h: 18 },
+    ],
+    door: { x: 495, y: 65, w: 40, h: 75 }
+  },
+];
+
+let currentLevel = 0;
+let PLATFORMS = [];
+let DOOR = { x: 790, y: 67, w: 40, h: 75 };
+
+function setLevel(index) {
+  currentLevel = ((index % LEVELS.length) + LEVELS.length) % LEVELS.length;
+  const level = LEVELS[currentLevel];
+  PLATFORMS = level.platforms.map(p => ({ ...p }));
+  DOOR = { ...level.door };
+  const status = document.getElementById('levelStatus');
+  if (status) status.textContent = `Level ${currentLevel + 1}: ${level.name} · v1.2.0`;
+}
+setLevel(0);
+
+// ─────────────────────────────────────────────────────────
+//  Player definitions
+// ─────────────────────────────────────────────────────────
+const GRAVITY    = 0.5;
+const JUMP_VY    = -10;
+const MOVE_SPEED = 4;
+const PLAYER_W   = 28;
+const PLAYER_H   = 34;
+
+const ROPE_REST    = 200;
+const ROPE_MAX     = 350;
+const ROPE_BREAK   = 500;
+const ROPE_K       = 0.08;
+const ROPE_DAMPING = 0.85;
+
+function makePlayer(x, y, color, name, keys) {
+  return { x, y, vx: 0, vy: 0, grounded: false, w: PLAYER_W, h: PLAYER_H, color, name, keys };
+}
+
+// Start positions — exactly on top of the ground platform (y=500, PLAYER_H=34)
+const SPAWN_P1 = { x: 60,  y: 466 };
+const SPAWN_P2 = { x: 110, y: 466 };
+
+let p1, p2;
+let gameStartTime  = 0;
+let gameElapsed    = 0;
+let gameWon        = false;
+let gameDead       = false;
+let rafId          = null;
+let pulsePhase     = 0;  // for rope pulsing animation
+
+// ─────────────────────────────────────────────────────────
+//  Game mode state
+//  'local' | 'host' | 'guest'
+// ─────────────────────────────────────────────────────────
+let gameMode = 'local';  // set before startGame()
+
+// Supabase channel (online modes)
+let channel = null;
+let roomCode = null;
+let guestConnected = false;        // host: has a guest joined?
+let lastMsgTime = Date.now();      // for connection-lost detection
+let broadcastFrame = 0;
+let guestPingInterval = null;      // guest: periodic ping until start
+let gameLoopStarted = false;
+
+// ─────────────────────────────────────────────────────────
+//  Helpers
+// ─────────────────────────────────────────────────────────
+function hasKey(keysSet, keyOrArray) {
+  if (Array.isArray(keyOrArray)) return keyOrArray.some(k => keysSet.has(k));
+  return keysSet.has(keyOrArray);
+}
+
+function genRoomCode() {
+  // 6-char uppercase alphanumeric, no O/0/I/1
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+// ─────────────────────────────────────────────────────────
+//  Connection badge
+// ─────────────────────────────────────────────────────────
+const connBadge = document.getElementById('connBadge');
+const connDot   = document.getElementById('connDot');
+const connText  = document.getElementById('connText');
+
+function setConnStatus(state) {
+  // state: 'waiting' | 'connected' | 'lost' | 'hidden'
+  if (state === 'hidden') {
+    connBadge.classList.remove('show');
+    return;
+  }
+  connBadge.classList.add('show');
+  connDot.className = 'conn-dot';
+  if (state === 'waiting') {
+    connDot.classList.add('yellow');
+    connText.textContent = gameMode === 'host' ? 'Waiting for P2…' : 'Connecting…';
+  } else if (state === 'connected') {
+    connDot.classList.add('green');
+    connText.textContent = gameMode === 'host' ? 'P2 connected' : 'Connected to host';
+  } else if (state === 'lost') {
+    connDot.classList.add('red');
+    connText.textContent = 'Connection lost';
+  }
+}
+
+// Check connection health every 5s
+setInterval(() => {
+  if (gameMode === 'local' || !gameLoopStarted) return;
+  if (Date.now() - lastMsgTime > 5000) {
+    setConnStatus('lost');
+  }
+}, 1000);
+
+// ─────────────────────────────────────────────────────────
+//  resetGame
+// ─────────────────────────────────────────────────────────
+function resetGame() {
+  setLevel(currentLevel);
+  const p1Keys = (gameMode === 'local')
+    ? { left: 'a', right: 'd', jump: 'w' }
+    : { left: 'a', right: 'd', jump: 'w' };
+
+  const p2KeysLocal  = { left: 'ArrowLeft', right: 'ArrowRight', jump: 'ArrowUp' };
+  const p2KeysOnline = { left: ['ArrowLeft','a'], right: ['ArrowRight','d'], jump: ['ArrowUp','w'] };
+
+  p1 = makePlayer(SPAWN_P1.x, SPAWN_P1.y, '#e87c1e', 'P1', p1Keys);
+  p2 = makePlayer(SPAWN_P2.x, SPAWN_P2.y, '#3d8de8', 'P2',
+    gameMode === 'local' ? p2KeysLocal : p2KeysOnline);
+
+  gameStartTime = performance.now();
+  gameElapsed   = 0;
+  gameWon  = false;
+  gameDead = false;
+  keysDown.clear();
+  remoteKeys.clear();
+
+  document.getElementById('victoryOverlay').classList.remove('show');
+  document.getElementById('deathOverlay').classList.remove('show');
+
+  // If host, broadcast restart
+  if (gameMode === 'host' && channel) {
+    channel.send({ type: 'broadcast', event: 'restart', payload: { level: currentLevel } }).catch(() => {});
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  AABB collision helpers
+// ─────────────────────────────────────────────────────────
+function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+  return ax < bx + bw && ax + aw > bx &&
+         ay < by + bh && ay + ah > by;
+}
+
+function resolvePlayerPlatforms(player) {
+  player.grounded = false;
+
+  for (let i = 0; i < PLATFORMS.length; i++) {
+    const plat = PLATFORMS[i];
+    const isGround = (i === 0);
+
+    if (!rectsOverlap(player.x, player.y, player.w, player.h, plat.x, plat.y, plat.w, plat.h)) continue;
+
+    // Compute penetration depths
+    const overlapLeft   = (player.x + player.w) - plat.x;
+    const overlapRight  = (plat.x + plat.w) - player.x;
+    const overlapTop    = (player.y + player.h) - plat.y;
+    const overlapBottom = (plat.y + plat.h) - player.y;
+
+    const minH = Math.min(overlapLeft, overlapRight);
+    const minV = Math.min(overlapTop,  overlapBottom);
+
+    if (minV < minH) {
+      // Vertical collision
+      if (overlapTop < overlapBottom) {
+        // Player's bottom is closer to platform top = coming from above
+        // For floating platforms: only land when falling (vy >= 0), not while jumping up
+        if (isGround || player.vy >= 0) {
+          player.y = plat.y - player.h;
+          if (player.vy > 0) player.vy = 0;
+          player.grounded = true;
+        }
+        // else: jumping upward through floating platform — pass through
+      } else if (isGround) {
+        // Hitting underside of ground only (acts as ceiling)
+        player.y = plat.y + plat.h;
+        if (player.vy < 0) player.vy = 0;
+      }
+      // Floating platforms: ignore hit from below — one-way pass-through
+    } else if (isGround) {
+      // Horizontal walls — only the ground platform has side walls
+      if (overlapLeft < overlapRight) {
+        player.x = plat.x - player.w;
+        if (player.vx > 0) player.vx = 0;
+      } else {
+        player.x = plat.x + plat.w;
+        if (player.vx < 0) player.vx = 0;
+      }
+    }
+  }
+
+  // World bounds
+  if (player.x < 0) { player.x = 0; if (player.vx < 0) player.vx = 0; }
+  if (player.x + player.w > DESIGN_W) { player.x = DESIGN_W - player.w; if (player.vx > 0) player.vx = 0; }
+  if (player.y + player.h > DESIGN_H) {
+    player.y = DESIGN_H - player.h;
+    if (player.vy > 0) player.vy = 0;
+    player.grounded = true;
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  updatePlayer — accepts keysSet parameter
+// ─────────────────────────────────────────────────────────
+function updatePlayer(player, keysSet) {
+  // Horizontal movement
+  if (hasKey(keysSet, player.keys.left))  player.vx -= 1.2;
+  if (hasKey(keysSet, player.keys.right)) player.vx += 1.2;
+
+  // Clamp horizontal speed
+  player.vx = Math.max(-MOVE_SPEED, Math.min(MOVE_SPEED, player.vx));
+
+  // Friction
+  if (!hasKey(keysSet, player.keys.left) && !hasKey(keysSet, player.keys.right)) {
+    player.vx *= 0.78;
+    if (Math.abs(player.vx) < 0.05) player.vx = 0;
+  }
+
+  // Jump
+  if (hasKey(keysSet, player.keys.jump) && player.grounded) {
+    player.vy = JUMP_VY;
+    player.grounded = false;
+  }
+
+  // Gravity
+  player.vy += GRAVITY;
+
+  // Integrate
+  player.x += player.vx;
+  player.y += player.vy;
+
+  // Platform collisions — single pass only.
+  // Running it twice caused the second call to reset player.grounded=false
+  // right after the first call set it to true, making jumping impossible.
+  resolvePlayerPlatforms(player);
+}
+
+function applyRopeForces(p1, p2) {
+  const cx1 = p1.x + p1.w / 2;
+  const cy1 = p1.y + p1.h / 2;
+  const cx2 = p2.x + p2.w / 2;
+  const cy2 = p2.y + p2.h / 2;
+
+  const dx   = cx2 - cx1;
+  const dy   = cy2 - cy1;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+
+  if (dist <= ROPE_REST) return dist; // Rope is slack, no force
+
+  const stretch = dist - ROPE_REST;
+  let force     = ROPE_K * stretch;
+
+  // Hard yank if beyond max
+  if (dist > ROPE_MAX) {
+    force = ROPE_K * stretch * 3.5;
+  }
+
+  const nx = dx / dist;
+  const ny = dy / dist;
+
+  p1.vx += nx * force;
+  p1.vy += ny * force;
+  p2.vx -= nx * force;
+  p2.vy -= ny * force;
+
+  // Damping only when stretched — horizontal only so vertical jumps aren't killed
+  if (dist > ROPE_REST) {
+    p1.vx *= ROPE_DAMPING;
+    p2.vx *= ROPE_DAMPING;
+  }
+
+  return dist;
+}
+
+function ropeDistance() {
+  const dx = (p2.x + p2.w/2) - (p1.x + p1.w/2);
+  const dy = (p2.y + p2.h/2) - (p1.y + p1.h/2);
+  return Math.sqrt(dx*dx + dy*dy);
+}
+
+function playerTouchesDoor(player) {
+  return rectsOverlap(player.x, player.y, player.w, player.h, DOOR.x, DOOR.y, DOOR.w, DOOR.h);
+}
+
+// ─────────────────────────────────────────────────────────
+//  Update
+// ─────────────────────────────────────────────────────────
+function update(ts) {
+  if (gameWon || gameDead) return;
+
+  gameElapsed = (ts - gameStartTime) / 1000;
+  pulsePhase  = ts / 400;
+
+  if (gameMode === 'guest') {
+    // Guest: physics driven by host state; just tick pulsePhase
+    return;
+  }
+
+  // local or host: run full physics
+  applyRopeForces(p1, p2);
+
+  if (gameMode === 'local') {
+    updatePlayer(p1, keysDown);
+    updatePlayer(p2, keysDown);
+  } else {
+    // host
+    updatePlayer(p1, keysDown);
+    updatePlayer(p2, remoteKeys);
+  }
+
+  // Check rope break
+  const dist = ropeDistance();
+  if (dist >= ROPE_BREAK) {
+    gameDead = true;
+    document.getElementById('deathOverlay').classList.add('show');
+    return;
+  }
+
+  // Check victory
+  if (playerTouchesDoor(p1) && playerTouchesDoor(p2)) {
+    gameWon = true;
+    showVictory(gameElapsed);
+    return;
+  }
+
+  // Host: broadcast state every 4th frame
+  if (gameMode === 'host' && channel) {
+    broadcastFrame++;
+    if (broadcastFrame % 4 === 0) {
+      channel.send({
+        type: 'broadcast',
+        event: 'state',
+        payload: {
+          p1: { x: p1.x, y: p1.y, vx: p1.vx, vy: p1.vy, grounded: p1.grounded },
+          p2: { x: p2.x, y: p2.y, vx: p2.vx, vy: p2.vy, grounded: p2.grounded },
+          gameWon,
+          gameDead,
+          elapsed: gameElapsed,
+          level: currentLevel,
+          pulsePhase,
+        }
+      }).catch(() => {});
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Render helpers
+// ─────────────────────────────────────────────────────────
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawPlayer(ctx, player) {
+  const x = player.x, y = player.y, w = player.w, h = player.h;
+
+  // Airborne shadow
+  if (!player.grounded) {
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(x + w/2, DESIGN_H - 2, w * 0.6, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Body
+  ctx.save();
+  drawRoundedRect(ctx, x, y, w, h, 7);
+  ctx.fillStyle = player.color;
+  ctx.fill();
+
+  // Highlight
+  drawRoundedRect(ctx, x + 2, y + 2, w - 4, h / 2.5, 5);
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.fill();
+
+  // Eyes (two filled dots)
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(x + w * 0.32, y + h * 0.38, 3.5, 0, Math.PI * 2);
+  ctx.arc(x + w * 0.68, y + h * 0.38, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#222';
+  ctx.beginPath();
+  ctx.arc(x + w * 0.32, y + h * 0.38, 2, 0, Math.PI * 2);
+  ctx.arc(x + w * 0.68, y + h * 0.38, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Mouth — smile or neutral depending on grounded
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  if (player.grounded) {
+    // Smile
+    ctx.arc(x + w / 2, y + h * 0.55, 5, 0.15, Math.PI - 0.15);
+  } else {
+    // O-face (airborne)
+    ctx.arc(x + w / 2, y + h * 0.58, 3.5, 0, Math.PI * 2);
+  }
+  ctx.stroke();
+
+  ctx.restore();
+
+  // Label above
+  ctx.save();
+  ctx.font = 'bold 11px Martel Sans, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillStyle = player.color;
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = 3;
+  ctx.fillText(player.name, x + w / 2, y - 4);
+  ctx.restore();
+}
+
+function drawPlatforms(ctx) {
+  for (let i = 0; i < PLATFORMS.length; i++) {
+    const p = PLATFORMS[i];
+    ctx.save();
+
+    if (i === 0) {
+      // Ground — earthy gradient
+      const grd = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
+      grd.addColorStop(0, '#5c8a3c');
+      grd.addColorStop(0.2, '#4a7a2e');
+      grd.addColorStop(1, '#3a5a24');
+      ctx.fillStyle = grd;
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+
+      // Grass strip
+      ctx.fillStyle = '#7cbf4e';
+      ctx.fillRect(p.x, p.y, p.w, 5);
+    } else {
+      // Floating platforms
+      const grd = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
+      grd.addColorStop(0, '#8bc34a');
+      grd.addColorStop(1, '#558b2f');
+      drawRoundedRect(ctx, p.x, p.y, p.w, p.h, 6);
+      ctx.fillStyle = grd;
+      ctx.fill();
+      // Grass top strip
+      drawRoundedRect(ctx, p.x, p.y, p.w, 6, 6);
+      ctx.fillStyle = '#aed581';
+      ctx.fill();
+      // Underside shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.18)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 3;
+      drawRoundedRect(ctx, p.x, p.y, p.w, p.h, 6);
+      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawDoor(ctx, ts) {
+  const d = DOOR;
+  const glow = 0.6 + 0.4 * Math.sin(ts / 600);
+
+  ctx.save();
+
+  // Door frame
+  ctx.shadowColor = `rgba(255, 220, 80, ${glow * 0.9})`;
+  ctx.shadowBlur  = 18 * glow;
+
+  // Frame
+  ctx.fillStyle = '#c8860a';
+  drawRoundedRect(ctx, d.x - 4, d.y - 4, d.w + 8, d.h + 8, 6);
+  ctx.fill();
+
+  // Door body
+  const doorGrd = ctx.createLinearGradient(d.x, d.y, d.x + d.w, d.y);
+  doorGrd.addColorStop(0, '#f5c842');
+  doorGrd.addColorStop(0.5, '#ffe96a');
+  doorGrd.addColorStop(1, '#f5c842');
+  drawRoundedRect(ctx, d.x, d.y, d.w, d.h, 4);
+  ctx.fillStyle = doorGrd;
+  ctx.fill();
+
+  // Door panel detail
+  ctx.strokeStyle = 'rgba(180, 120, 0, 0.4)';
+  ctx.lineWidth = 1.5;
+  drawRoundedRect(ctx, d.x + 5, d.y + 8, d.w - 10, d.h * 0.4, 3);
+  ctx.stroke();
+  drawRoundedRect(ctx, d.x + 5, d.y + 8 + d.h * 0.4 + 4, d.w - 10, d.h * 0.4 - 4, 3);
+  ctx.stroke();
+
+  // Knob
+  ctx.fillStyle = '#c8860a';
+  ctx.beginPath();
+  ctx.arc(d.x + d.w - 9, d.y + d.h * 0.52, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Glow star burst
+  ctx.globalAlpha = glow * 0.35;
+  ctx.fillStyle = '#ffe96a';
+  ctx.beginPath();
+  ctx.arc(d.x + d.w / 2, d.y - 10, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // "EXIT" label
+  ctx.font = 'bold 9px Martel Sans, Arial, sans-serif';
+  ctx.fillStyle = '#7a4a00';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowBlur = 0;
+  ctx.fillText('EXIT', d.x + d.w / 2, d.y + d.h * 0.85);
+
+  ctx.restore();
+}
+
+function drawRope(ctx, p1, p2, dist) {
+  const x1 = p1.x + p1.w / 2;
+  const y1 = p1.y + p1.h / 2;
+  const x2 = p2.x + p2.w / 2;
+  const y2 = p2.y + p2.h / 2;
+
+  const broken   = dist >= ROPE_BREAK;
+  const maxed    = dist >= ROPE_MAX;
+  const slack    = dist < ROPE_REST;
+
+  ctx.save();
+  ctx.lineWidth = 3;
+
+  if (broken) {
+    ctx.restore();
+    return; // rope is gone
+  }
+
+  // Build gradient (orange → blue)
+  let grad;
+  try {
+    grad = ctx.createLinearGradient(x1, y1, x2, y2);
+    if (maxed) {
+      const alpha = 0.7 + 0.3 * Math.sin(pulsePhase * 2);
+      grad.addColorStop(0, `rgba(255, 60, 30, ${alpha})`);
+      grad.addColorStop(0.5, `rgba(255, 30, 30, ${alpha})`);
+      grad.addColorStop(1, `rgba(255, 60, 30, ${alpha})`);
+    } else {
+      grad.addColorStop(0, '#e87c1e');
+      grad.addColorStop(1, '#3d8de8');
+    }
+  } catch(e) {
+    grad = '#e87c1e';
+  }
+
+  ctx.strokeStyle = grad;
+
+  if (maxed) {
+    // Dashed + thicker when at max
+    ctx.setLineDash([8, 5]);
+    ctx.lineWidth = 3.5;
+  } else {
+    ctx.setLineDash([]);
+  }
+
+  // Draw catenary / bezier curve
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+
+  // Sag amount: more sag when slack, less when stretched
+  const sagAmount = slack
+    ? Math.max(0, (ROPE_REST - dist) * 0.4)
+    : 0;
+  const cpx = mx;
+  const cpy = my + sagAmount;
+
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.quadraticCurveTo(cpx, cpy, x2, y2);
+  ctx.stroke();
+
+  // Tension indicator dots along rope when maxed
+  if (maxed) {
+    const pulseAlpha = 0.5 + 0.5 * Math.sin(pulsePhase * 3);
+    ctx.globalAlpha = pulseAlpha;
+    ctx.fillStyle = '#ff3333';
+    ctx.setLineDash([]);
+    for (let t = 0.2; t <= 0.8; t += 0.3) {
+      const bx = (1-t)*(1-t)*x1 + 2*(1-t)*t*cpx + t*t*x2;
+      const by = (1-t)*(1-t)*y1 + 2*(1-t)*t*cpy + t*t*y2;
+      ctx.beginPath();
+      ctx.arc(bx, by, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+}
+
+function drawBackground(ctx, w, h) {
+  // Sky gradient
+  const sky = ctx.createLinearGradient(0, 0, 0, h);
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (dark) {
+    sky.addColorStop(0, '#0d1f3c');
+    sky.addColorStop(1, '#1a3a5c');
+  } else {
+    sky.addColorStop(0, '#c9e8ff');
+    sky.addColorStop(0.6, '#dff0ff');
+    sky.addColorStop(1, '#f0f8e8');
+  }
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, w, h);
+
+  // Distant cloud puffs (static)
+  if (!dark) {
+    drawCloud(ctx, 80,  60, 0.9);
+    drawCloud(ctx, 300, 40, 1.2);
+    drawCloud(ctx, 600, 80, 0.8);
+    drawCloud(ctx, 800, 55, 1.0);
+  }
+}
+
+function drawCloud(ctx, cx, cy, s) {
+  ctx.save();
+  ctx.globalAlpha = 0.6;
+  ctx.fillStyle = '#fff';
+  function puff(x, y, r) {
+    ctx.beginPath();
+    ctx.arc(cx + x * s, cy + y * s, r * s, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  puff(0,    0,   20);
+  puff(-22,  6,   15);
+  puff(22,   6,   16);
+  puff(-8,  -10,  14);
+  puff(10,  -9,   12);
+  ctx.restore();
+}
+
+function drawHUD(ctx) {
+  ctx.save();
+  ctx.font = 'bold 13px Martel Sans, Arial, sans-serif';
+  ctx.textBaseline = 'top';
+
+  // P1 hint
+  ctx.fillStyle = '#e87c1e';
+  ctx.textAlign = 'left';
+  if (gameMode === 'local') {
+    ctx.fillText('P1: WASD', 12, 10);
+  } else if (gameMode === 'host') {
+    ctx.fillText('P1: WASD (you)', 12, 10);
+  } else {
+    ctx.fillText('P1: online', 12, 10);
+  }
+
+  // P2 hint
+  ctx.fillStyle = '#3d8de8';
+  ctx.textAlign = 'right';
+  if (gameMode === 'local') {
+    ctx.fillText('P2: ↑ ← →', DESIGN_W - 12, 10);
+  } else if (gameMode === 'host') {
+    ctx.fillText('P2: online', DESIGN_W - 12, 10);
+  } else {
+    ctx.fillText('P2: WASD / ↑←→ (you)', DESIGN_W - 12, 10);
+  }
+
+  // Center hint
+  ctx.fillStyle = 'rgba(100,100,100,0.85)';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 12px Martel Sans, Arial, sans-serif';
+  ctx.fillText(`Level ${currentLevel + 1}: ${LEVELS[currentLevel].name} — reach the door TOGETHER!`, DESIGN_W / 2, 10);
+
+  // Timer
+  ctx.fillStyle = 'rgba(60,60,60,0.7)';
+  ctx.font = 'bold 11px Martel Sans, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(gameElapsed.toFixed(1) + 's', DESIGN_W / 2, 28);
+
+  ctx.restore();
+}
+
+function showVictory(elapsed) {
+  const level = LEVELS[currentLevel];
+  const finalLevel = currentLevel === LEVELS.length - 1;
+  document.getElementById('victoryLevel').textContent =
+    finalLevel ? 'Final level complete!' : `Level ${currentLevel + 1}: ${level.name} complete`;
+  document.getElementById('victoryTime').textContent =
+    'Time: ' + elapsed.toFixed(1) + 's';
+  document.getElementById('nextLevelBtn').textContent = finalLevel ? 'Restart Run' : 'Next Level';
+  document.getElementById('victoryOverlay').classList.add('show');
+}
+
+function restartCurrentLevel() {
+  if (gameMode === 'guest') {
+    if (channel) channel.send({ type: 'broadcast', event: 'requestRestart', payload: {} }).catch(() => {});
+    document.getElementById('victoryOverlay').classList.remove('show');
+    document.getElementById('deathOverlay').classList.remove('show');
+    return;
+  }
+  resetGame();
+}
+
+function advanceLevel() {
+  const next = currentLevel === LEVELS.length - 1 ? 0 : currentLevel + 1;
+  if (gameMode === 'guest') {
+    if (channel) channel.send({ type: 'broadcast', event: 'requestNextLevel', payload: { level: next } }).catch(() => {});
+    document.getElementById('victoryOverlay').classList.remove('show');
+    return;
+  }
+  setLevel(next);
+  resetGame();
+}
+
+function drawRopeWarning(ctx, dist) {
+  if (dist < ROPE_MAX) return;
+  const pct = Math.min(1, (dist - ROPE_MAX) / (ROPE_BREAK - ROPE_MAX));
+
+  ctx.save();
+  ctx.globalAlpha = pct * (0.5 + 0.5 * Math.sin(pulsePhase * 4));
+  ctx.fillStyle = '#ff2222';
+  ctx.font = 'bold 14px Martel Sans, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('⚠️ ROPE SNAPPING!', DESIGN_W / 2, 44);
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────────
+//  Main render
+// ─────────────────────────────────────────────────────────
+function render(ts) {
+  const cw = canvas.width;
+  const ch = canvas.height;
+
+  // Clear
+  ctx.clearRect(0, 0, cw, ch);
+
+  // Apply letterbox transform
+  ctx.save();
+  ctx.translate(offsetX, offsetY);
+  ctx.scale(scale, scale);
+
+  // Background
+  drawBackground(ctx, DESIGN_W, DESIGN_H);
+
+  // Platforms
+  drawPlatforms(ctx);
+
+  // Door
+  drawDoor(ctx, ts);
+
+  // Rope
+  const dist = ropeDistance();
+  drawRope(ctx, p1, p2, dist);
+
+  // Players
+  drawPlayer(ctx, p1);
+  drawPlayer(ctx, p2);
+
+  // HUD
+  drawHUD(ctx);
+  drawRopeWarning(ctx, dist);
+
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────────
+//  Game loop
+// ─────────────────────────────────────────────────────────
+function gameLoop(ts) {
+  pulsePhase = ts / 400;
+
+  if (gameMode === 'guest') {
+    // Guest: send input every 2nd frame, skip physics
+    broadcastFrame++;
+    if (broadcastFrame % 2 === 0 && channel) {
+      channel.send({
+        type: 'broadcast',
+        event: 'input',
+        payload: { keys: [...keysDown] }
+      }).catch(() => {});
+    }
+    // Update pulsePhase only (state driven by host)
+    if (!gameWon && !gameDead) gameElapsed = (ts - gameStartTime) / 1000;
+  } else {
+    update(ts);
+  }
+
+  render(ts);
+  rafId = requestAnimationFrame(gameLoop);
+}
+
+// ─────────────────────────────────────────────────────────
+//  Start game
+// ─────────────────────────────────────────────────────────
+function startGame() {
+  document.getElementById('modeScreen').classList.add('hidden');
+  document.getElementById('lobbyScreen').classList.add('hidden');
+  document.getElementById('gameContainer').style.display = 'flex';
+
+  resizeCanvas();
+  resetGame();
+
+  if (!gameLoopStarted) {
+    gameLoopStarted = true;
+    rafId = requestAnimationFrame(gameLoop);
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Supabase online co-op
+// ─────────────────────────────────────────────────────────
+
+function getSupabase() {
+  if (window.supabaseClient) return window.supabaseClient;
+  if (
+    window.supabase &&
+    window.ALEX_FUN_SUPABASE_URL &&
+    window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY
+  ) {
+    window.supabaseClient = window.supabase.createClient(
+      window.ALEX_FUN_SUPABASE_URL,
+      window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY
+    );
+    return window.supabaseClient;
+  }
+  return null;
+}
+
+function subscribeChannel(code, asHost) {
+  const sb = getSupabase();
+  if (!sb) {
+    alert('Online co-op is not connected right now. Check that supabase-config.js loaded correctly.');
+    return null;
+  }
+
+  const ch = sb.channel('rope-run:' + code, {
+    config: { broadcast: { self: false } }
+  });
+
+  if (asHost) {
+    // ── HOST ──
+    ch.on('broadcast', { event: 'input' }, ({ payload }) => {
+      lastMsgTime = Date.now();
+      if (!guestConnected) {
+        guestConnected = true;
+        setConnStatus('connected');
+        document.getElementById('createStatus').textContent = 'P2 joined! Starting…';
+        // Send 'start' to guest, begin game
+        ch.send({ type: 'broadcast', event: 'start', payload: {} }).catch(() => {});
+        setTimeout(() => startGame(), 400);
+      }
+      // Update remote keys
+      remoteKeys.clear();
+      if (payload.keys) payload.keys.forEach(k => remoteKeys.add(k));
+    });
+
+    ch.on('broadcast', { event: 'requestRestart' }, () => {
+      resetGame();
+    });
+
+    ch.on('broadcast', { event: 'requestNextLevel' }, ({ payload }) => {
+      const requested = Number.isInteger(payload?.level) ? payload.level : currentLevel + 1;
+      setLevel(requested);
+      resetGame();
+    });
+
+  } else {
+    // ── GUEST ──
+    ch.on('broadcast', { event: 'state' }, ({ payload }) => {
+      lastMsgTime = Date.now();
+      setConnStatus('connected');
+      if (!p1 || !p2) return;
+
+      if (Number.isInteger(payload.level) && payload.level !== currentLevel) {
+        setLevel(payload.level);
+      }
+
+      // Apply host state to local objects
+      Object.assign(p1, payload.p1);
+      Object.assign(p2, payload.p2);
+      pulsePhase = payload.pulsePhase || pulsePhase;
+      gameElapsed = payload.elapsed || gameElapsed;
+
+      if (payload.gameWon && !gameWon) {
+        gameWon = true;
+        showVictory(payload.elapsed || 0);
+      }
+      if (payload.gameDead && !gameDead) {
+        gameDead = true;
+        document.getElementById('deathOverlay').classList.add('show');
+      }
+    });
+
+    ch.on('broadcast', { event: 'start' }, () => {
+      lastMsgTime = Date.now();
+      setConnStatus('connected');
+      if (guestPingInterval) { clearInterval(guestPingInterval); guestPingInterval = null; }
+      if (!gameLoopStarted) startGame();
+    });
+
+    ch.on('broadcast', { event: 'restart' }, ({ payload }) => {
+      lastMsgTime = Date.now();
+      if (Number.isInteger(payload?.level)) setLevel(payload.level);
+      resetGame();
+    });
+  }
+
+  ch.subscribe((status) => {
+    if (status === 'SUBSCRIBED') {
+      if (!asHost) {
+        // Guest: start pinging every 500ms until host acks
+        setConnStatus('waiting');
+        guestPingInterval = setInterval(() => {
+          ch.send({ type: 'broadcast', event: 'input', payload: { keys: [] } }).catch(() => {});
+        }, 500);
+        // Update join status
+        document.getElementById('joinStatus').textContent = 'Waiting for host to start…';
+        document.getElementById('joinStatus').className = 'lobby-status ok';
+      }
+    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      if (!asHost) {
+        document.getElementById('joinStatus').textContent = 'Connection error. Check the room code.';
+        document.getElementById('joinStatus').className = 'lobby-status err';
+      }
+    }
+  });
+
+  return ch;
+}
+
+// ─────────────────────────────────────────────────────────
+//  UI: Mode select
+// ─────────────────────────────────────────────────────────
+document.getElementById('localModeBtn').addEventListener('click', () => {
+  gameMode = 'local';
+  setLevel(0);
+  setConnStatus('hidden');
+  startGame();
+});
+
+document.getElementById('onlineModeBtn').addEventListener('click', () => {
+  document.getElementById('modeScreen').classList.add('hidden');
+  document.getElementById('lobbyScreen').classList.remove('hidden');
+});
+
+document.getElementById('lobbyBackBtn').addEventListener('click', () => {
+  document.getElementById('lobbyScreen').classList.add('hidden');
+  document.getElementById('modeScreen').classList.remove('hidden');
+  // Clean up any pending channel
+  if (channel) { channel.unsubscribe(); channel = null; }
+  if (guestPingInterval) { clearInterval(guestPingInterval); guestPingInterval = null; }
+  document.getElementById('createSection').style.display = 'none';
+  document.getElementById('joinSection').style.display = 'none';
+  document.getElementById('createStatus').textContent = 'Waiting for P2 to join…';
+  document.getElementById('joinStatus').textContent = '';
+  document.getElementById('joinStatus').className = 'lobby-status';
+  document.getElementById('roomCodeDisplay').textContent = '——';
+});
+
+// ─────────────────────────────────────────────────────────
+//  UI: Create room
+// ─────────────────────────────────────────────────────────
+document.getElementById('createRoomBtn').addEventListener('click', () => {
+  roomCode = genRoomCode();
+  gameMode = 'host';
+  setLevel(0);
+  guestConnected = false;
+
+  document.getElementById('roomCodeDisplay').textContent = roomCode;
+  document.getElementById('createSection').style.display = 'block';
+  document.getElementById('createStatus').textContent = 'Waiting for P2 to join…';
+  document.getElementById('createStatus').className = 'lobby-status';
+
+  setConnStatus('waiting');
+
+  // Clean up old channel
+  if (channel) { channel.unsubscribe(); channel = null; }
+
+  channel = subscribeChannel(roomCode, true);
+});
+
+document.getElementById('copyCodeBtn').addEventListener('click', () => {
+  if (!roomCode) return;
+  navigator.clipboard.writeText(roomCode).then(() => {
+    const btn = document.getElementById('copyCodeBtn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1400);
+  });
+});
+
+// ─────────────────────────────────────────────────────────
+//  UI: Join room
+// ─────────────────────────────────────────────────────────
+document.getElementById('showJoinBtn').addEventListener('click', () => {
+  document.getElementById('joinSection').style.display = 'block';
+  document.getElementById('createSection').style.display = 'none';
+});
+
+const joinCodeInput = document.getElementById('joinCodeInput');
+joinCodeInput.addEventListener('input', () => {
+  joinCodeInput.value = joinCodeInput.value.toUpperCase().replace(/[^A-Z2-9]/g, '');
+});
+
+document.getElementById('connectBtn').addEventListener('click', () => {
+  const code = joinCodeInput.value.trim().toUpperCase();
+  if (code.length !== 6) {
+    document.getElementById('joinStatus').textContent = 'Please enter a 6-character code.';
+    document.getElementById('joinStatus').className = 'lobby-status err';
+    return;
+  }
+
+  roomCode = code;
+  gameMode = 'guest';
+  setLevel(0);
+
+  document.getElementById('joinStatus').textContent = 'Connecting…';
+  document.getElementById('joinStatus').className = 'lobby-status';
+
+  // Clean up old channel
+  if (channel) { channel.unsubscribe(); channel = null; }
+
+  channel = subscribeChannel(roomCode, false);
+  if (!channel) return;
+
+  // Reset state for guest
+  p1 = makePlayer(SPAWN_P1.x, SPAWN_P1.y, '#e87c1e', 'P1', { left: 'a', right: 'd', jump: 'w' });
+  p2 = makePlayer(SPAWN_P2.x, SPAWN_P2.y, '#3d8de8', 'P2',
+    { left: ['ArrowLeft','a'], right: ['ArrowRight','d'], jump: ['ArrowUp','w'] });
+  gameStartTime = performance.now();
+  gameElapsed = 0;
+  gameWon = false;
+  gameDead = false;
+});
+
+// ─────────────────────────────────────────────────────────
+//  Restart buttons
+// ─────────────────────────────────────────────────────────
+document.getElementById('playAgainBtn').addEventListener('click', () => {
+  restartCurrentLevel();
+});
+
+document.getElementById('nextLevelBtn').addEventListener('click', () => {
+  advanceLevel();
+});
+
+document.getElementById('tryAgainBtn').addEventListener('click', () => {
+  restartCurrentLevel();
+});
+
+</script>
+</body>
+</html>

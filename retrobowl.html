@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="utf-8">
+  <link rel="icon" type="image/png" href="./clever1.png">
+  <title>Retro Bowl — alex.fun</title>
+  <script src="./cover-profiles.js"></script>
+  <script>
+    if (localStorage.getItem("theme") === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  </script>
+  <style>
+    :root {
+      --control-fg: #111812;
+      --control-bg: rgba(255,255,255,.9);
+      --control-bg-hover: #fff;
+      --control-border: rgba(0,0,0,.16);
+      --control-shadow: rgba(0,0,0,.18);
+      --status-h: 26px;
+    }
+
+    [data-theme="dark"] {
+      --control-fg: #ececec;
+      --control-bg: rgba(22,24,22,.9);
+      --control-bg-hover: #2a2d2a;
+      --control-border: rgba(255,255,255,.18);
+      --control-shadow: rgba(0,0,0,.36);
+    }
+
+    *,
+    *::before,
+    *::after { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: #cccccc;
+      touch-action: none;
+      overscroll-behavior: none;
+      user-select: none;
+    }
+
+    canvas {
+      image-rendering: optimizeSpeed;
+      -webkit-interpolation-mode: nearest-neighbor;
+      -ms-touch-action: none;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      touch-action: none;
+      position: absolute;
+      inset: calc(50% - (var(--status-h) / 2)) -50% -50% 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    :-webkit-full-screen #canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    div.gm4html5_div_class {
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    div.gm4html5_login {
+      padding: 20px;
+      position: absolute;
+      border: solid 2px #000000;
+      background-color: #404040;
+      color: #00ff00;
+      border-radius: 15px;
+      box-shadow: #101010 20px 20px 40px;
+    }
+
+    div.gm4html5_cancel_button { float: right; }
+    div.gm4html5_login_button { float: left; }
+    div.gm4html5_login_header { text-align: center; }
+
+    :-webkit-full-screen {
+      width: 100%;
+      height: 100%;
+    }
+
+    .game-bar {
+      position: fixed;
+      left: 14px;
+      top: 14px;
+      z-index: 100000;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .game-bar button {
+      font: 800 13px Arial, sans-serif;
+      color: var(--control-fg);
+      background: var(--control-bg);
+      border: 1px solid var(--control-border);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px var(--control-shadow);
+      transition: background .15s, transform .12s;
+    }
+
+    .game-bar button:hover {
+      background: var(--control-bg-hover);
+      transform: translateY(-1px);
+    }
+
+    #coverOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200000;
+      background: #fff;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .55s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    #coverOverlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #coverOverlay img {
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      object-position: top center;
+      display: block;
+    }
+
+    #statusBar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--status-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background: var(--control-bg);
+      border-top: 1px solid var(--control-border);
+      color: rgba(20,20,20,.68);
+      font: 800 11px Arial, sans-serif;
+      z-index: 100000;
+    }
+
+    [data-theme="dark"] #statusBar { color: rgba(236,236,236,.68); }
+    #statusBar .sb-cover { cursor: pointer; user-select: none; }
+    #statusBar .sb-cover:hover { color: var(--control-fg); }
+
+    #loadStatus {
+      position: fixed;
+      left: 50%;
+      bottom: 48px;
+      z-index: 50;
+      transform: translateX(-50%);
+      color: #d6d6d6;
+      font: 700 12px Arial, sans-serif;
+      letter-spacing: 0.2px;
+      opacity: 0.78;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-bar">
+    <button id="backBtn" type="button">Back</button>
+    <button id="fullscreenBtn" type="button">Fullscreen</button>
+  </div>
+
+  <div class="gm4html5_div_class" id="gm4html5_div_id">
+    <img src="https://cdn.jsdelivr.net/gh/selenite-cc/selenite-old@9c743188888af0986c8c7b293dbac8f9e421a4ee/retrobowl/html5game/splash.png" id="GM4HTML5_loadingscreen" alt="GameMaker:HTML5 loading screen" style="display: none;">
+    <canvas id="canvas" width="1033" height="581">
+      <p>Your browser doesn't support HTML5 canvas.</p>
+    </canvas>
+  </div>
+  <div id="loadStatus">Loading Retro Bowl...</div>
+
+  <div id="coverOverlay" aria-hidden="true">
+    <img id="coverImage" alt="Cover">
+  </div>
+  <div id="statusBar">
+    <span class="sb-cover" onclick="showCover()">Backspace Cover Image</span>
+    <span>Retro Bowl</span>
+  </div>
+
+  <script>
+    (function clearRetroBowlSaveSlots() {
+      const filenames = [
+        "savedata.ini",
+        "savedata2.ini",
+        "savedata3.ini",
+        "savedata4.ini",
+        "savedata5.ini",
+        "backup_savedata.ini",
+        "backup_savedata2.ini",
+        "backup_savedata3.ini",
+        "backup_savedata4.ini",
+        "backup_savedata5.ini",
+        "uniforms_custom_1.txt",
+        "uniforms_custom_2.txt",
+        "uniforms_custom_3.txt",
+        "uniforms_custom_4.txt",
+        "uniforms_custom_5.txt"
+      ];
+      const prefixes = ["", "RetroBowl.0.", "Retro Bowl.0."];
+
+      try {
+        filenames.forEach((filename) => {
+          prefixes.forEach((prefix) => localStorage.removeItem(prefix + filename));
+        });
+        Object.keys(localStorage).forEach((key) => {
+          if (
+            /(^|\.)backup_savedata[2-5]?\.ini$/.test(key) ||
+            /(^|\.)savedata[2-5]?\.ini$/.test(key) ||
+            /(^|\.)uniforms_custom_[1-5]\.txt$/.test(key) ||
+            (key.toLowerCase().includes("retrobowl") && key.toLowerCase().includes("savedata")) ||
+            (key.toLowerCase().includes("retro bowl") && key.toLowerCase().includes("savedata"))
+          ) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        console.log("Retro Bowl save-slot cleanup skipped:", e);
+      }
+    })();
+  </script>
+  <script type="text/javascript" src="retrobowl-runtime.js"></script>
+  <script>
+    const backBtn = document.getElementById("backBtn");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const coverOverlay = document.getElementById("coverOverlay");
+    const coverImage = document.getElementById("coverImage");
+    const loadStatus = document.getElementById("loadStatus");
+    let coverTimer = null;
+
+    function syncTheme() {
+      if (localStorage.getItem("theme") === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+    }
+
+    function showCover() {
+      coverOverlay.classList.add("show");
+      coverOverlay.setAttribute("aria-hidden", "false");
+      clearTimeout(coverTimer);
+    }
+
+    function hideCover() {
+      coverOverlay.classList.remove("show");
+      coverOverlay.setAttribute("aria-hidden", "true");
+    }
+
+    function armCoverTimer() {
+      clearTimeout(coverTimer);
+    }
+
+    function handleCoverActivity() {
+      clearTimeout(coverTimer);
+    }
+
+    function isTypingField() {
+      const active = document.activeElement;
+      return active && active.closest("input, textarea, select, [contenteditable='true']");
+    }
+
+    function coverKeyHandler(e) {
+      if (e.key !== "Backspace") {
+        armCoverTimer();
+        return;
+      }
+      if (isTypingField()) {
+        armCoverTimer();
+        return;
+      }
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      showCover();
+    }
+
+    function showError(message) {
+      if (loadStatus) loadStatus.textContent = message;
+    }
+
+    function startGame(ok) {
+      window.PokiSDK_OK = ok;
+      if (typeof GameMaker_Init === "function") {
+        showError("");
+        GameMaker_Init();
+      } else {
+        showError("Retro Bowl could not start. GameMaker_Init was not found.");
+      }
+    }
+
+    backBtn.addEventListener("click", () => {
+      location.href = new URL("index.html", window.location.href).href;
+    });
+
+    fullscreenBtn.addEventListener("click", async () => {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          fullscreenBtn.textContent = "Exit Fullscreen";
+        } else {
+          await document.exitFullscreen();
+          fullscreenBtn.textContent = "Fullscreen";
+        }
+      } catch (e) {
+        console.log("Fullscreen failed:", e);
+      }
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      fullscreenBtn.textContent = document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen";
+    });
+    document.addEventListener("keydown", coverKeyHandler, true);
+    coverOverlay.addEventListener("click", hideCover);
+    window.addEventListener("storage", e => {
+      if (e.key === "theme") syncTheme();
+    });
+    ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt => {
+      window.addEventListener(evt, handleCoverActivity, { passive: true });
+    });
+
+    window.addEventListener("load", function () {
+      window.PokiSDK_loadState = 0;
+      if (window.PokiSDK && typeof PokiSDK.init === "function") {
+        PokiSDK.init()
+          .then(function () {
+            startGame(true);
+          })
+          .catch(function () {
+            startGame(false);
+          });
+      } else {
+        window.PokiSDK = null;
+        startGame(false);
+      }
+    });
+
+    window.addEventListener("error", function (event) {
+      if (event.target && event.target.tagName === "SCRIPT") {
+        showError("Retro Bowl could not load its game script.");
+      }
+    }, true);
+
+    syncTheme();
+  </script>
+  <script src="https://cdn.jsdelivr.net/gh/selenite-cc/selenite-old@9c743188888af0986c8c7b293dbac8f9e421a4ee/retrobowl/html5game/uph_poki.js" type="text/javascript"></script>
+</body>
+</html>
