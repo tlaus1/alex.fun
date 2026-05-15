@@ -269,6 +269,9 @@
       clearTimeout(coverTimer);
       coverTimer = setTimeout(showCover, 5000);
     }
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) clearTimeout(coverTimer);
+    });
 
     function handleCoverActivity() {
       if (coverOverlay.classList.contains("show")) {
@@ -305,7 +308,10 @@
       fullscreenBtn.textContent = document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen";
     });
 
-    coverOverlay.addEventListener("click", hideCover);
+    coverOverlay.addEventListener("click", () => {
+      if (coverOverlay.classList.contains("show")) hideCover();
+      else showCover();
+    });
     window.addEventListener("storage", e => {
       if (e.key === "theme") syncTheme();
     });
@@ -319,7 +325,8 @@
         return;
       }
       e.preventDefault();
-      showCover();
+      if (coverOverlay.classList.contains("show")) hideCover();
+      else showCover();
     }, true);
     ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt => {
       window.addEventListener(evt, handleCoverActivity, { passive: true });

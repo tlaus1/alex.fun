@@ -197,7 +197,7 @@
     <img id="coverImage" alt="Cover">
   </div>
   <div id="statusBar">
-    <span class="sb-cover" onclick="showCover()">Backspace Cover Image</span>
+    <span class="sb-cover" onclick="toggleCover()">Backspace Cover Image</span>
     <span>Retro Bowl</span>
   </div>
 
@@ -270,6 +270,11 @@
       coverOverlay.setAttribute("aria-hidden", "true");
     }
 
+    function toggleCover() {
+      if (coverOverlay.classList.contains("show")) hideCover();
+      else showCover();
+    }
+
     function armCoverTimer() {
       clearTimeout(coverTimer);
     }
@@ -294,7 +299,7 @@
       }
       e.preventDefault();
       e.stopImmediatePropagation();
-      showCover();
+      toggleCover();
     }
 
     function showError(message) {

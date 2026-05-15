@@ -306,7 +306,7 @@
 </head>
 <body>
   <!-- Cover overlay (Backspace when not in input) -->
-  <div id="coverOverlay" onclick="hideCover()"></div>
+  <div id="coverOverlay" onclick="toggleCover()"></div>
 
   <!-- Toast notification -->
   <div id="toast"></div>
@@ -416,7 +416,7 @@
        STATUS BAR
   ═══════════════════════════════ -->
   <div id="statusBar">
-    <span class="sb-cover" onclick="showCover()">⌫ Cover Image</span>
+    <span class="sb-cover" onclick="toggleCover()">⌫ Cover Image</span>
     <span>v1.0.0</span>
   </div>
 
@@ -464,11 +464,14 @@
   ═══════════════════════════════════════════════════════════════════ */
   function showCover() { document.getElementById('coverOverlay').classList.add('show'); }
   function hideCover() { document.getElementById('coverOverlay').classList.remove('show'); }
+  function toggleCover() {
+    if (document.getElementById('coverOverlay').classList.contains('show')) hideCover();
+    else showCover();
+  }
   document.addEventListener('keydown', e => {
     if (e.key === 'Backspace' && document.activeElement.tagName !== 'INPUT') {
       e.preventDefault();
-      if (document.getElementById('coverOverlay').classList.contains('show')) hideCover();
-      else showCover();
+      toggleCover();
     }
     if (e.key === 'Escape') hideCover();
   });

@@ -608,10 +608,14 @@ document.getElementById('backBtn').addEventListener('click', () => {
 const coverOverlay = document.getElementById('coverOverlay');
 function showCover() { coverOverlay.classList.add('show'); }
 function hideCover() { coverOverlay.classList.remove('show'); }
-document.getElementById('coverBtn').addEventListener('click', showCover);
+function toggleCover() {
+  if (coverOverlay.classList.contains('show')) hideCover();
+  else showCover();
+}
+document.getElementById('coverBtn').addEventListener('click', toggleCover);
 window.addEventListener('keydown', function(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  if (e.key === 'Backspace') { e.preventDefault(); showCover(); }
+  if (e.key === 'Backspace') { e.preventDefault(); toggleCover(); }
 });
 
 // ─────────────────────────────────────────────────────────
