@@ -553,38 +553,10 @@
     .card-pw.card::after { background:linear-gradient(to top,rgba(0,0,0,0.48) 0%,rgba(0,0,0,0.03) 40%,transparent 65%); }
     .card-pw .card-title { color:#1a1a1a;text-shadow:0 1px 6px rgba(255,255,255,0.6); }
 
-    /* ── Spelling Bee card ── */
-    .card-bee {
-      background: linear-gradient(135deg, #1a0800 0%, #7c3a00 50%, #ffc107 100%);
-      grid-column: span 2;  /* full-width spotlight */
-      border: 2.5px solid #ffc107 !important;
-      box-shadow: 0 0 0 3px rgba(255,193,7,0.25), 0 12px 40px rgba(255,193,7,0.2) !important;
-    }
-    .card-bee.card::after { background: linear-gradient(to top, rgba(0,0,0,.6) 0%, rgba(0,0,0,.05) 45%, transparent 65%); }
-    .card-bee .card-title { color: #ffc107; text-shadow: 0 1px 12px rgba(0,0,0,0.6); }
-    .new-badge {
-      position: absolute; top: 10px; right: 10px; z-index: 3;
-      background: #ffc107; color: #1a0800;
-      font-size: 9px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;
-      padding: 3px 8px; border-radius: 999px;
-      box-shadow: 0 2px 8px rgba(255,193,7,0.45);
-      animation: newPulse 1.8s ease-in-out infinite;
-    }
-    @keyframes newPulse {
-      0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(255,193,7,0.45); }
-      50% { transform: scale(1.08); box-shadow: 0 4px 18px rgba(255,193,7,0.7); }
-    }
-    .card-bee-preview {
-      position: absolute; inset: 0; display: flex; align-items: center;
-      justify-content: center; gap: 24px; z-index: 1;
-    }
-    .bee-stickman {
-      width: 60px; height: 80px; position: relative; opacity: 0.85;
-    }
-
-    /* ── Pico Park card ── */
-    .card-pico { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #3b82f6 100%); }
-    .card-pico.card::after { background: linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,.08) 48%, transparent 70%); }
+    /* ── Space Waves card ── */
+    .card-spacewaves { background: #1a0a3a; }
+    .card-spacewaves img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-spacewaves.card::after { background: linear-gradient(to top, rgba(10,0,30,.72) 0%, rgba(10,0,30,.08) 48%, transparent 70%); }
 
     /* ── Snake card ── */
     .card-snake { background: #65a30d; }
@@ -867,56 +839,11 @@
 
     <main class="grid">
 
-      <!-- ══ Spelling Bee — NEW ══ -->
-      <article class="card card-bee" onclick="location.href='./spelling-bee.html'" style="cursor:pointer;aspect-ratio:4.8/1;">
-        <span class="new-badge">✨ NEW</span>
-        <div class="card-bee-preview">
-          <!-- Inline SVG stickmen -->
-          <svg width="52" height="72" viewBox="0 0 52 72" fill="none" stroke="rgba(255,193,7,0.9)" stroke-width="2.5" stroke-linecap="round">
-            <circle cx="26" cy="14" r="10" fill="rgba(255,193,7,0.15)"/>
-            <circle cx="22" cy="12" r="1.5" fill="rgba(255,193,7,0.9)" stroke="none"/>
-            <circle cx="30" cy="12" r="1.5" fill="rgba(255,193,7,0.9)" stroke="none"/>
-            <path d="M22 17 Q26 20 30 17" stroke-width="1.8"/>
-            <line x1="26" y1="24" x2="26" y2="46"/>
-            <line x1="26" y1="32" x2="10" y2="42"/>
-            <line x1="26" y1="32" x2="42" y2="38"/>
-            <line x1="26" y1="46" x2="14" y2="62"/>
-            <line x1="26" y1="46" x2="38" y2="62"/>
-          </svg>
-          <div style="text-align:center;">
-            <div style="font-size:44px;line-height:1;margin-bottom:6px;">🐝</div>
-            <div style="font-size:13px;font-weight:900;color:rgba(255,193,7,0.9);letter-spacing:2px;text-transform:uppercase;">Spelling Bee</div>
-          </div>
-          <svg width="52" height="72" viewBox="0 0 52 72" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round">
-            <circle cx="26" cy="14" r="10" fill="rgba(255,255,255,0.08)"/>
-            <circle cx="22" cy="12" r="1.5" fill="rgba(255,255,255,0.7)" stroke="none"/>
-            <circle cx="30" cy="12" r="1.5" fill="rgba(255,255,255,0.7)" stroke="none"/>
-            <path d="M22 17 Q26 20 30 17" stroke-width="1.8"/>
-            <line x1="26" y1="24" x2="26" y2="46"/>
-            <line x1="26" y1="32" x2="10" y2="38"/>
-            <line x1="26" y1="32" x2="42" y2="42"/>
-            <line x1="26" y1="46" x2="14" y2="62"/>
-            <line x1="26" y1="46" x2="38" y2="62"/>
-          </svg>
-        </div>
-        <h3 class="card-title" style="font-size:clamp(22px,3vw,40px);">🐝 Spelling Bee</h3>
-      </article>
-
-      <!-- Pico Park rope game -->
-      <article class="card card-pico" onclick="location.href='./pico-park.html'" style="cursor:pointer">
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:24px;z-index:1;padding:16px;">
-          <!-- P1 square -->
-          <div style="width:44px;height:52px;background:#f97316;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(249,115,22,.5);">😊</div>
-          <!-- Rope line -->
-          <svg width="70" height="14" viewBox="0 0 70 14" style="flex-shrink:0;">
-            <path d="M0,7 Q17,2 35,7 Q53,12 70,7" stroke="url(#rg)" stroke-width="3" fill="none" stroke-linecap="round"/>
-            <defs><linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f97316"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs>
-          </svg>
-          <!-- P2 square -->
-          <div style="width:44px;height:52px;background:#3b82f6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(59,130,246,.5);">😊</div>
-        </div>
-        <h3 class="card-title">🪢 Rope Run</h3>
-      </article>
+      <!-- Space Waves -->
+      <a class="card card-spacewaves" href="./space-waves.html" style="cursor:pointer">
+        <img src="./cover-space-waves.jpg" alt="Space Waves preview">
+        <h3 class="card-title">🚀 Space Waves</h3>
+      </a>
 
       <article class="card card-67" id="open67">
         <img src="./67.svg" alt="67 Clicker preview">
@@ -954,10 +881,10 @@
         <h3 class="card-title">Crossy Road</h3>
       </article>
 
-      <article class="card card-solar" onclick="openSolarSmash()" style="cursor:pointer">
+      <a class="card card-solar" href="./solar-smash.html" style="cursor:pointer">
         <img src="./solar-smash-cover.png" alt="Solar Smash preview">
         <h3 class="card-title">Solar Smash</h3>
-      </article>
+      </a>
 
       <a class="card card-retrobowl" href="./retrobowl.html" style="cursor:pointer">
         <img src="./retrobowl-card.avif" alt="Retro Bowl preview">
@@ -1026,7 +953,7 @@
     </div>
   </div>
   <div id="statusBar" class="hidden">
-    <span class="sb-cover" onclick="showIdle(true)">⌫ Cover Image</span>
+    <span class="sb-cover" onclick="isIdleVisible() ? dismissIdleCover() : showIdle(true)">⌫ Cover Image</span>
     <span>v1.0.0</span>
   </div>
   <div id="noticeToast" class="notice-toast" role="status" aria-live="polite"></div>
@@ -1727,7 +1654,7 @@
         return;
       }
       if (isIdleVisible()) {
-        if (e.key === "Backspace") e.preventDefault();
+        if (e.key === "Backspace") { e.preventDefault(); dismissIdleCover(); }
         return;
       }
       if (e.key === "Backspace" && coverShortcutEnabled) {
@@ -1744,7 +1671,6 @@
     });
 
     function pauseIdleCoverForTabSwitch() {
-      idlePhoto.classList.add("hidden");
       clearTimeout(idleTimer);
     }
 
@@ -1768,13 +1694,7 @@
       document.body.classList.toggle("game-active", visible);
     }
 
-    function openSolarSmash() {
-      if (location.protocol === "file:") {
-        location.href = "http://127.0.0.1:8765/solar-smash.html";
-        return;
-      }
-      location.href = "./solar-smash.html";
-    }
+
 
     document.getElementById("open67").addEventListener("click", () => {
       show67BalanceUpdateNotice();
@@ -1883,7 +1803,7 @@
       { key:"lab",        icon:"🔬", name:"67 Laboratory",           desc:"+260 points/sec",           cost:28_000,          scale:1.17, onBuy:()=>{ perSec+=260; } },
       { key:"powerclick", icon:"⚡", name:"Power Click",             desc:"+1,000 points per click",    cost:75_000,          scale:1.18, onBuy:()=>{ clickPower+=1_000; } },
       { key:"dimension",  icon:"🌀", name:"67 Dimension",            desc:"+5,000 points/sec",         cost:420_000,         scale:1.18, onBuy:()=>{ perSec+=5_000; } },
-      { key:"sahur",      icon:"🥁", name:"Tung Tung Tung Sahur",    desc:"+5,000 points/sec",         cost:1_000_000,           scale:1.19, onBuy:()=>{ perSec+=5_000; } },
+      { key:"sahur",      icon:"🥁", name:"Tung Tung Tung Sahur",    desc:"+10,000 points/sec",        cost:1_000_000,           scale:1.19, onBuy:()=>{ perSec+=10_000; } },
       { key:"empire",     icon:"👑", name:"67 Empire",               desc:"+20,000 points/sec",        cost:5_000_000,           scale:1.19, onBuy:()=>{ perSec+=20_000; } },
       { key:"galaxy",     icon:"🌌", name:"67 Galaxy",               desc:"+100,000 points/sec",       cost:75_000_000,          scale:1.20, onBuy:()=>{ perSec+=100_000; } },
       { key:"patapim",    icon:"🌳", name:"Brr Brr Patapim",         desc:"+500,000 points/sec",       cost:400_000_000,         scale:1.20, onBuy:()=>{ perSec+=500_000; } },

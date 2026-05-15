@@ -1,290 +1,378 @@
-<!doctype html>
+<!DOCTYPE html>
+
+
+<!-- Ultimate Game Stash file-->
+<!-- For the regularly updating doc go to https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/ -->
+
+
+
+
 <html lang="en-us">
+
 <head>
-  <script>
-    if (location.protocol === "file:") {
-      location.replace("http://127.0.0.1:8765/solar-smash.html");
-    }
-  </script>
   <script src="./cover-profiles.js"></script>
-  <script>
-    if (localStorage.getItem("theme") === "dark") {
-      document.documentElement.setAttribute("data-theme", "dark");
-    }
-  </script>
+  <link rel="icon" type="image/png" href="./clever1.png">
+  <base href="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@a2e4bb68955f2665d16669bbbf7be3123870c2e0/solar-smash/">
   <meta charset="UTF-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Solar Smash — alex.fun</title>
-  <link rel="icon" type="image/png" href="./clever1.png">
-  <link rel="stylesheet" href="TemplateData/style.css">
+
+  <title>YT Game Wrapper WebGL Template</title>
+  <link rel="stylesheet" href="TemplateData/style.css" nonce="we8ZPMAc10sjbMeA8f_pRw">
+  <script src="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@main/ytgame.js" nonce="we8ZPMAc10sjbMeA8f_pRw">// Load YT Game API code</script>
   <style>
-    :root {
-      --control-fg: #12131a;
-      --control-bg: rgba(255,255,255,.9);
-      --control-bg-hover: #fff;
-      --control-border: rgba(18,19,26,.18);
-      --control-shadow: rgba(0,0,0,.18);
-      --status-h: 26px;
-    }
-    [data-theme="dark"] {
-      --control-fg: #ececec;
-      --control-bg: rgba(24,24,30,.9);
-      --control-bg-hover: #292936;
-      --control-border: rgba(255,255,255,.18);
-      --control-shadow: rgba(0,0,0,.38);
-    }
-    html, body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #03040a;
-      touch-action: none;
-      overscroll-behavior: none;
-      user-select: none;
-      animation: pageIn .32s ease both;
-    }
-    @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
-    #unity-container {
-      position: fixed;
-      inset: 0 0 var(--status-h) 0;
-      width: 100%;
-      height: auto;
-      background: #03040a;
-    }
-    #unity-canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-      background: #03040a;
-    }
-    .game-bar {
-      position: fixed;
-      left: 14px;
-      top: 14px;
-      z-index: 100000;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .game-bar button {
-      font: 800 13px Arial, sans-serif;
-      color: var(--control-fg);
-      background: var(--control-bg);
-      border: 1px solid var(--control-border);
-      border-radius: 999px;
-      padding: 8px 14px;
-      cursor: pointer;
-      box-shadow: 0 8px 24px var(--control-shadow);
-      transition: background .15s, border-color .15s, color .15s, transform .12s;
-    }
-    .game-bar button:hover {
-      background: var(--control-bg-hover);
-      transform: translateY(-1px);
-    }
+    :root { --status-h: 24px; --panel: rgba(3,7,18,.82); --fg: #f8fafc; --border: rgba(255,255,255,.18); }
+    #unity-container { bottom: var(--status-h) !important; height: calc(100% - var(--status-h)) !important; }
     #coverOverlay {
-      position: fixed;
-      inset: 0;
-      z-index: 200000;
-      background: #fff;
-      cursor: pointer;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .55s cubic-bezier(.4, 0, .2, 1);
+      position: fixed; inset: 0; z-index: 10000;
+      background: #fff; opacity: 0; pointer-events: none;
+      transition: opacity .45s cubic-bezier(.4,0,.2,1); cursor: pointer;
     }
-    #coverOverlay.show {
-      opacity: 1;
-      pointer-events: auto;
+    #coverOverlay.show { opacity: 1; pointer-events: auto; }
+    #coverOverlay img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .alex-topbar {
+      position: fixed; top: 10px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      pointer-events: none; z-index: 9000;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
     }
-    #coverOverlay img {
-      width: 100%;
-      height: 100%;
-      object-fit: fill;
-      object-position: top center;
-      display: block;
+    .alex-actions { display: flex; gap: 8px; pointer-events: auto; }
+    .alex-title {
+      max-width: 44vw; padding: 8px 12px; border: 1px solid var(--border); border-radius: 999px;
+      background: var(--panel); backdrop-filter: blur(12px); box-shadow: 0 8px 22px rgba(0,0,0,.32);
+      font-size: 12px; font-weight: 900; color: var(--fg); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; pointer-events: none;
     }
-    #statusBar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: var(--status-h);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 14px;
-      background: var(--control-bg);
-      border-top: 1px solid var(--control-border);
-      color: rgba(18,19,26,.68);
-      font: 800 11px Arial, sans-serif;
-      z-index: 100000;
+    .alex-btn {
+      appearance: none; border: 1px solid var(--border); border-radius: 999px;
+      background: var(--panel); color: var(--fg); padding: 8px 12px;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 12px; font-weight: 900;
+      cursor: pointer; backdrop-filter: blur(12px); box-shadow: 0 8px 22px rgba(0,0,0,.32);
     }
-    #statusBar .sb-cover {
-      cursor: pointer;
-      user-select: none;
+    .alex-btn:hover { background: rgba(15,23,42,.92); }
+    #alexStatusBar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: var(--status-h);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 14px;
+      background: #030712; border-top: 1px solid rgba(255,255,255,.1);
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 11px; font-weight: 800;
+      color: rgba(248,250,252,.6); z-index: 9100;
     }
-    #statusBar .sb-cover:hover {
-      color: var(--control-fg);
-    }
-    [data-theme="dark"] #statusBar {
-      color: rgba(236,236,236,.68);
-    }
+    #alexStatusBar .sb-cover { cursor: pointer; user-select: none; }
+    #alexStatusBar .sb-cover:hover { color: var(--fg); }
   </style>
 </head>
-<body>
-  <div class="game-bar">
-    <button id="backBtn" type="button">Back</button>
-    <button id="fullscreenBtn" type="button">Fullscreen</button>
-  </div>
 
+<body>
   <div id="unity-container" class="unity-desktop">
-    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <canvas id="unity-canvas" width=100% height=100% tabindex="-1"></canvas>
     <div id="unity-loading-bar">
       <div id="unity-logo"></div>
       <div id="unity-progress-bar-empty">
         <div id="unity-progress-bar-full"></div>
       </div>
     </div>
-    <div id="unity-warning"></div>
+    <div id="unity-warning"> </div>
   </div>
 
-  <div id="coverOverlay" aria-hidden="true">
-    <img id="coverImage" alt="Solar Smash cover">
-  </div>
-  <div id="statusBar">
-    <span class="sb-cover" onclick="showCover()">⌫ Cover Image</span>
-    <span>v1.0.0</span>
-  </div>
+<script async>
+    function mergeFiles(fileParts) {
+        return new Promise((resolve, reject) => {
+            let buffers = [];
 
-  <script>
-    "use strict";
-
-    const backBtn = document.getElementById("backBtn");
-    const fullscreenBtn = document.getElementById("fullscreenBtn");
-    const coverOverlay = document.getElementById("coverOverlay");
-    let coverTimer = null;
-    let unityLoaded = false;
-
-    function syncTheme() {
-      if (localStorage.getItem("theme") === "dark") {
-        document.documentElement.setAttribute("data-theme", "dark");
-      } else {
-        document.documentElement.removeAttribute("data-theme");
-      }
+            function fetchPart(index) {
+                if (index >= fileParts.length) {
+                    let mergedBlob = new Blob(buffers, { type: "application/octet-stream" });
+                    resolve(mergedBlob);
+                    return;
+                }
+                fetch(fileParts[index])
+                    .then((response) => response.arrayBuffer())
+                    .then((data) => {
+                        buffers.push(data);
+                        fetchPart(index + 1);
+                    })
+                    .catch(reject);
+            }
+            fetchPart(0);
+        });
     }
 
-    function showCover() {
-      coverOverlay.classList.add("show");
-      coverOverlay.setAttribute("aria-hidden", "false");
-      clearTimeout(coverTimer);
-    }
-
-    function hideCover() {
-      coverOverlay.classList.remove("show");
-      coverOverlay.setAttribute("aria-hidden", "true");
-      armCoverTimer();
-    }
-
-    function armCoverTimer() {
-      if (!unityLoaded) return;
-      clearTimeout(coverTimer);
-      coverTimer = setTimeout(showCover, 5000);
-    }
-
-    function handleCoverActivity() {
-      if (coverOverlay.classList.contains("show")) {
-        return;
-      } else {
-        armCoverTimer();
-      }
-    }
-
-    function isTypingField() {
-      const active = document.activeElement;
-      return active && active.closest("input, textarea, select, [contenteditable='true']");
-    }
-
-    backBtn.addEventListener("click", () => {
-      location.href = new URL("index.html", window.location.href).href;
-    });
-
-    fullscreenBtn.addEventListener("click", async () => {
-      try {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
-          fullscreenBtn.textContent = "Exit Fullscreen";
-        } else {
-          await document.exitFullscreen();
-          fullscreenBtn.textContent = "Fullscreen";
+    function getParts(file, start, end) {
+        let parts = [];
+        for (let i = start; i <= end; i++) {
+            parts.push(file + ".part" + i);
         }
-      } catch (e) {
-        console.log("Fullscreen failed:", e);
-      }
-    });
+        return parts;
+    }
 
-    document.addEventListener("fullscreenchange", () => {
-      fullscreenBtn.textContent = document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen";
-    });
+    Promise.all([
+        mergeFiles(getParts("StreamingAssets/AssetBundles/WebGL/planets", 1, 2)),
+        mergeFiles(getParts("StreamingAssets/AssetBundles/WebGL/planets2", 1, 2))
+    ]).then(([planets1, planets2]) => {
+        const originalFetch = window.fetch;
 
-    coverOverlay.addEventListener("click", hideCover);
-    window.addEventListener("storage", e => {
-      if (e.key === "theme") syncTheme();
-    });
-    document.addEventListener("keydown", e => {
-      if (e.key !== "Backspace") {
-        armCoverTimer();
-        return;
-      }
-      if (isTypingField()) {
-        armCoverTimer();
-        return;
-      }
-      e.preventDefault();
-      showCover();
-    }, true);
-    ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt => {
-      window.addEventListener(evt, handleCoverActivity, { passive: true });
-    });
-    syncTheme();
+        window.fetch = async function (...args) {
+            const url = args[0];
 
-    const container = document.querySelector("#unity-container");
-    const canvas = document.querySelector("#unity-canvas");
-    const loadingBar = document.querySelector("#unity-loading-bar");
-    const progressBarFull = document.querySelector("#unity-progress-bar-full");
-    const warningBanner = document.querySelector("#unity-warning");
+            if (typeof url === "string" && url.includes("StreamingAssets/AssetBundles/WebGL/planets")) {
+                if (url.includes("planets2")) {
+                    return new Response(planets2, { status: 200 });
+                } else if (url.includes("planets3")) {
+                    return originalFetch.apply(this, args);
+                } else {
+                    return new Response(planets1, { status: 200 });
+                }
+            }
+
+            return originalFetch.apply(this, args);
+        };
+    });
+</script>
+
+  <script nonce="VdK5nAGpFKd9vu2JazSNaA">
+    "use strict";
+const DIST = 1,
+    EXT = DIST ? ".min.js" : ".js";
+
+function loadScript(e, r) {
+    return loadScriptFromPath("lib/" + r + EXT)
+}
+
+function loadScriptFromPath(a) {
+    return new Promise((r, e) => {
+        if ("object" == typeof window) {
+            let e = document.createElement("script");
+            e.type = "text/javascript", e.src = a, e.onload = r, document.head.appendChild(e)
+        } else "function" == typeof importScripts ? (importScripts(a), r()) : e()
+    })
+}
+
+function currentScriptPath() {
+    try {
+        throw new Error("")
+    } catch (e) {
+        let r = e.stack,
+            a = (-1 !== r.indexOf("@") ? r.split("@")[1].split("\n") : r.split("(")[1].split(")"))[0];
+        return a.substring(0, a.lastIndexOf("/")) + "/"
+    }
+}
+let unrarMemoryFileLocation = null,
+    g_on_loaded_cb = null,
+    unrarReady = new Promise((e, r) => {
+        g_on_loaded_cb = e
+    });
+class Unarchiver {
+    static async load(e = null) {
+        return e = e || ["zip", "rar", "tar", "gz", "xz", "bz2"], Promise.all(e.map(this._loadFormat))
+    }
+    static async _loadFormat(t) {
+        if (!(t in Unarchiver.loadedFormats)) {
+            let a = currentScriptPath();
+            return Unarchiver.loadedFormats[t] = new Promise(async (e, r) => {
+                switch (t) {
+                    case "zip":
+                        await loadScript(a, "jszip");
+                        break;
+                    case "rar":
+                        unrarMemoryFileLocation = a + "lib/libunrar.js.mem", await loadScript(a, "libunrar"), await unrarReady;
+                        break;
+                    case "tar":
+                        await loadScript(a, "libuntar");
+                        break;
+                    case "gz":
+                        await loadScript(a, "pako_inflate");
+                        break;
+                    case "xz":
+                        await loadScript(a, "xz");
+                        break;
+                    case "bz2":
+                        await loadScript(a, "bz2");
+                        break;
+                    default:
+                        throw new Error("Unknown archive format '" + t + "'.")
+                }
+                e()
+            })
+        }
+        await Unarchiver.loadedFormats[t]
+    }
+    static open(r, l = null) {
+        let o = this;
+        return new Promise((i, e) => {
+            let n = r.name;
+            l = l || null;
+            let s = new FileReader;
+            s.onload = async () => {
+                let e = s.result;
+                o._isGzip(e) ? (await o._loadFormat("gz"), e = pako.inflate(e).buffer) : o._isXZ(e) ? (await o._loadFormat("xz"), e = toXZ(new Uint8Array(e), 0, 0, 0, 2 ** 28).buffer) : o._isBZ2(e) && (await o._loadFormat("bz2"), e = bz2.decompress(new Uint8Array(e)).buffer);
+                let r = null,
+                    a = [],
+                    t = null;
+                if (o._isRarFile(e)) t = "rar", await o._loadFormat(t), r = o._rarOpen(n, l, e), a = o._rarGetEntries(r);
+                else if (o._isZipFile(e)) t = "zip", await o._loadFormat(t), r = await o._zipOpen(n, l, e), a = o._zipGetEntries(r);
+                else {
+                    if (!o._isTarFile(e)) throw new Error("The archive type is unknown");
+                    t = "tar", await o._loadFormat(t), r = o._tarOpen(n, l, e), a = o._tarGetEntries(r)
+                }
+                a.sort((e, r) => e.name.localeCompare(r.name)), i({
+                    file_name: n,
+                    archive_type: t,
+                    array_buffer: e,
+                    entries: a,
+                    handle: r
+                })
+            }, s.readAsArrayBuffer(r)
+        })
+    }
+    static close(e) {
+        e.file_name = null, e.archive_type = null, e.array_buffer = null, e.entries = null, e.handle = null
+    }
+    static _rarOpen(e, r, a) {
+        return {
+            file_name: e,
+            array_buffer: a,
+            password: r,
+            rar_files: [{
+                name: e,
+                size: a.byteLength,
+                type: "",
+                content: new Uint8Array(a)
+            }]
+        }
+    }
+    static async _zipOpen(e, r, a) {
+        return {
+            file_name: e,
+            array_buffer: a,
+            password: r,
+            zip: await JSZip.loadAsync(a)
+        }
+    }
+    static _tarOpen(e, r, a) {
+        return {
+            file_name: e,
+            array_buffer: a,
+            password: r
+        }
+    }
+    static _rarGetEntries(n) {
+        return Object.entries(readRARFile(n.rar_files, n.password)).map(([, e]) => {
+            let t = e.name,
+                i = e.is_file;
+            return {
+                name: t,
+                is_file: e.is_file,
+                size_compressed: e.size_compressed,
+                size_uncompressed: e.size_uncompressed,
+                read: () => new Promise((r, a) => {
+                    if (i) try {
+                        readRARContent(n.rar_files, n.password, t, e => {
+                            r(new File([e], t))
+                        })
+                    } catch (e) {
+                        a(e)
+                    } else r(null)
+                })
+            }
+        })
+    }
+    static _zipGetEntries(e) {
+        return Object.entries(e.zip.files).map(([, a]) => {
+            let t = a.name,
+                i = !a.dir;
+            var e = a._data ? a._data.compressedSize : 0,
+                r = a._data ? a._data.uncompressedSize : 0;
+            return {
+                name: t,
+                is_file: i,
+                size_compressed: e,
+                size_uncompressed: r,
+                read: () => new Promise(async (e, r) => {
+                    e(i ? new File([await a.async("blob")], t) : null)
+                })
+            }
+        })
+    }
+    static _tarGetEntries(s) {
+        return tarGetEntries(s.file_name, s.array_buffer).map(t => {
+            let i = t.name,
+                n = t.is_file;
+            var e = t.size;
+            return {
+                name: i,
+                is_file: n,
+                size_compressed: e,
+                size_uncompressed: e,
+                read: () => new Promise((e, r) => {
+                    var a;
+                    n ? (a = tarGetEntryData(t, s.array_buffer), e(new File([a.buffer], i))) : e(null)
+                })
+            }
+        })
+    }
+    static _isRarFile(e) {
+        if (e.byteLength < 8) return !1;
+        e = new Uint8Array(e, 0, 8);
+        return 82 == e[0] && (69 == e[1] && 126 == e[2] && 94 == e[3] || 97 == e[1] && 114 == e[2] && 33 == e[3] && 26 == e[4] && 7 == e[5] && (0 == e[6] || 1 == e[6] && 0 == e[7]))
+    }
+    static _isZipFile(e) {
+        return this._checkHeader([80, 75, 3, 4], e)
+    }
+    static _isTarFile(e) {
+        return this._checkHeader([117, 115, 116, 97, 114], e, 257, 512)
+    }
+    static _isGzip(e) {
+        return this._checkHeader([31, 139, 8], e)
+    }
+    static _isBZ2(e) {
+        return this._checkHeader([66, 90, 104], e)
+    }
+    static _isXZ(e) {
+        return this._checkHeader([253, 55, 122, 88, 90, 0], e)
+    }
+    static _checkHeader(r, e, a = 0, t = null) {
+        var i = a + r.length;
+        if (e.byteLength < (t || i)) return !1;
+        var n = new Uint8Array(e, a, i);
+        for (let e = 0; e < r.length; ++e)
+            if (n[e] != r[e]) return !1;
+        return !0
+    }
+}
+Unarchiver.loadedFormats = {};
+  </script>
+  <script nonce="VdK5nAGpFKd9vu2JazSNaA"> // Logic for Unity contianer
+    var container = document.querySelector("#unity-container");
+    var canvas = document.querySelector("#unity-canvas");
+    var loadingBar = document.querySelector("#unity-loading-bar");
+    var progressBarFull = document.querySelector("#unity-progress-bar-full");
+    var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+    var fullscreenOverlayButton = document.querySelector("#unity-overlay-fullscreen-button");
+    var quitcanvas = document.querySelector("#quit-canvas");
+    var warningBanner = document.querySelector("#unity-warning");
 
     function unityShowBanner(msg, type) {
-      console[type === "error" ? "error" : "warn"](msg);
-      warningBanner.textContent = msg;
-      warningBanner.style.display = "block";
-      if (type !== "error") {
-        setTimeout(() => {
-          warningBanner.textContent = "";
-          warningBanner.style.display = "none";
-        }, 5000);
-      }
     }
 
-    const buildUrl = "Build";
-    const loaderUrl = buildUrl + "/Build.loader.js";
-    const config = {
+    var buildUrl = "Build";
+    var loaderUrl = buildUrl + "/Build.loader.js";
+    var config = {
       dataUrl: buildUrl + "/Build.data",
       frameworkUrl: buildUrl + "/Build.framework.js",
-      codeUrl: buildUrl + "/Build.wasm.part.aa",
+        codeUrl: buildUrl + "/Build.wasm",
       streamingAssetsUrl: "StreamingAssets",
       companyName: "Paradyme Games",
       productName: "Live - Solar Smash YouTube",
       productVersion: "0.1.0",
-      showBanner: unityShowBanner
+      showBanner: unityShowBanner,
     };
 
     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-      const meta = document.createElement("meta");
-      meta.name = "viewport";
-      meta.content = "width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes";
-      document.head.appendChild(meta);
+      var meta = document.createElement('meta');
+      meta.name = 'viewport';
+      meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+      document.getElementsByTagName('head')[0].appendChild(meta);
       container.className = "unity-mobile";
       canvas.className = "unity-mobile";
     } else {
@@ -294,153 +382,175 @@
 
     loadingBar.style.display = "block";
 
-    let unityGameInstance = null;
-    let wasmBlobUrl = "";
-    async function createSplitWasmUrl() {
-      if (wasmBlobUrl) return wasmBlobUrl;
-      const parts = [
-        buildUrl + "/Build.wasm.part.aa",
-        buildUrl + "/Build.wasm.part.ab",
-        buildUrl + "/Build.wasm.part.ac",
-        buildUrl + "/Build.wasm.part.ad",
-        buildUrl + "/Build.wasm.part.ae"
-      ];
-      const buffers = [];
-      for (const part of parts) {
-        const response = await fetch(part);
-        if (!response.ok) throw new Error(`Could not load ${part}`);
-        buffers.push(await response.arrayBuffer());
+    const subZipStr = '.zip';
+    const subWASMStr = '.wasm';
+    const subJSStr = '.js';
+    const subDataStr = '.data';
+
+    loadResources = (callback) => {
+      var dataUrl = config.dataUrl;
+      var shouldDecompress = true;
+      if (!dataUrl.includes(subZipStr)) {
+        if (UrlExists(dataUrl + subZipStr)) {
+          dataUrl = dataUrl + subZipStr;
+        } else {
+          shouldDecompress = false;
+        }
       }
-      wasmBlobUrl = URL.createObjectURL(new Blob(buffers, { type: "application/wasm" }));
-      return wasmBlobUrl;
+
+      if (shouldDecompress)
+      {
+        var blobTypeData = GetBlobType(dataUrl);
+        DecompressFile(dataUrl, blobTypeData, (file) => {
+          config.dataUrl = file;
+          LoadWASM(callback);
+        });
+      }
+      else
+      {
+        LoadWASM(callback);
+      }
     }
 
-    function initUnitySection() {
-      const script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = async () => {
-        config.codeUrl = await createSplitWasmUrl();
-        createUnityInstance(canvas, config, progress => {
-          progressBarFull.style.width = (100 * progress) + "%";
-        }).then(unityInstance => {
-          unityGameInstance = unityInstance;
-          loadingBar.style.display = "none";
-          unityLoaded = true;
-          armCoverTimer();
-        }).catch(message => {
-          console.error(message);
+    loadZipData = (url, callback) => {
+      fetch(url)
+        .then(response => response.blob())
+        .then(blob => {
+          callback(blob);
         });
+    }
+
+    function LoadWASM(callback)
+    {
+      var codeUrl = config.codeUrl;
+      var shouldDecompress = true;
+
+      if (!codeUrl.includes(subZipStr)) {
+        if (UrlExists(codeUrl + subZipStr)) {
+          codeUrl = codeUrl + subZipStr;
+        } else {
+          shouldDecompress = false;
+        }
+      }
+
+      if (shouldDecompress) {
+        var blobTypeWASM = GetBlobType(codeUrl);
+        DecompressFile(codeUrl, blobTypeWASM, (file) => {
+          config.codeUrl = file;
+          callback();
+        });
+      } else {
+        callback();
+      }
+    }
+
+    function GetBlobType(urlToCheck) {
+      var blobType = 'application/octet-stream';
+      if (urlToCheck.includes(subWASMStr)){
+        blobType = 'application/wasm';
+      } else if (urlToCheck.includes(subJSStr)){
+        blobType = 'text/javascript';
+      }
+      return blobType;
+    }
+
+    function UrlExists(urlToCheck)
+    {
+        var httpReq = new XMLHttpRequest();
+        httpReq.open('HEAD', urlToCheck, false);
+        httpReq.send();
+        return httpReq.status!=404;
+    }
+
+    function DecompressFile(file, blobMimeType, callback) {
+      let decompressedFile;
+
+      loadZipData(file, (f) => {
+        Unarchiver.open(f).then(async function (archive) {
+          for (let entry of archive.entries) {
+            if (entry.is_file) {
+              let entryRead = await entry.read();
+              let entryData = await entryRead.arrayBuffer();
+              let dataBlob = new Blob([new Uint8Array(entryData)], { type: blobMimeType });
+              decompressedFile = window.URL.createObjectURL(dataBlob);
+            }
+          }
+          callback(decompressedFile);
+        });
+      });
+    }
+
+    var unityGameInstance = null;
+    function InitUnitySection() {
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          progressBarFull.style.width = 100 * progress + "%";
+          }).then((unityInstance) => {
+            unityGameInstance = unityInstance;
+            loadingBar.style.display = "none";
+          }).catch((message) => {
+            console.error(message);
+          });
       };
+
       document.body.appendChild(script);
     }
 
-    const originalFetch = window.fetch.bind(window);
-    const assetBundleBases = [
-      "https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@a2e4bb68955f2665d16669bbbf7be3123870c2e0/solar-smash/StreamingAssets/AssetBundles/WebGL/",
-      "https://rawcdn.githack.com/bubbls/youtube-playables/a2e4bb68955f2665d16669bbbf7be3123870c2e0/solar-smash/StreamingAssets/AssetBundles/WebGL/"
-    ];
-    const splitBundles = new Map();
-
-    function getAssetBundleName(input) {
-      const value = typeof input === "string" ? input : (input && input.url);
-      if (!value) return null;
-      const match = value.match(/(?:StreamingAssets\/)?AssetBundles\/WebGL\/([^?#]+)/);
-      return match ? match[1] : null;
-    }
-
-    function shouldUseRemoteBundleFallback() {
-      const localHosts = ["", "localhost", "127.0.0.1", "::1"];
-      return location.protocol !== "file:" && !localHosts.includes(location.hostname) && navigator.onLine !== false;
-    }
-
-    async function mergeBundleParts(bundleName, partCount) {
-      const buffers = [];
-      for (let i = 1; i <= partCount; i += 1) {
-        const response = await fetchBundleCandidate(`${bundleName}.part${i}`);
-        if (!response.ok) throw new Error(`Could not load ${bundleName}.part${i}`);
-        buffers.push(await response.arrayBuffer());
-      }
-      splitBundles.set(bundleName, new Blob(buffers, { type: "application/octet-stream" }));
-    }
-
-    async function fetchBundleCandidate(path, options) {
-      let lastError = null;
-      for (const base of assetBundleBases) {
-        try {
-          const response = await originalFetch(base + path, options);
-          if (response.ok) return response;
-          lastError = new Error(`${path} returned ${response.status}`);
-        } catch (error) {
-          lastError = error;
-        }
-      }
-      if (lastError) throw lastError;
-      throw new Error(`Could not load ${path}`);
-    }
-
-    async function loadLazySplitBundle(bundleName) {
-      if (splitBundles.has(bundleName)) return splitBundles.get(bundleName);
-      const buffers = [];
-      for (let i = 1; i <= 32; i += 1) {
-        let response = null;
-        try {
-          response = await fetchBundleCandidate(`${bundleName}.part${i}`);
-        } catch {
-          break;
-        }
-        buffers.push(await response.arrayBuffer());
-      }
-      if (!buffers.length) return null;
-      const blob = new Blob(buffers, { type: "application/octet-stream" });
-      splitBundles.set(bundleName, blob);
-      return blob;
-    }
-
-    async function loadBundleResponse(bundleName, options, originalInput) {
-      if (originalInput) {
-        try {
-          const localResponse = await originalFetch(originalInput, options);
-          if (localResponse.ok) return localResponse;
-        } catch (error) {
-          console.log("Solar Smash local bundle load failed:", bundleName, error);
-        }
-      }
-      try {
-        return await fetchBundleCandidate(bundleName, options);
-      } catch (error) {
-        console.log("Solar Smash bundle direct load failed:", bundleName, error);
-      }
-      const splitBundle = await loadLazySplitBundle(bundleName);
-      if (splitBundle) {
-        return new Response(splitBundle, {
-          status: 200,
-          headers: { "Content-Type": "application/octet-stream" }
-        });
-      }
-      throw new Error(`Could not load Solar Smash asset bundle: ${bundleName}`);
-    }
-
-    function rewriteSolarSmashUrl(input) {
-      const value = typeof input === "string" ? input : (input && input.url);
-      if (!value) return input;
-      const match = value.match(/(?:StreamingAssets\/)?AssetBundles\/WebGL\/([^?#]+)/);
-      if (!match) return input;
-      const rewritten = assetBundleBases[0] + match[1];
-      return typeof input === "string" ? rewritten : new Request(rewritten, input);
-    }
-
-    window.fetch = async function(input, options) {
-      const bundleName = getAssetBundleName(input);
-      if (bundleName && !shouldUseRemoteBundleFallback()) {
-        return originalFetch(input, options);
-      }
-      if (bundleName) {
-        return loadBundleResponse(bundleName, options, input);
-      }
-      return originalFetch(input, options);
-    };
-
-    initUnitySection();
+    loadResources(InitUnitySection);
   </script>
+
+  <div class="alex-topbar">
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexBackBtn" type="button">Back</button>
+    </div>
+    <div class="alex-title">Solar Smash</div>
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexFullscreenBtn" type="button">Fullscreen</button>
+    </div>
+  </div>
+
+  <div id="coverOverlay" aria-hidden="true">
+    <img data-cover-image alt="Cover">
+  </div>
+
+  <div id="alexStatusBar">
+    <span>Solar Smash</span>
+    <span class="sb-cover" id="alexCoverHint">Backspace Cover Image</span>
+  </div>
+
+  <script>
+    document.getElementById('alexBackBtn').addEventListener('click', function () {
+      window.location.href = new URL('index.html', window.location.href).href;
+    });
+
+    var alexFsBtn = document.getElementById('alexFullscreenBtn');
+    alexFsBtn.addEventListener('click', function () {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(function () { alexFsBtn.textContent = 'Exit Fullscreen'; }).catch(function(){});
+      } else {
+        document.exitFullscreen().then(function () { alexFsBtn.textContent = 'Fullscreen'; }).catch(function(){});
+      }
+    });
+    document.addEventListener('fullscreenchange', function () {
+      alexFsBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+    });
+
+    var coverOverlay = document.getElementById('coverOverlay');
+    function toggleCover() {
+      var showing = coverOverlay.classList.toggle('show');
+      coverOverlay.setAttribute('aria-hidden', String(!showing));
+    }
+    coverOverlay.addEventListener('click', toggleCover);
+    document.getElementById('alexCoverHint').addEventListener('click', toggleCover);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        toggleCover();
+      }
+    });
+  </script>
+
 </body>
 </html>

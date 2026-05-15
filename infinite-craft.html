@@ -261,7 +261,7 @@
 </div>
 
 <div id="statusBar">
-  <span class="sb-cover" onclick="showCover()">⌫ Cover Image</span>
+  <span class="sb-cover" onclick="toggleCover()">⌫ Cover Image</span>
   <span>v1.0.0</span>
 </div>
 
@@ -316,6 +316,10 @@ function hideCover(){
   document.getElementById('coverOverlay').classList.remove('show');
   armCoverTimer();
 }
+function toggleCover(){
+  if(document.getElementById('coverOverlay').classList.contains('show')) hideCover();
+  else showCover();
+}
 let coverTimer = null;
 function isTypingField(){
   const active = document.activeElement;
@@ -325,6 +329,9 @@ function armCoverTimer(){
   clearTimeout(coverTimer);
   coverTimer = setTimeout(showCover, 5000);
 }
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) clearTimeout(coverTimer);
+});
 function handleCoverActivity(){
   if(document.getElementById('coverOverlay').classList.contains('show')) return;
   else armCoverTimer();
@@ -339,7 +346,7 @@ document.addEventListener('keydown',function(e){
     return;
   }
   e.preventDefault();
-  showCover();
+  toggleCover();
 });
 ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt=>{
   window.addEventListener(evt, handleCoverActivity, { passive:true });
