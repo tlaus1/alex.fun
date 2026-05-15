@@ -380,12 +380,17 @@
 
   async function updatePillInfo(uri) {
     if (!uri) return;
-    const oe = await fetchOEmbed(uri);
-    const title = (oe && oe.title) || "Now Playing";
-    const thumb = pickThumbnail(oe);
     const titleEl = document.querySelector(".island-songtitle");
     const subEl   = document.querySelector(".island-songsub");
     const artEl   = document.querySelector(".island-art");
+    // Paint a "Loading…" state immediately so the user sees something happen
+    // before the oEmbed round-trip completes.
+    if (titleEl) titleEl.textContent = "Loading…";
+    if (subEl)   subEl.textContent   = "Spotify";
+
+    const oe = await fetchOEmbed(uri);
+    const title = (oe && oe.title) || "Now Playing";
+    const thumb = pickThumbnail(oe);
     if (titleEl) titleEl.textContent = title;
     if (subEl)   subEl.textContent   = (oe && oe.provider_name) || "Spotify";
     if (artEl) {
@@ -414,20 +419,24 @@
     }, 700);
   }
 
-  async function ensureController(uri, seekMs) {
+  async function ensureController(uri, seekMs, autoplay) {
     const api      = await loadSpotifyIframeAPI();
     const el       = document.getElementById("musicSpotifyEmbed");
     const prevUri  = lastUri;
     const finalUri = uri || lastUri || DEFAULT_URI;
+    const isNewUri = uri && uri !== prevUri;
     lastUri = finalUri;
 
     // Fire-and-forget metadata fetch so the pill shows the song title + art
     updatePillInfo(finalUri);
 
     if (spotifyController) {
-      if (uri && uri !== prevUri) spotifyController.loadUri(finalUri);
+      if (isNewUri) spotifyController.loadUri(finalUri);
       if (typeof seekMs === "number" && seekMs > 0) {
         setTimeout(() => { try { spotifyController.seek(seekMs / 1000); } catch (_) {} }, 600);
+      }
+      if (autoplay) {
+        setTimeout(() => { try { spotifyController.play(); } catch (_) {} }, isNewUri ? 800 : 200);
       }
       return spotifyController;
     }
@@ -440,9 +449,12 @@
           pillEl().classList.toggle("paused", spotifyIsPaused);
           scheduleSave();
         });
+        // Spotify needs ~1s after createController fires before seek/play work
         if (typeof seekMs === "number" && seekMs > 0) {
-          // Spotify needs the controller to be "ready" before seek/play work.
           setTimeout(() => { try { controller.seek(seekMs / 1000); } catch (_) {} }, 1200);
+        }
+        if (autoplay) {
+          setTimeout(() => { try { controller.play(); } catch (_) {} }, 1400);
         }
         resolve(controller);
       });
@@ -535,11 +547,26 @@
 
     const input = document.getElementById("musicSpotifyInput");
     const loadBtn = document.getElementById("musicSpotifyLoadBtn");
-    loadBtn.addEventListener("click", () => {
+    loadBtn.addEventListener("click", async () => {
       const uri = urlToUri(input.value);
-      if (!uri) { input.focus(); input.placeholder = "Invalid URL — try a Spotify track/album/playlist link"; return; }
-      ensureController(uri);
+      if (!uri) {
+        input.focus();
+        input.placeholder = "Invalid URL — try a Spotify track/album/playlist link";
+        return;
+      }
+      const originalLabel = loadBtn.textContent;
+      loadBtn.textContent = "Loading…";
+      loadBtn.disabled = true;
       input.value = "";
+      // Reveal the pill instantly so the user sees "Loading…" feedback there too
+      pillEl().classList.add("show");
+      try {
+        // autoplay = true so playback starts the moment the embed is ready
+        await ensureController(uri, 0, true);
+      } finally {
+        loadBtn.textContent = originalLabel;
+        loadBtn.disabled = false;
+      }
     });
     input.addEventListener("keydown", e => {
       if (e.key === "Enter") { e.preventDefault(); loadBtn.click(); }
@@ -556,6 +583,10 @@
     });
 
     watchCoverState();
+
+    // Warm up the Spotify SDK in the background so the first user click
+    // doesn't have to wait for it to download + initialize.
+    loadSpotifyIframeAPI().catch(() => {});
 
     // Restore previous playback on page load
     const saved = loadState();
