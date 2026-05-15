@@ -1938,6 +1938,11 @@
         if (Number.isFinite(savedUpgrade.count)) state[cfg.key].count = savedUpgrade.count;
         if (Number.isFinite(savedUpgrade.cost)) state[cfg.key].cost = savedUpgrade.cost;
       });
+      // One-time migration: bump 420 from old 10B base to new 25B base for players
+      // whose save predates the rebalance and who haven't bought a 420 yet.
+      if (state.fourtwenty && state.fourtwenty.count === 0 && state.fourtwenty.cost < 25_000_000_000) {
+        state.fourtwenty.cost = 25_000_000_000;
+      }
       return true;
     }
 
