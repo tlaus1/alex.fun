@@ -1809,7 +1809,7 @@
       { key:"patapim",    icon:"🌳", name:"Brr Brr Patapim",         desc:"+500,000 points/sec",       cost:400_000_000,         scale:1.20, onBuy:()=>{ perSec+=500_000; } },
       { key:"mason",      icon:"🧱", name:"Mason 67",                desc:"+3,000,000 points/sec",     cost:750_000_000,         scale:1.21, onBuy:()=>{ perSec+=3_000_000; } },
       { key:"hoopify",    icon:"🏀", name:"Hoopify",                 desc:"+5,000,000 points/sec",     cost:10_000_000_000,      scale:1.21, onBuy:()=>{ perSec+=5_000_000; } },
-      { key:"fourtwenty", icon:"🍃", name:"420",                     desc:"+50,000,000 points/sec",    cost:10_000_000_000,      scale:1.22, onBuy:()=>{ perSec+=50_000_000; } },
+      { key:"fourtwenty", icon:"🍃", name:"420",                     desc:"+50,000,000 points/sec",    cost:25_000_000_000,      scale:1.22, onBuy:()=>{ perSec+=50_000_000; } },
       { key:"god",        icon:"✨", name:"67 God",                  desc:"+100,000,000 points/sec",   cost:50_000_000_000,      scale:1.22, onBuy:()=>{ perSec+=100_000_000; } },
       { key:"rebirthClick", icon:"6️⃣", name:"61",                   desc:"+1,000,000 points per click", cost:200_000_000_000, scale:1.24, requiresRebirth:1, onBuy:()=>{ clickPower+=1_000_000; } },
       { key:"sixtynine",  icon:"6️⃣9️⃣", name:"69",                  desc:"+5,000,000,000 points/sec", cost:500_000_000_000,     scale:1.24, onBuy:()=>{ perSec+=5_000_000_000; } },
@@ -2159,7 +2159,9 @@
       points = 0; clickPower = 1; perSec = 0; achievementBuffUntil = 0; lastSpaceClickTimes = [];
       if(masonBonus) masonBonus.classList.remove("visible");
       clearTimeout(masonBonusTimer);
-      upgradeConfig.forEach(cfg => { state[cfg.key].count=0; state[cfg.key].cost=cfg.cost; });
+      // Each rebirth permanently inflates every upgrade's reset cost by 1.25x
+      const rebirthCostMult = Math.pow(1.25, rebirths);
+      upgradeConfig.forEach(cfg => { state[cfg.key].count=0; state[cfg.key].cost = Math.ceil(cfg.cost * rebirthCostMult); });
       markSaveDirty(); saveGame(); updateUI();
       scheduleMasonBonus();
     });
