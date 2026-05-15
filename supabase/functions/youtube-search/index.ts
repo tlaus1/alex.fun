@@ -52,7 +52,8 @@ serve(async (req) => {
     url.searchParams.set("type", "video,playlist");
     url.searchParams.set("maxResults", "8");
     url.searchParams.set("safeSearch", "none");
-    url.searchParams.set("videoEmbeddable", "true");
+    // Note: videoEmbeddable / videoSyndicated etc. are video-only filters and
+    // YouTube rejects them when `type` includes anything other than `video`.
     url.searchParams.set("key", apiKey);
 
     const res = await fetch(url.toString());
