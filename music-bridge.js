@@ -123,7 +123,7 @@
       --island-art-bg: linear-gradient(135deg, #fbbf24, #ec4899);
     }
     /* Game/clicker pages position the pill at the bottom. !important is
-       belt-and-suspenders against animation rules re-applying `top`. */
+       belt-and-suspenders against animation rules re-applying top. */
     #musicIsland[data-pill-position="bottom"] {
       top: auto !important;
       bottom: 38px !important;  /* clears the 24-26px status bar most game pages use */
