@@ -269,6 +269,59 @@
 
     body.no-page-scroll { overflow:hidden; }
 
+    /* ── Settings modal ── */
+    .settings-modal {
+      position:fixed; inset:0; z-index:10040; display:none; place-items:center; padding:24px;
+      background:rgba(0,0,0,.55); backdrop-filter:blur(6px);
+    }
+    .settings-modal.show { display:grid; }
+    .settings-card {
+      width:min(380px,100%); border-radius:22px; padding:22px; background:var(--surface2);
+      border:1.5px solid var(--border); color:var(--fg); box-shadow:0 24px 80px rgba(0,0,0,.32);
+    }
+    .settings-card h2 { font-size:22px; font-weight:900; margin-bottom:16px; }
+    .settings-row {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 0; border-bottom:1px solid var(--border); gap:12px;
+    }
+    .settings-row:last-of-type { border-bottom:0; }
+    .settings-label { font-size:13px; font-weight:800; }
+    .settings-label small { display:block; font-size:11px; color:var(--muted); font-weight:600; margin-top:2px; }
+    .toggle-switch {
+      position:relative; width:42px; height:24px; flex-shrink:0;
+    }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-switch .slider {
+      position:absolute; cursor:pointer; inset:0; border-radius:999px;
+      background:var(--border); transition:background .2s;
+    }
+    .toggle-switch .slider::before {
+      content:""; position:absolute; width:18px; height:18px; left:3px; bottom:3px;
+      border-radius:50%; background:#fff; transition:transform .2s;
+      box-shadow:0 1px 4px rgba(0,0,0,.2);
+    }
+    .toggle-switch input:checked + .slider { background:#ffc107; }
+    .toggle-switch input:checked + .slider::before { transform:translateX(18px); }
+    .settings-row-block {
+      flex-direction:column; align-items:stretch; gap:10px;
+    }
+    .disguise-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:8px;
+    }
+    .disguise-opt {
+      display:flex; align-items:center; gap:8px; padding:8px 10px;
+      border-radius:10px; border:1.5px solid var(--border);
+      cursor:pointer; background:var(--surface);
+      transition:border-color .15s, background .15s;
+      font-size:12px; font-weight:700; color:var(--fg);
+      text-align:left; line-height:1.25;
+      min-width:0; overflow:hidden;
+    }
+    .disguise-opt:hover { background:var(--hover); }
+    .disguise-opt.active { border-color:#ffc107; background:rgba(255,193,7,.08); }
+    .disguise-opt img { width:20px; height:20px; object-fit:contain; border-radius:4px; flex-shrink:0; }
+    .disguise-opt-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+
 
     /* ══════════════════════════════════════════════
        DASHBOARD
@@ -281,16 +334,26 @@
 
     /* ── Header ── */
     .site-header {
-      position: relative;
-      text-align: center;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
       margin-bottom: 44px;
     }
+    .header-side {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding-top: 2px;
+    }
+    .header-side:last-child {
+      justify-content: flex-end;
+    }
+    .header-center {
+      text-align: center;
+    }
 
-    /* "Get new posts" pill — top-right */
+    /* Pill buttons */
     .pill {
-      position: absolute;
-      top: 0;
-      right: 0;
       font-family: "Martel Sans", Arial, sans-serif;
       font-size: 13px;
       font-weight: 700;
@@ -298,21 +361,20 @@
       background: var(--surface2);
       border: 1.5px solid var(--border);
       border-radius: 100px;
-      padding: 8px 18px;
+      padding: 8px 16px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
+      white-space: nowrap;
       transition: background 0.15s, border-color 0.15s, transform 0.15s, color 0.25s;
     }
     .pill:hover { background: var(--hover); transform: translateY(-1px); }
     .pill:active { transform: translateY(0); }
 
-    /* Dark mode toggle — top-left */
+    /* Icon-only pill (theme toggle) */
     .pill-icon {
-      right: auto;
-      left: 0;
-      padding: 8px 13px;
+      padding: 8px 12px;
       font-size: 16px;
       line-height: 1;
     }
@@ -491,6 +553,39 @@
     .card-pw.card::after { background:linear-gradient(to top,rgba(0,0,0,0.48) 0%,rgba(0,0,0,0.03) 40%,transparent 65%); }
     .card-pw .card-title { color:#1a1a1a;text-shadow:0 1px 6px rgba(255,255,255,0.6); }
 
+    /* ── Spelling Bee card ── */
+    .card-bee {
+      background: linear-gradient(135deg, #1a0800 0%, #7c3a00 50%, #ffc107 100%);
+      grid-column: span 2;  /* full-width spotlight */
+      border: 2.5px solid #ffc107 !important;
+      box-shadow: 0 0 0 3px rgba(255,193,7,0.25), 0 12px 40px rgba(255,193,7,0.2) !important;
+    }
+    .card-bee.card::after { background: linear-gradient(to top, rgba(0,0,0,.6) 0%, rgba(0,0,0,.05) 45%, transparent 65%); }
+    .card-bee .card-title { color: #ffc107; text-shadow: 0 1px 12px rgba(0,0,0,0.6); }
+    .new-badge {
+      position: absolute; top: 10px; right: 10px; z-index: 3;
+      background: #ffc107; color: #1a0800;
+      font-size: 9px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(255,193,7,0.45);
+      animation: newPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes newPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(255,193,7,0.45); }
+      50% { transform: scale(1.08); box-shadow: 0 4px 18px rgba(255,193,7,0.7); }
+    }
+    .card-bee-preview {
+      position: absolute; inset: 0; display: flex; align-items: center;
+      justify-content: center; gap: 24px; z-index: 1;
+    }
+    .bee-stickman {
+      width: 60px; height: 80px; position: relative; opacity: 0.85;
+    }
+
+    /* ── Pico Park card ── */
+    .card-pico { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #3b82f6 100%); }
+    .card-pico.card::after { background: linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,.08) 48%, transparent 70%); }
+
     /* ── Snake card ── */
     .card-snake { background: #65a30d; }
     .card-snake img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
@@ -501,15 +596,17 @@
       from { opacity: 0; transform: translateY(18px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .card:nth-child(1) { animation: fadeUp 0.35s ease 0.04s both; }
-    .card:nth-child(2) { animation: fadeUp 0.35s ease 0.12s both; }
-    .card:nth-child(3) { animation: fadeUp 0.35s ease 0.20s both; }
-    .card:nth-child(4) { animation: fadeUp 0.35s ease 0.28s both; }
-    .card:nth-child(5) { animation: fadeUp 0.35s ease 0.36s both; }
-    .card:nth-child(6) { animation: fadeUp 0.35s ease 0.44s both; }
-    .card:nth-child(7) { animation: fadeUp 0.35s ease 0.52s both; }
-    .card:nth-child(8) { animation: fadeUp 0.35s ease 0.60s both; }
-    .card:nth-child(9) { animation: fadeUp 0.35s ease 0.68s both; }
+    .card:nth-child(1) { animation: fadeUp 0.40s ease 0.00s both; }
+    .card:nth-child(2) { animation: fadeUp 0.35s ease 0.08s both; }
+    .card:nth-child(3) { animation: fadeUp 0.35s ease 0.14s both; }
+    .card:nth-child(4) { animation: fadeUp 0.35s ease 0.20s both; }
+    .card:nth-child(5) { animation: fadeUp 0.35s ease 0.26s both; }
+    .card:nth-child(6) { animation: fadeUp 0.35s ease 0.32s both; }
+    .card:nth-child(7) { animation: fadeUp 0.35s ease 0.38s both; }
+    .card:nth-child(8) { animation: fadeUp 0.35s ease 0.44s both; }
+    .card:nth-child(9) { animation: fadeUp 0.35s ease 0.50s both; }
+    .card:nth-child(10){ animation: fadeUp 0.35s ease 0.56s both; }
+    .card:nth-child(11){ animation: fadeUp 0.35s ease 0.62s both; }
 
     /* ══════════════════════════════════════════════
        GAME SCREEN
@@ -750,15 +847,76 @@
   <div id="dashboard">
 
     <header class="site-header">
-      <button class="pill pill-icon" id="themeToggle" type="button" title="Toggle dark mode">🌙</button>
-      <button class="pill" id="suggestionBtn" type="button" title="Send a site idea">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
-        Suggest idea
-      </button>
-      <span class="brand-name">alex.fun</span>
+      <div class="header-side">
+        <button class="pill pill-icon" id="themeToggle" type="button" title="Toggle dark mode">🌙</button>
+      </div>
+      <div class="header-center">
+        <span class="brand-name">alex.fun</span>
+      </div>
+      <div class="header-side">
+        <button class="pill" id="settingsBtn" type="button" title="Settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </button>
+        <button class="pill" id="suggestionBtn" type="button" title="Send a site idea">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+          Suggest idea
+        </button>
+      </div>
     </header>
 
     <main class="grid">
+
+      <!-- ══ Spelling Bee — NEW ══ -->
+      <article class="card card-bee" onclick="location.href='./spelling-bee.html'" style="cursor:pointer;aspect-ratio:4.8/1;">
+        <span class="new-badge">✨ NEW</span>
+        <div class="card-bee-preview">
+          <!-- Inline SVG stickmen -->
+          <svg width="52" height="72" viewBox="0 0 52 72" fill="none" stroke="rgba(255,193,7,0.9)" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="26" cy="14" r="10" fill="rgba(255,193,7,0.15)"/>
+            <circle cx="22" cy="12" r="1.5" fill="rgba(255,193,7,0.9)" stroke="none"/>
+            <circle cx="30" cy="12" r="1.5" fill="rgba(255,193,7,0.9)" stroke="none"/>
+            <path d="M22 17 Q26 20 30 17" stroke-width="1.8"/>
+            <line x1="26" y1="24" x2="26" y2="46"/>
+            <line x1="26" y1="32" x2="10" y2="42"/>
+            <line x1="26" y1="32" x2="42" y2="38"/>
+            <line x1="26" y1="46" x2="14" y2="62"/>
+            <line x1="26" y1="46" x2="38" y2="62"/>
+          </svg>
+          <div style="text-align:center;">
+            <div style="font-size:44px;line-height:1;margin-bottom:6px;">🐝</div>
+            <div style="font-size:13px;font-weight:900;color:rgba(255,193,7,0.9);letter-spacing:2px;text-transform:uppercase;">Spelling Bee</div>
+          </div>
+          <svg width="52" height="72" viewBox="0 0 52 72" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="26" cy="14" r="10" fill="rgba(255,255,255,0.08)"/>
+            <circle cx="22" cy="12" r="1.5" fill="rgba(255,255,255,0.7)" stroke="none"/>
+            <circle cx="30" cy="12" r="1.5" fill="rgba(255,255,255,0.7)" stroke="none"/>
+            <path d="M22 17 Q26 20 30 17" stroke-width="1.8"/>
+            <line x1="26" y1="24" x2="26" y2="46"/>
+            <line x1="26" y1="32" x2="10" y2="38"/>
+            <line x1="26" y1="32" x2="42" y2="42"/>
+            <line x1="26" y1="46" x2="14" y2="62"/>
+            <line x1="26" y1="46" x2="38" y2="62"/>
+          </svg>
+        </div>
+        <h3 class="card-title" style="font-size:clamp(22px,3vw,40px);">🐝 Spelling Bee</h3>
+      </article>
+
+      <!-- Pico Park rope game -->
+      <article class="card card-pico" onclick="location.href='./pico-park.html'" style="cursor:pointer">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:24px;z-index:1;padding:16px;">
+          <!-- P1 square -->
+          <div style="width:44px;height:52px;background:#f97316;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(249,115,22,.5);">😊</div>
+          <!-- Rope line -->
+          <svg width="70" height="14" viewBox="0 0 70 14" style="flex-shrink:0;">
+            <path d="M0,7 Q17,2 35,7 Q53,12 70,7" stroke="url(#rg)" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <defs><linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f97316"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs>
+          </svg>
+          <!-- P2 square -->
+          <div style="width:44px;height:52px;background:#3b82f6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(59,130,246,.5);">😊</div>
+        </div>
+        <h3 class="card-title">🪢 Rope Run</h3>
+      </article>
 
       <article class="card card-67" id="open67">
         <img src="./67.svg" alt="67 Clicker preview">
@@ -796,7 +954,7 @@
         <h3 class="card-title">Crossy Road</h3>
       </article>
 
-      <article class="card card-solar" onclick="location.href='./solar-smash.html'" style="cursor:pointer">
+      <article class="card card-solar" onclick="openSolarSmash()" style="cursor:pointer">
         <img src="./solar-smash-cover.png" alt="Solar Smash preview">
         <h3 class="card-title">Solar Smash</h3>
       </article>
@@ -839,11 +997,24 @@
       <input id="adminMultiplierAmount" type="number" min="1" step="1" placeholder="multiplier">
     </div>
     <div class="admin-actions">
-      <button class="btn" id="adminSetPointsBtn" type="button">Set points</button>
-      <button class="btn" id="adminAddPointsBtn" type="button">Add points</button>
+      <button class="btn" id="adminSetPointsBtn" type="button">Set points (self)</button>
+      <button class="btn" id="adminAddPointsBtn" type="button">Add points (self)</button>
       <button class="btn" id="adminSetMultiplierBtn" type="button">Set multiplier</button>
       <button class="btn" id="adminUnlockAllBtn" type="button">Unlock everything</button>
       <button class="btn" id="adminAchievementsBtn" type="button">Unlock achievements</button>
+    </div>
+    <div style="margin-top:10px;font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Give / Take Points (target user)</div>
+    <div class="admin-grid">
+      <input id="adminAdjustAmount" type="number" min="0" step="1" placeholder="amount">
+    </div>
+    <div class="admin-actions">
+      <button class="btn" id="adminGivePointsBtn" type="button">💰 Give Points</button>
+      <button class="btn" id="adminTakePointsBtn" type="button">💸 Take Points</button>
+    </div>
+    <div style="margin-top:10px;font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Global Announcement</div>
+    <textarea id="adminAnnouncement" rows="2" placeholder="Broadcast a message to all users..." style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--fg);font:inherit;font-size:12px;font-weight:800;resize:vertical;"></textarea>
+    <div class="admin-actions" style="margin-top:6px;">
+      <button class="btn" id="adminAnnounceBtn" type="button">📢 Broadcast</button>
     </div>
     <div class="cheat-grid" id="cheatGrid67"></div>
   </div>
@@ -883,6 +1054,7 @@
       <button id="fullscreenBtn" class="btn" type="button">Fullscreen</button>
       <button id="leaderboardBtn" class="btn" type="button">Leaderboard</button>
       <button id="resetGame"     class="btn" type="button">Reset Game</button>
+      <button id="saveGameBtn"   class="btn" type="button">💾 Save</button>
     </div>
 
     <div class="game-wrap">
@@ -989,6 +1161,36 @@
       </div>
     </div>
   </aside>
+
+  <!-- ══ Settings modal ════════════════════════════════════════ -->
+  <div id="settingsModal" class="settings-modal" aria-hidden="true">
+    <div class="settings-card">
+      <h2>⚙️ Settings</h2>
+      <div class="settings-row">
+        <span class="settings-label">Dark Mode<small>Switch between light and dark theme</small></span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="settingsDarkMode">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Cover Image shortcut<small>Press Backspace to show cover image</small></span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="settingsCoverShortcut" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="settings-row settings-row-block">
+        <span class="settings-label">Tab disguise<small>Sets the tab title, favicon &amp; cover image</small></span>
+        <div class="disguise-grid" id="disguiseGrid"></div>
+      </div>
+      <div class="settings-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;justify-content:center;flex-direction:column;align-items:center;text-align:center;gap:4px;">
+        <span style="font-size:13px;font-weight:800;">alex.fun</span>
+        <span style="font-size:11px;font-weight:600;color:var(--muted);">v1.0.0</span>
+      </div>
+      <button class="btn" id="settingsCloseBtn" type="button" style="width:100%;margin-top:14px;">Done</button>
+    </div>
+  </div>
 
   <div id="authOverlay" class="auth-overlay hidden">
     <form class="auth-card" id="authForm">
@@ -1296,6 +1498,116 @@
       }
     });
 
+    // ── Settings modal ────────────────────────────────────────────
+    let coverShortcutEnabled = localStorage.getItem("alexFunCoverShortcut") !== "off";
+    const settingsModal = document.getElementById("settingsModal");
+    const settingsDarkModeToggle = document.getElementById("settingsDarkMode");
+    const settingsCoverToggle = document.getElementById("settingsCoverShortcut");
+
+    function openSettings() {
+      settingsDarkModeToggle.checked = document.documentElement.getAttribute("data-theme") === "dark";
+      settingsCoverToggle.checked = coverShortcutEnabled;
+      settingsModal.classList.add("show");
+      settingsModal.setAttribute("aria-hidden", "false");
+    }
+    function closeSettings() {
+      settingsModal.classList.remove("show");
+      settingsModal.setAttribute("aria-hidden", "true");
+    }
+    document.getElementById("settingsBtn").addEventListener("click", openSettings);
+    document.getElementById("settingsCloseBtn").addEventListener("click", closeSettings);
+    settingsModal.addEventListener("click", e => { if(e.target === settingsModal) closeSettings(); });
+
+    settingsDarkModeToggle.addEventListener("change", () => {
+      const isDark = settingsDarkModeToggle.checked;
+      if(isDark){
+        document.documentElement.setAttribute("data-theme","dark");
+        themeToggle.textContent = "☀️";
+        localStorage.setItem("theme","dark");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+        themeToggle.textContent = "🌙";
+        localStorage.setItem("theme","light");
+      }
+    });
+    settingsCoverToggle.addEventListener("change", () => {
+      coverShortcutEnabled = settingsCoverToggle.checked;
+      localStorage.setItem("alexFunCoverShortcut", coverShortcutEnabled ? "on" : "off");
+    });
+
+    // ── Disguise picker ───────────────────────────────────────────
+    (function buildDisguisePicker(){
+      const grid = document.getElementById("disguiseGrid");
+      if(!grid || !window.alexFunProfiles) return;
+
+      const profiles = window.alexFunProfiles;
+
+      // Include a "Random" option
+      const allOptions = [
+        { key:"random", title:"Random", icon:"🎲", iconIsEmoji:true },
+        ...profiles
+      ];
+
+      function currentKey(){
+        return localStorage.getItem("alexFunCoverProfileKey") || "random";
+      }
+
+      function renderGrid(){
+        const active = currentKey();
+        grid.innerHTML = "";
+        allOptions.forEach(opt => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "disguise-opt" + (opt.key === active ? " active" : "");
+          btn.title = opt.title;
+
+          // Icon
+          if(opt.iconIsEmoji){
+            const em = document.createElement("span");
+            em.style.cssText = "font-size:18px;line-height:1;flex-shrink:0;width:20px;text-align:center;";
+            em.textContent = opt.icon;
+            btn.appendChild(em);
+          } else {
+            const img = document.createElement("img");
+            img.src = /^https?:\/\//i.test(opt.icon) ? opt.icon : new URL(opt.icon, location.href).href;
+            img.alt = "";
+            img.onerror = () => { img.style.display = "none"; };
+            btn.appendChild(img);
+          }
+
+          // Name
+          const name = document.createElement("span");
+          name.className = "disguise-opt-name";
+          name.textContent = opt.title;
+          btn.appendChild(name);
+
+          btn.addEventListener("click", () => {
+            if(opt.key === "random"){
+              localStorage.removeItem("alexFunCoverProfileKey");
+              sessionStorage.removeItem("alexFunCoverProfile");
+              // Pick a new random profile now
+              const rand = profiles[Math.floor(Math.random() * profiles.length)];
+              window.alexFunSetProfile(rand.key);
+              localStorage.removeItem("alexFunCoverProfileKey"); // keep it random
+            } else {
+              window.alexFunSetProfile(opt.key);
+            }
+            renderGrid();
+          });
+
+          grid.appendChild(btn);
+        });
+      }
+
+      // Re-render whenever settings opens so active state is fresh
+      document.getElementById("settingsBtn").addEventListener("click", renderGrid);
+
+      renderGrid();
+    })();
+
+    // Patch keydown to respect coverShortcutEnabled
+    // (The main keydown listener below checks this variable)
+
     document.getElementById("suggestionBtn").addEventListener("click", async () => {
       const ideas = [
         "Add a boss fight to 67 Clicker",
@@ -1360,7 +1672,9 @@
     function dismissIdleCover() {
       clearTimeout(idleTimer);
       idlePhoto.classList.add("hidden");
-      idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
+      if (!document.hidden && document.hasFocus()) {
+        idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
+      }
     }
 
     function hideIdleAndArmTimer() {
@@ -1368,6 +1682,9 @@
         return;
       }
       clearTimeout(idleTimer);
+      if (document.hidden || !document.hasFocus()) {
+        return;
+      }
       idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
     }
 
@@ -1392,7 +1709,9 @@
     if (isFromGame()) {
       // Back from a game — go straight to dashboard, arm idle timer normally
       idlePhoto.classList.add("hidden");
-      idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
+      if (!document.hidden && document.hasFocus()) {
+        idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
+      }
     } else {
       // Fresh visit — show clever picture first
       showIdle(true);
@@ -1411,7 +1730,7 @@
         if (e.key === "Backspace") e.preventDefault();
         return;
       }
-      if (e.key === "Backspace") {
+      if (e.key === "Backspace" && coverShortcutEnabled) {
         e.preventDefault();
         showIdle(true);
         return;
@@ -1424,10 +1743,14 @@
       showIdle(true);
     });
 
-    window.addEventListener("blur", () => {
+    function pauseIdleCoverForTabSwitch() {
       idlePhoto.classList.add("hidden");
       clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
+    }
+
+    window.addEventListener("blur", pauseIdleCoverForTabSwitch);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) pauseIdleCoverForTabSwitch();
     });
 
     // ── Screen switching ──────────────────────────────────────────
@@ -1443,6 +1766,14 @@
     function setGameStatusVisible(visible) {
       statusBar.classList.toggle("hidden", !visible);
       document.body.classList.toggle("game-active", visible);
+    }
+
+    function openSolarSmash() {
+      if (location.protocol === "file:") {
+        location.href = "http://127.0.0.1:8765/solar-smash.html";
+        return;
+      }
+      location.href = "./solar-smash.html";
     }
 
     document.getElementById("open67").addEventListener("click", () => {
@@ -1552,15 +1883,19 @@
       { key:"lab",        icon:"🔬", name:"67 Laboratory",           desc:"+260 points/sec",           cost:28_000,          scale:1.17, onBuy:()=>{ perSec+=260; } },
       { key:"powerclick", icon:"⚡", name:"Power Click",             desc:"+1,000 points per click",    cost:75_000,          scale:1.18, onBuy:()=>{ clickPower+=1_000; } },
       { key:"dimension",  icon:"🌀", name:"67 Dimension",            desc:"+5,000 points/sec",         cost:420_000,         scale:1.18, onBuy:()=>{ perSec+=5_000; } },
-      { key:"sahur",      icon:"🥁", name:"Tung Tung Tung Sahur",    desc:"+67,000 points/sec",        cost:1_000_000,       scale:1.19, onBuy:()=>{ perSec+=67_000; } },
-      { key:"empire",     icon:"👑", name:"67 Empire",               desc:"+20,000 points/sec",        cost:5_000_000,       scale:1.19, onBuy:()=>{ perSec+=20_000; } },
-      { key:"galaxy",     icon:"🌌", name:"67 Galaxy",               desc:"+100,000 points/sec",       cost:75_000_000,      scale:1.20, onBuy:()=>{ perSec+=100_000; } },
-      { key:"patapim",    icon:"🌳", name:"Brr Brr Patapim",        desc:"+250,000 points/sec",       cost:100_000_000,     scale:1.20, onBuy:()=>{ perSec+=250_000; } },
-      { key:"mason",      icon:"🧱", name:"Mason 67",                desc:"+3,000,000 points/sec",     cost:750_000_000,     scale:1.21, onBuy:()=>{ perSec+=3_000_000; } },
-      { key:"god",        icon:"✨", name:"67 God",                  desc:"+100,000,000 points/sec",   cost:50_000_000_000,  scale:1.22, onBuy:()=>{ perSec+=100_000_000; } },
+      { key:"sahur",      icon:"🥁", name:"Tung Tung Tung Sahur",    desc:"+5,000 points/sec",         cost:1_000_000,           scale:1.19, onBuy:()=>{ perSec+=5_000; } },
+      { key:"empire",     icon:"👑", name:"67 Empire",               desc:"+20,000 points/sec",        cost:5_000_000,           scale:1.19, onBuy:()=>{ perSec+=20_000; } },
+      { key:"galaxy",     icon:"🌌", name:"67 Galaxy",               desc:"+100,000 points/sec",       cost:75_000_000,          scale:1.20, onBuy:()=>{ perSec+=100_000; } },
+      { key:"patapim",    icon:"🌳", name:"Brr Brr Patapim",         desc:"+500,000 points/sec",       cost:400_000_000,         scale:1.20, onBuy:()=>{ perSec+=500_000; } },
+      { key:"mason",      icon:"🧱", name:"Mason 67",                desc:"+3,000,000 points/sec",     cost:750_000_000,         scale:1.21, onBuy:()=>{ perSec+=3_000_000; } },
+      { key:"hoopify",    icon:"🏀", name:"Hoopify",                 desc:"+5,000,000 points/sec",     cost:10_000_000_000,      scale:1.21, onBuy:()=>{ perSec+=5_000_000; } },
+      { key:"fourtwenty", icon:"🍃", name:"420",                     desc:"+50,000,000 points/sec",    cost:10_000_000_000,      scale:1.22, onBuy:()=>{ perSec+=50_000_000; } },
+      { key:"god",        icon:"✨", name:"67 God",                  desc:"+100,000,000 points/sec",   cost:50_000_000_000,      scale:1.22, onBuy:()=>{ perSec+=100_000_000; } },
       { key:"rebirthClick", icon:"6️⃣", name:"61",                   desc:"+1,000,000 points per click", cost:200_000_000_000, scale:1.24, requiresRebirth:1, onBuy:()=>{ clickPower+=1_000_000; } },
-      { key:"rebirthEngine", icon:"4️⃣", name:"41",                  desc:"+1,000,000,000 points/sec", cost:100_000_000_000, scale:1.25, requiresRebirth:1, onBuy:()=>{ perSec+=1_000_000_000; } },
-      { key:"rebirthCore", icon:"🏀", name:"Lebron 67",              desc:"+10,000,000,000 points/sec", cost:100_000_000_000_000, scale:1.26, requiresRebirth:2, onBuy:()=>{ perSec+=10_000_000_000; } }
+      { key:"sixtynine",  icon:"6️⃣9️⃣", name:"69",                  desc:"+5,000,000,000 points/sec", cost:500_000_000_000,     scale:1.24, onBuy:()=>{ perSec+=5_000_000_000; } },
+      { key:"rebirthEngine", icon:"4️⃣", name:"41",                  desc:"+1,000,000,000 points/sec", cost:500_000_000_000,     scale:1.25, requiresRebirth:1, onBuy:()=>{ perSec+=1_000_000_000; } },
+      { key:"rebirthCore", icon:"🏀", name:"Lebron 67",              desc:"+10,000,000,000 points/sec", cost:100_000_000_000_000, scale:1.26, requiresRebirth:2, onBuy:()=>{ perSec+=10_000_000_000; } },
+      { key:"ronaldo",    icon:"⚽", name:"Ronaldo",                 desc:"+50,000,000,000 points/sec", cost:500_000_000_000_000, scale:1.28, onBuy:()=>{ perSec+=50_000_000_000; } }
     ];
 
     let points     = 0;
@@ -1575,7 +1910,7 @@
     let lastSavedAt = Date.now();
 
     function achievementMultiplier(){ return Date.now() < achievementBuffUntil ? 1.25 : 1; }
-    function rebirthMultiplier(){ return 1 + rebirths * 0.35; }
+    function rebirthMultiplier(){ return 1 + rebirths * 0.5; }
     function effectiveClickPower(){ return clickPower * rebirthMultiplier() * achievementMultiplier() * adminMultiplier; }
     function effectivePerSec(){ return perSec * rebirthMultiplier() * achievementMultiplier() * adminMultiplier; }
 
@@ -1899,7 +2234,7 @@
 
     document.getElementById("rebirthBtn").addEventListener("click", () => {
       if(points < 1_000_000_000) return;
-      if(!confirm("Rebirth resets your 67 points and upgrades, but gives a permanent +35% boost. Do it?")) return;
+      if(!confirm("Rebirth resets your 67 points and upgrades, but gives a permanent +50% boost. Do it?")) return;
       rebirths += 1;
       points = 0; clickPower = 1; perSec = 0; achievementBuffUntil = 0; lastSpaceClickTimes = [];
       if(masonBonus) masonBonus.classList.remove("visible");
@@ -2155,6 +2490,51 @@
       achievementBuffUntil = Date.now() + 60_000;
       updateUI(); markSaveDirty(); saveGame();
     });
+    async function runAdminAdjustPoints(direction){
+      if(!isAlexAccount()) return;
+      const target = normalizeUsername(document.getElementById("adminTargetUser").value);
+      const amount = Number(document.getElementById("adminAdjustAmount").value);
+      if(!target){ alert("Enter a target username first."); return; }
+      if(!Number.isFinite(amount) || amount <= 0){ alert("Enter a valid positive amount."); return; }
+      if(!supabaseClient || !currentSessionToken){
+        alert("This action requires Supabase to be connected.");
+        return;
+      }
+      const rpcName = direction === "give" ? "admin_give_points" : "admin_take_points";
+      const { error } = await supabaseClient.rpc(rpcName, {
+        p_token: currentSessionToken,
+        p_target_username: target,
+        p_amount: Math.floor(amount)
+      });
+      if(error){
+        alert(error.message || `Could not ${direction} points. Make sure the RPC exists in Supabase.`);
+        return;
+      }
+      showNotice(`${direction === "give" ? "Gave" : "Took"} ${formatNum(amount)} points ${direction === "give" ? "to" : "from"} ${target}.`);
+    }
+    document.getElementById("adminGivePointsBtn").addEventListener("click", () => runAdminAdjustPoints("give"));
+    document.getElementById("adminTakePointsBtn").addEventListener("click", () => runAdminAdjustPoints("take"));
+
+    document.getElementById("adminAnnounceBtn").addEventListener("click", async () => {
+      if(!isAlexAccount()) return;
+      const message = document.getElementById("adminAnnouncement").value.trim();
+      if(!message){ alert("Type an announcement message first."); return; }
+      if(!supabaseClient || !currentSessionToken){
+        alert("Broadcasts require Supabase to be connected.");
+        return;
+      }
+      const { error } = await supabaseClient.rpc("admin_broadcast", {
+        p_token: currentSessionToken,
+        p_message: message
+      });
+      if(error){
+        alert(error.message || "Broadcast failed. Make sure admin_broadcast RPC exists in Supabase.");
+        return;
+      }
+      document.getElementById("adminAnnouncement").value = "";
+      showNotice("📢 Announcement broadcast!");
+    });
+
     document.getElementById("adminUnlockAllBtn").addEventListener("click", () => {
       if(!isAlexAccount()) return;
       points = Math.max(points, 1_000_000_000_000_000);
@@ -2459,6 +2839,20 @@
       panel.setAttribute("aria-hidden", "true");
     });
 
+    document.getElementById("saveGameBtn").addEventListener("click", () => {
+      saveGame();
+      const btn = document.getElementById("saveGameBtn");
+      const orig = btn.textContent;
+      btn.textContent = "✓ Saved!";
+      btn.style.borderColor = "#22c55e";
+      btn.style.color = "#166534";
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.style.borderColor = "";
+        btn.style.color = "";
+      }, 1600);
+    });
+
     document.getElementById("resetGame").addEventListener("click", async () => {
       if (!confirm("Reset all progress?")) return;
       reset67StateToDefaults();
@@ -2490,7 +2884,7 @@
 
     setInterval(() => {
       if (saveDirty) saveGame();
-    }, 2000);
+    }, 10_000);
 
     window.addEventListener("beforeunload", saveGame);
 
