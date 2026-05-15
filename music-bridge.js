@@ -367,9 +367,11 @@
         s.onerror = () => fail(new Error("Spotify SDK script failed to load"));
         document.head.appendChild(s);
       }
-      // 12-second timeout — if the SDK never fires onSpotifyIframeApiReady,
-      // surface a real error instead of hanging the Load button forever.
-      setTimeout(() => fail(new Error("Spotify SDK timed out — check your network or disable any ad-blocker that blocks open.spotify.com")), 12000);
+      // 45-second safety-net timeout. Most networks load the Spotify SDK in
+      // under 3s; this only fires if something is genuinely broken (offline,
+      // blocked by extensions, Spotify down). Generous enough that healthy
+      // connections will never hit it.
+      setTimeout(() => fail(new Error("Spotify SDK timed out — check your network or disable any ad-blocker that blocks open.spotify.com")), 45000);
     });
   }
 
@@ -648,10 +650,6 @@
       } catch (err) {
         console.error("Music load failed:", err);
         loadBtn.textContent = "Failed — retry";
-        // Reset the embed area so a retry can mount a fresh controller
-        spotifyController = null;
-        const embedEl = document.getElementById("musicSpotifyEmbed");
-        if (embedEl) embedEl.innerHTML = "";
         setTimeout(() => { loadBtn.textContent = originalLabel; }, 3000);
       } finally {
         loadBtn.disabled = false;
