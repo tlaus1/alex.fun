@@ -122,10 +122,11 @@
       --island-accent: #16a34a;
       --island-art-bg: linear-gradient(135deg, #fbbf24, #ec4899);
     }
-    /* Game/clicker pages position the pill at the bottom */
+    /* Game/clicker pages position the pill at the bottom. !important is
+       belt-and-suspenders against animation rules re-applying `top`. */
     #musicIsland[data-pill-position="bottom"] {
-      top: auto;
-      bottom: 38px;  /* clears the 24-26px status bar most game pages use */
+      top: auto !important;
+      bottom: 38px !important;  /* clears the 24-26px status bar most game pages use */
     }
     #musicIsland[data-pill-position="bottom"].show {
       animation: islandIntroBottom .55s var(--island-spring) both;
@@ -431,28 +432,39 @@
     const el = pillEl(); if (!el) return;
     el.dataset.pillPosition = isGamePage() ? "bottom" : (window.__alexFunPillPosition || "top");
   }
-  // Pick the pill theme based on the body background luminance (so it always
-  // contrasts), unless the page sets html[data-theme="dark"|"light"] which we
-  // honor first.
+  // Pick the pill theme. Order: explicit html[data-theme] → game pages default
+  // to dark (most games are dark themed and body bg sampling is unreliable
+  // when the dark style sits on a wrapper rather than <body>) → otherwise
+  // sample body+html background luminance and pick a contrasting theme.
   function applyAutoTheme() {
     const el = pillEl(); if (!el) return;
     const declared = document.documentElement.getAttribute("data-theme");
     if (declared === "dark")  { el.dataset.pillTheme = "dark";  return; }
     if (declared === "light") { el.dataset.pillTheme = "light"; return; }
-    // No explicit declaration — sample the body background
+    if (isGamePage()) { el.dataset.pillTheme = "dark"; return; }
+    // Dashboard sampling — try body then html
     try {
-      const bg = getComputedStyle(document.body).backgroundColor || "rgb(255,255,255)";
+      let bg = getComputedStyle(document.body).backgroundColor;
+      if (!bg || /rgba?\(0,\s*0,\s*0,\s*0\)/.test(bg) || bg === "transparent") {
+        bg = getComputedStyle(document.documentElement).backgroundColor || "rgb(255,255,255)";
+      }
       const m  = bg.match(/(\d+)\D+(\d+)\D+(\d+)/);
       if (!m) { el.dataset.pillTheme = "dark"; return; }
       const lum = 0.299*+m[1] + 0.587*+m[2] + 0.114*+m[3];
       el.dataset.pillTheme = lum < 140 ? "dark" : "light";
     } catch (_) { el.dataset.pillTheme = "dark"; }
   }
-  // Public helper: pages can override "top" / "bottom" for the pill
+  // Public helper: pages can override "top" / "bottom" for the pill. Game
+  // pages are always "bottom" — the optional arg lets the dashboard switch
+  // when entering/leaving the in-page 67 Clicker view.
   window.__alexFunSetPillPosition = function (pos) {
     window.__alexFunPillPosition = pos;
     const el = pillEl();
-    if (el) el.dataset.pillPosition = isGamePage() ? "bottom" : (pos || "top");
+    if (!el) return;
+    const final = isGamePage() ? "bottom" : (pos || "top");
+    el.dataset.pillPosition = final;
+    // Also re-apply theme since the page context may have changed
+    applyAutoTheme();
   };
 
   function scheduleSave() {
