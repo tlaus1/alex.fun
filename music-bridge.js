@@ -295,6 +295,7 @@
             <input type="text" id="musicSpotifyInput" placeholder="Paste a Spotify track / album / playlist URL…" autocomplete="off" spellcheck="false">
             <button id="musicSpotifyLoadBtn" type="button">Load</button>
           </div>
+          <div id="musicSpotifyStatus" style="padding:0 16px 8px;font:600 11px Inter,sans-serif;color:rgba(255,255,255,.6);min-height:14px;"></div>
           <div class="music-modal-tip">
             <strong style="color:#1db954;display:block;margin-bottom:6px;">To listen to your own playlist:</strong>
             <ol style="margin:0 0 0 18px;padding:0;line-height:1.6;">
@@ -504,8 +505,15 @@
     }, 700);
   }
 
+  function setStatus(msg) {
+    const el = document.getElementById("musicSpotifyStatus");
+    if (el) el.textContent = msg || "";
+  }
+
   async function ensureController(uri, seekMs, autoplay) {
+    setStatus("Loading Spotify SDK…");
     const api      = await loadSpotifyIframeAPI();
+    setStatus("Mounting embed…");
     const el       = document.getElementById("musicSpotifyEmbed");
     const prevUri  = lastUri;
     const finalUri = uri || lastUri || DEFAULT_URI;
@@ -523,6 +531,8 @@
       if (autoplay) {
         setTimeout(() => { try { spotifyController.play(); } catch (_) {} }, isNewUri ? 800 : 200);
       }
+      setStatus("Loaded — playing");
+      setTimeout(() => setStatus(""), 2000);
       return spotifyController;
     }
     return new Promise(resolve => {
@@ -541,6 +551,8 @@
         if (autoplay) {
           setTimeout(() => { try { controller.play(); } catch (_) {} }, 1400);
         }
+        setStatus("Loaded — playing");
+        setTimeout(() => setStatus(""), 2000);
         resolve(controller);
       });
     });
@@ -650,6 +662,7 @@
       } catch (err) {
         console.error("Music load failed:", err);
         loadBtn.textContent = "Failed — retry";
+        setStatus("⚠ " + (err && err.message ? err.message : String(err)));
         setTimeout(() => { loadBtn.textContent = originalLabel; }, 3000);
       } finally {
         loadBtn.disabled = false;
