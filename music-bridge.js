@@ -430,7 +430,17 @@
   }
   function applyPagePosition() {
     const el = pillEl(); if (!el) return;
-    el.dataset.pillPosition = isGamePage() ? "bottom" : (window.__alexFunPillPosition || "top");
+    const wantBottom = isGamePage() || window.__alexFunPillPosition === "bottom";
+    // Use inline styles — they beat any CSS rule including animation frames.
+    if (wantBottom) {
+      el.style.top    = "auto";
+      el.style.bottom = "38px";
+      el.dataset.pillPosition = "bottom";
+    } else {
+      el.style.top    = "12px";
+      el.style.bottom = "auto";
+      el.dataset.pillPosition = "top";
+    }
   }
   // Pick the pill theme. Order: explicit html[data-theme] → game pages default
   // to dark (most games are dark themed and body bg sampling is unreliable
@@ -459,11 +469,7 @@
   // when entering/leaving the in-page 67 Clicker view.
   window.__alexFunSetPillPosition = function (pos) {
     window.__alexFunPillPosition = pos;
-    const el = pillEl();
-    if (!el) return;
-    const final = isGamePage() ? "bottom" : (pos || "top");
-    el.dataset.pillPosition = final;
-    // Also re-apply theme since the page context may have changed
+    applyPagePosition();
     applyAutoTheme();
   };
 

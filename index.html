@@ -1493,9 +1493,20 @@
     // ── Music player ──────────────────────────────────────────
     // All music UI/logic lives in music-bridge.js (loaded once, used on every
     // page). Settings → Music opens the modal via the bridge's public API.
+    // The bridge loads with `defer` so it should be ready by user-click time
+    // but retry just in case (e.g. very slow first paint).
+    function openMusicWithRetry(tries = 0) {
+      if (window.alexFunMusic && typeof window.alexFunMusic.open === "function") {
+        window.alexFunMusic.open();
+      } else if (tries < 30) {
+        setTimeout(() => openMusicWithRetry(tries + 1), 100);
+      } else {
+        alert("Music player failed to load — refresh the page and try again.");
+      }
+    }
     document.getElementById("settingsMusicBtn").addEventListener("click", () => {
       closeSettings();
-      if (window.alexFunMusic) window.alexFunMusic.open();
+      openMusicWithRetry();
     });
 
     settingsDarkModeToggle.addEventListener("change", () => {
