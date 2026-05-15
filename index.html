@@ -298,51 +298,222 @@
       width: 100%; height: 100%; border: 0; display: block;
     }
 
-    /* ── Dynamic Island music pill ── */
-    #musicPill {
-      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+    /* ══════════════════════════════════════════════════════════
+       Dynamic Island-style music pill
+       ── Two-layer construction:
+         1. .island-blobs : black blob shapes wrapped in an SVG goo filter
+            (when shapes get close they visually fuse like liquid metal)
+         2. .island-fg    : sharp text/icons/buttons sitting on top
+       ── On hover, the pause "orb" pops out of the right side of the main
+          pill. Because both shapes are inside the same goo-filtered layer,
+          their separation animates as a true blob stretch-and-snap.
+       ══════════════════════════════════════════════════════════ */
+    #musicIsland {
+      position: fixed; top: 12px; left: 50%;
       z-index: 10030;
-      background: #000; color: #fff;
-      border-radius: 999px; padding: 8px 16px;
-      display: none; align-items: center; gap: 10px;
-      font-size: 12px; font-weight: 700;
-      box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.08) inset;
-      cursor: pointer; user-select: none;
-      transition: transform .25s cubic-bezier(.34,1.56,.64,1), padding .25s, gap .25s;
-    }
-    #musicPill.show { display: inline-flex; animation: pillIn .4s cubic-bezier(.34,1.56,.64,1); }
-    #musicPill:hover { padding: 8px 14px 8px 16px; gap: 12px; }
-    @keyframes pillIn {
-      from { transform: translateX(-50%) scale(.6); opacity: 0; }
-      to   { transform: translateX(-50%) scale(1);  opacity: 1; }
-    }
-    #musicPill .equalizer {
-      display: inline-flex; gap: 2px; height: 14px; align-items: flex-end;
-    }
-    #musicPill .equalizer span {
-      display: block; width: 3px; background: #4ade80;
-      border-radius: 1px;
-      animation: pillBar 1s infinite ease-in-out;
-    }
-    #musicPill .equalizer span:nth-child(1) { animation-delay: 0s;   height: 60%; }
-    #musicPill .equalizer span:nth-child(2) { animation-delay: .2s;  height: 100%; }
-    #musicPill .equalizer span:nth-child(3) { animation-delay: .35s; height: 50%; }
-    #musicPill .equalizer span:nth-child(4) { animation-delay: .5s;  height: 80%; }
-    #musicPill.paused .equalizer span { animation-play-state: paused; opacity: .35; }
-    @keyframes pillBar {
-      0%, 100% { transform: scaleY(0.4); }
-      50%      { transform: scaleY(1);   }
-    }
-    #musicPill .pill-label { white-space: nowrap; }
-    #musicPill .pill-pause-btn {
       display: none;
-      width: 22px; height: 22px; border-radius: 50%;
-      background: rgba(255,255,255,.16); color: #fff;
-      border: 0; cursor: pointer; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 900; line-height: 1;
+      width: 0; height: 36px;            /* width = 0; children overflow */
+      transform: translateX(-50%);
+      pointer-events: none;
+      --island-w: 96px;                   /* compact pill (equalizer only) */
+      --island-w-hover: 256px;            /* expanded: art + name + orb */
+      --island-bg: #000;                  /* dark bg by default */
+      --island-fg: #fff;
+      --island-accent: #4ade80;           /* equalizer / accent */
+      --island-art-bg: linear-gradient(135deg, #f97316, #db2777);
+      --island-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --island-spring-soft: cubic-bezier(0.32, 0.72, 0, 1);
     }
-    #musicPill .pill-pause-btn:hover { background: rgba(255,255,255,.28); }
-    #musicPill:hover .pill-pause-btn { display: inline-flex; }
+    /* Match site's light/dark theme. Default body (no data-theme) is light. */
+    html:not([data-theme="dark"]) #musicIsland {
+      --island-bg: #f5f5f7;
+      --island-fg: #1a1a1a;
+      --island-accent: #16a34a;
+      --island-art-bg: linear-gradient(135deg, #fbbf24, #ec4899);
+    }
+    #musicIsland.show {
+      display: block;
+      animation: islandIntro .55s var(--island-spring) both;
+    }
+    @keyframes islandIntro {
+      0%   { opacity: 0; transform: translateX(-50%) translateY(-14px) scale(.55); }
+      60%  { opacity: 1; }
+      100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    }
+
+    /* ── Blob layer (gets the goo filter) ── */
+    .island-blobs {
+      position: absolute; inset: -12px;
+      filter: url(#islandGoo);
+      pointer-events: none;
+    }
+    .island-blob-main {
+      position: absolute; top: 12px; left: 50%;
+      height: 36px; width: var(--island-w);
+      margin-left: calc(var(--island-w) / -2);
+      background: var(--island-bg);
+      border-radius: 100px;
+      transition: width .65s var(--island-spring), margin-left .65s var(--island-spring), background .25s;
+    }
+    .island-blob-orb {
+      position: absolute; top: 14px;
+      height: 32px; width: 32px;
+      left: 50%;
+      margin-left: calc(var(--island-w) / 2 - 30px);  /* overlap pill so they fuse */
+      background: var(--island-bg);
+      border-radius: 50%;
+      opacity: 0;
+      transition:
+        margin-left .65s var(--island-spring),
+        opacity .3s var(--island-spring-soft),
+        background .25s;
+    }
+    #musicIsland:hover .island-blob-main,
+    #musicIsland:focus-within .island-blob-main {
+      width: var(--island-w-hover);
+      margin-left: calc(var(--island-w-hover) / -2);
+    }
+    #musicIsland:hover .island-blob-orb,
+    #musicIsland:focus-within .island-blob-orb {
+      opacity: 1;
+      margin-left: calc(var(--island-w-hover) / 2 - 30px);
+    }
+
+    /* ── Foreground layer (sharp content, no filter) ── */
+    .island-fg {
+      position: absolute; top: 0; left: 50%;
+      height: 36px;
+      width: var(--island-w);
+      margin-left: calc(var(--island-w) / -2);
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 0 14px;
+      color: var(--island-fg);
+      font: 700 12px/1 Inter, ui-sans-serif, system-ui, sans-serif;
+      pointer-events: auto;
+      cursor: pointer;
+      user-select: none;
+      overflow: hidden;
+      transition: width .65s var(--island-spring), margin-left .65s var(--island-spring), color .25s, padding .65s var(--island-spring);
+    }
+    #musicIsland:hover .island-fg,
+    #musicIsland:focus-within .island-fg {
+      width: var(--island-w-hover);
+      margin-left: calc(var(--island-w-hover) / -2);
+      justify-content: flex-start;
+      padding-left: 8px;
+    }
+
+    /* Equalizer bars */
+    .island-eq {
+      display: inline-flex; gap: 2.5px; height: 14px; align-items: flex-end;
+      flex: 0 0 auto;
+      transition: opacity .25s, transform .45s var(--island-spring);
+    }
+    .island-eq i {
+      display: block; width: 3px; background: var(--island-accent);
+      border-radius: 1px;
+      transform-origin: bottom;
+      animation: islandEq 1s infinite ease-in-out;
+      transition: background .25s;
+    }
+    .island-eq i:nth-child(1) { animation-delay: 0s;    height: 60%; }
+    .island-eq i:nth-child(2) { animation-delay: .15s;  height: 100%; }
+    .island-eq i:nth-child(3) { animation-delay: .35s;  height: 50%; }
+    .island-eq i:nth-child(4) { animation-delay: .55s;  height: 80%; }
+    @keyframes islandEq {
+      0%, 100% { transform: scaleY(0.35); }
+      50%      { transform: scaleY(1);    }
+    }
+    #musicIsland.paused .island-eq i { animation-play-state: paused; opacity: .4; }
+    /* Shrink the equalizer to the side when expanded so art+name take center */
+    #musicIsland:hover .island-eq,
+    #musicIsland:focus-within .island-eq {
+      transform: scale(.85);
+      opacity: .75;
+    }
+
+    /* Album art (placeholder gradient — playlistsound is cross-origin so we
+       can't read the actual cover; this is a generic "music is on" indicator) */
+    .island-art {
+      width: 26px; height: 26px;
+      border-radius: 7px;
+      background: var(--island-art-bg);
+      flex: 0 0 auto;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: #fff;
+      opacity: 0;
+      transform: scale(.55) translateX(-4px);
+      transition: opacity .3s var(--island-spring-soft),
+                  transform .55s var(--island-spring);
+      box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    }
+    #musicIsland:hover .island-art,
+    #musicIsland:focus-within .island-art {
+      opacity: 1;
+      transform: scale(1) translateX(0);
+    }
+
+    /* Song name + sub */
+    .island-songname {
+      display: flex; flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+      opacity: 0;
+      transform: translateX(-6px);
+      transition: opacity .35s var(--island-spring-soft) .1s,
+                  transform .45s var(--island-spring) .1s;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+    #musicIsland:hover .island-songname,
+    #musicIsland:focus-within .island-songname {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .island-songtitle {
+      font-size: 11.5px; font-weight: 800;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      letter-spacing: 0.1px;
+      color: var(--island-fg);
+    }
+    .island-songsub {
+      font-size: 9.5px; font-weight: 600;
+      opacity: .55;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--island-fg);
+    }
+
+    /* The pause "orb" — its blob lives in .island-blobs, this is the sharp
+       click target + glyph that rides on top of it. */
+    .island-pause {
+      position: absolute; top: 2px;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 0; background: transparent;
+      color: var(--island-fg);
+      font: 900 0/1 inherit;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      pointer-events: auto;
+      left: 50%;
+      margin-left: calc(var(--island-w) / 2 - 30px);
+      opacity: 0;
+      transition: margin-left .65s var(--island-spring),
+                  opacity .3s var(--island-spring-soft),
+                  color .25s;
+    }
+    .island-pause::before {
+      content: "⏸";
+      font-size: 12px; font-weight: 900;
+      transition: content 0s;
+    }
+    #musicIsland.paused .island-pause::before { content: "▶"; }
+    #musicIsland:hover .island-pause,
+    #musicIsland:focus-within .island-pause {
+      opacity: 1;
+      margin-left: calc(var(--island-w-hover) / 2 - 30px);
+    }
+    .island-pause:active { transform: scale(.9); transition: transform .1s ease; }
 
     /* ── Settings modal ── */
     .settings-modal {
@@ -1177,10 +1348,39 @@
     </div>
   </div>
 
-  <div id="musicPill" role="button" tabindex="0" aria-label="Music player — click to open, hover to pause">
-    <span class="equalizer" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
-    <span class="pill-label">Music</span>
-    <button class="pill-pause-btn" id="musicPillPauseBtn" type="button" aria-label="Pause music">⏸</button>
+  <!-- Hidden SVG goo filter: blurs alpha then thresholds it back to a sharp
+       blob outline. When two #000 shapes get close their soft halos overlap
+       and the threshold step fuses them into one liquid mass. -->
+  <svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
+    <defs>
+      <filter id="islandGoo">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+        <feColorMatrix in="blur" mode="matrix"
+          values="1 0 0 0 0
+                  0 1 0 0 0
+                  0 0 1 0 0
+                  0 0 0 22 -11" result="goo" />
+        <feBlend in="SourceGraphic" in2="goo" />
+      </filter>
+    </defs>
+  </svg>
+
+  <div id="musicIsland" role="group" aria-label="Music player">
+    <!-- Blob shapes: morph + fuse via goo filter -->
+    <div class="island-blobs" aria-hidden="true">
+      <div class="island-blob-main"></div>
+      <div class="island-blob-orb"></div>
+    </div>
+    <!-- Sharp foreground: click target, equalizer, album art, song name -->
+    <div class="island-fg" role="button" tabindex="0" aria-label="Open music player">
+      <span class="island-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="island-art" aria-hidden="true">♪</span>
+      <span class="island-songname">
+        <span class="island-songtitle">Now Playing</span>
+        <span class="island-songsub">Playlistsound</span>
+      </span>
+    </div>
+    <button class="island-pause" id="musicPillPauseBtn" type="button" aria-label="Pause music"></button>
   </div>
 
   <!-- ══ Settings modal ════════════════════════════════════════ -->
@@ -1551,11 +1751,11 @@
     const musicModal      = document.getElementById("musicModal");
     const musicModalFrame = document.getElementById("musicModalFrame");
     const musicModalClose = document.getElementById("musicModalClose");
-    const musicPill       = document.getElementById("musicPill");
+    const musicPill       = document.getElementById("musicIsland");
+    const musicPillFg     = musicPill ? musicPill.querySelector(".island-fg") : null;
     const musicPillPause  = document.getElementById("musicPillPauseBtn");
     const MUSIC_URL       = "https://playlistsound.com/";
     let   musicIframe     = null;
-    let   musicSuspendedByCover = false;
 
     function musicEnsureIframe() {
       if (musicIframe) return;
@@ -1590,30 +1790,25 @@
     musicModalClose.addEventListener("click", closeMusicModal);
     musicModal.addEventListener("click", e => { if (e.target === musicModal) closeMusicModal(); });
 
-    // Click the pill background → reopen the modal so the user can interact
-    musicPill.addEventListener("click", e => {
-      if (e.target.closest("#musicPillPauseBtn")) return; // pause handled separately
-      openMusicModal();
-    });
-    musicPill.addEventListener("keydown", e => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMusicModal(); }
-    });
+    // Click the pill's main body (not the pause orb) → reopen the modal
+    if (musicPillFg) {
+      musicPillFg.addEventListener("click", openMusicModal);
+      musicPillFg.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMusicModal(); }
+      });
+    }
     musicPillPause.addEventListener("click", e => { e.stopPropagation(); stopMusic(); });
 
     // Called from inside showIdle() / dismissIdleCover() below (same closure)
     // so cross-origin iframe audio is killed whenever the cover image goes up.
+    // Cover image toggle: just flip the pill's visual paused state. Don't
+    // kill the iframe — the previous "remove iframe" approach lost playback
+    // state entirely. Now the pill stays visible and shows ▶ when paused.
     function musicPauseForCover() {
-      if (musicIframe && !musicSuspendedByCover) {
-        musicSuspendedByCover = true;
-        stopMusic();
-      }
+      if (musicIframe) musicPill.classList.add("paused");
     }
     function musicResumeFromCover() {
-      if (musicSuspendedByCover) {
-        musicSuspendedByCover = false;
-        musicEnsureIframe();
-        musicPill.classList.add("show");
-      }
+      musicPill.classList.remove("paused");
     }
 
     settingsDarkModeToggle.addEventListener("change", () => {
@@ -2337,8 +2532,8 @@
       points = 0; clickPower = 1; perSec = 0; achievementBuffUntil = 0; lastSpaceClickTimes = [];
       if(masonBonus) masonBonus.classList.remove("visible");
       clearTimeout(masonBonusTimer);
-      // Each rebirth permanently inflates every upgrade's reset cost by 1.25x
-      const rebirthCostMult = Math.pow(1.25, rebirths);
+      // Each rebirth permanently inflates every upgrade's reset cost by 2x
+      const rebirthCostMult = Math.pow(2, rebirths);
       upgradeConfig.forEach(cfg => { state[cfg.key].count=0; state[cfg.key].cost = Math.ceil(cfg.cost * rebirthCostMult); });
       markSaveDirty(); saveGame(); updateUI();
       scheduleMasonBonus();
