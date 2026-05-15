@@ -156,6 +156,37 @@
     .achievement-chip { border:1.5px solid var(--border); border-radius:999px; padding:5px 8px; font-size:10px; font-weight:900; color:var(--muted); background:var(--surface); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .achievement-chip.unlocked { color:#1a0800; background:#ffe27a; border-color:#ffc107; }
 
+    /* ── Frenzy viewport outline (Claude-in-Chrome style) ──
+       Toggled on body during 2× Mason Frenzy. A pulsing orange-to-amber
+       border + inner glow that frames the whole window. */
+    body.frenzy-active::before,
+    body.frenzy-active::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+    body.frenzy-active::before {
+      z-index: 9990;
+      border: 5px solid #ff7a1a;
+      box-sizing: border-box;
+      border-radius: 6px;
+      animation: frenzyBorder 0.85s ease-in-out infinite alternate;
+    }
+    body.frenzy-active::after {
+      z-index: 9989;
+      box-shadow: inset 0 0 60px rgba(255, 122, 26, .55);
+      animation: frenzyGlow 0.85s ease-in-out infinite alternate;
+    }
+    @keyframes frenzyBorder {
+      from { border-color: #ff7a1a; }
+      to   { border-color: #ffcc00; }
+    }
+    @keyframes frenzyGlow {
+      from { box-shadow: inset 0 0 30px  rgba(255, 122, 26, .35); }
+      to   { box-shadow: inset 0 0 100px rgba(255, 204, 0,  .65); }
+    }
+
     /* Mason Frenzy banner — appears when player clicks floating Mason; gives
        2× to all earnings for 20 seconds. Style modeled on Blooket's Fishing
        Frenzy banner. */
@@ -1776,6 +1807,7 @@
       game67El.classList.add("hidden");
       masonBonus?.classList.remove("visible");
       document.body.classList.remove("no-page-scroll");
+      document.body.classList.remove("frenzy-active"); // hide outline outside 67-Clicker
       setGameStatusVisible(false);
       dashboard.classList.remove("hidden");
       hideIdleAndArmTimer();
@@ -2296,7 +2328,10 @@
     });
 
     // ── Mason Frenzy banner (Blooket-style 2× indicator) ──
+    // Also toggles body.frenzy-active for the orange pulsing viewport border.
     function showMasonFrenzy(){
+      document.body.classList.add("frenzy-active");
+
       let banner = document.getElementById("masonFrenzyBanner");
       if (!banner) {
         banner = document.createElement("div");
@@ -2313,7 +2348,6 @@
       const fill = banner.querySelector(".mfb-bar-fill");
       const time = banner.querySelector(".mfb-time");
       const duration = 20000;
-      const start    = Date.now();
       fill.style.transition = "none";
       fill.style.width = "100%";
       void fill.offsetWidth;
@@ -2327,6 +2361,7 @@
         } else {
           banner.classList.remove("show");
           banner.classList.add("hide");
+          document.body.classList.remove("frenzy-active");
           updateUI();
         }
       };

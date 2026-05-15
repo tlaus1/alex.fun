@@ -338,20 +338,38 @@
   function loadSpotifyIframeAPI() {
     if (spotifyApi) return Promise.resolve(spotifyApi);
     if (window.SpotifyIframeApi) { spotifyApi = window.SpotifyIframeApi; return Promise.resolve(spotifyApi); }
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
+      let done = false;
+      const finish = (api) => {
+        if (done) return; done = true;
+        spotifyApi = api;
+        window.SpotifyIframeApi = api;
+        resolve(api);
+      };
+      const fail = (err) => {
+        if (done) return; done = true;
+        reject(err || new Error("Spotify SDK failed"));
+      };
       const prev = window.onSpotifyIframeApiReady;
       window.onSpotifyIframeApiReady = (api) => {
+        // Cache globally first so even a late callback after timeout still
+        // populates spotifyApi for the next retry.
         spotifyApi = api;
         window.SpotifyIframeApi = api;
         if (typeof prev === "function") { try { prev(api); } catch (_) {} }
-        resolve(api);
+        finish(api);
       };
-      if (!document.querySelector('script[src*="open.spotify.com/embed/iframe-api"]')) {
+      const existing = document.querySelector('script[src*="open.spotify.com/embed/iframe-api"]');
+      if (!existing) {
         const s = document.createElement("script");
         s.src = "https://open.spotify.com/embed/iframe-api/v1";
         s.async = true;
+        s.onerror = () => fail(new Error("Spotify SDK script failed to load"));
         document.head.appendChild(s);
       }
+      // 12-second timeout — if the SDK never fires onSpotifyIframeApiReady,
+      // surface a real error instead of hanging the Load button forever.
+      setTimeout(() => fail(new Error("Spotify SDK timed out — check your network or disable any ad-blocker that blocks open.spotify.com")), 12000);
     });
   }
 
@@ -623,13 +641,19 @@
       loadBtn.textContent = "Loading…";
       loadBtn.disabled = true;
       input.value = "";
-      // Reveal the pill instantly so the user sees "Loading…" feedback there too
       pillEl().classList.add("show");
       try {
-        // autoplay = true so playback starts the moment the embed is ready
         await ensureController(uri, 0, true);
-      } finally {
         loadBtn.textContent = originalLabel;
+      } catch (err) {
+        console.error("Music load failed:", err);
+        loadBtn.textContent = "Failed — retry";
+        // Reset the embed area so a retry can mount a fresh controller
+        spotifyController = null;
+        const embedEl = document.getElementById("musicSpotifyEmbed");
+        if (embedEl) embedEl.innerHTML = "";
+        setTimeout(() => { loadBtn.textContent = originalLabel; }, 3000);
+      } finally {
         loadBtn.disabled = false;
       }
     });
