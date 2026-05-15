@@ -1,26 +1,18 @@
 <!DOCTYPE html>
-
-
 <!-- Ultimate Game Stash file-->
 <!-- For the regularly updating doc go to https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/ -->
-
-
-
-
 <html lang="en-us">
 
 <head>
   <script src="./cover-profiles.js"></script>
   <link rel="icon" type="image/png" href="./clever1.png">
-  <!-- Load assets from local repo (Build/, StreamingAssets/, TemplateData/) — no CDN dependency
-       The previous <base href> pointed to a jsDelivr commit, which caused asset bundles
-       (weapons, dynamic_ui) to fail loading intermittently on GitHub Pages deployments. -->
+  <base href="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@a2e4bb68955f2665d16669bbbf7be3123870c2e0/solar-smash/">
   <meta charset="UTF-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
-  <title>YT Game Wrapper WebGL Template</title>
+  <title>Solar Smash</title>
   <link rel="stylesheet" href="TemplateData/style.css" nonce="we8ZPMAc10sjbMeA8f_pRw">
   <script src="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@main/ytgame.js" nonce="we8ZPMAc10sjbMeA8f_pRw">// Load YT Game API code</script>
   <style>
@@ -78,43 +70,43 @@
   </div>
 
 <script>
-    // Merge multi-part files (planets bundles, Build.wasm) from local repo.
-    // GitHub has a 100MB per-file limit, so large files are committed as multiple parts.
+    // ────────────────────────────────────────────────────────────────
+    // Asset bundle merging + fetch override.
+    //
+    // The bundles `planets` and `planets2` are committed to the source
+    // repo as `.part1` / `.part2` because of GitHub's 100MB file limit,
+    // so we merge them at runtime. The original ytgame template did
+    // this too but used `originalFetch.apply(this, args)` — which Unity
+    // can hit with a non-window `this`, causing an "Illegal invocation"
+    // throw and silent asset bundle load failure (the reason weapons
+    // and weapon UIs didn't load on GitHub Pages). The fix is to
+    // permanently bind originalFetch to window.
+    // ────────────────────────────────────────────────────────────────
     function mergeFiles(fileParts) {
       return Promise.all(fileParts.map(p => fetch(p).then(r => r.arrayBuffer())))
         .then(buffers => new Blob(buffers, { type: "application/octet-stream" }));
     }
-    function getNumberedParts(file, start, end) {
+    function getParts(file, start, end) {
       const parts = [];
       for (let i = start; i <= end; i++) parts.push(file + ".part" + i);
       return parts;
     }
-    function getLetteredParts(file, letters) {
-      return letters.map(l => file + ".part." + l);
-    }
 
-    // Promise that resolves to merged blobs and a blob URL for Build.wasm.
-    window.__solarSmashAssets = Promise.all([
-      mergeFiles(getNumberedParts("StreamingAssets/AssetBundles/WebGL/planets",  1, 2)),
-      mergeFiles(getNumberedParts("StreamingAssets/AssetBundles/WebGL/planets2", 1, 2)),
-      mergeFiles(getLetteredParts("Build/Build.wasm", ["aa", "ab", "ac", "ad", "ae"]))
-    ]).then(([planets1, planets2, wasmBlob]) => {
-      const wasmUrl = URL.createObjectURL(new Blob([wasmBlob], { type: "application/wasm" }));
-      const originalFetch = window.fetch.bind(window);
+    const originalFetch = window.fetch.bind(window);
 
+    window.__solarSmashPlanets = Promise.all([
+      mergeFiles(getParts("StreamingAssets/AssetBundles/WebGL/planets",  1, 2)),
+      mergeFiles(getParts("StreamingAssets/AssetBundles/WebGL/planets2", 1, 2))
+    ]).then(([planets1, planets2]) => {
       window.fetch = function (...args) {
         const url = args[0];
-        if (typeof url === "string") {
-          if (url.includes("StreamingAssets/AssetBundles/WebGL/planets")) {
-            if (url.includes("planets2")) return Promise.resolve(new Response(planets2, { status: 200 }));
-            if (url.includes("planets3")) return originalFetch(...args);
-            return Promise.resolve(new Response(planets1, { status: 200 }));
-          }
+        if (typeof url === "string" && url.includes("StreamingAssets/AssetBundles/WebGL/planets")) {
+          if (url.includes("planets2")) return Promise.resolve(new Response(planets2, { status: 200 }));
+          if (url.includes("planets3")) return originalFetch(...args);
+          return Promise.resolve(new Response(planets1, { status: 200 }));
         }
         return originalFetch(...args);
       };
-
-      return { wasmUrl };
     });
 </script>
 
@@ -330,25 +322,22 @@ class Unarchiver {
 }
 Unarchiver.loadedFormats = {};
   </script>
-  <script nonce="VdK5nAGpFKd9vu2JazSNaA"> // Logic for Unity contianer
+
+  <script nonce="VdK5nAGpFKd9vu2JazSNaA">
     var container = document.querySelector("#unity-container");
     var canvas = document.querySelector("#unity-canvas");
     var loadingBar = document.querySelector("#unity-loading-bar");
     var progressBarFull = document.querySelector("#unity-progress-bar-full");
-    var fullscreenButton = document.querySelector("#unity-fullscreen-button");
-    var fullscreenOverlayButton = document.querySelector("#unity-overlay-fullscreen-button");
-    var quitcanvas = document.querySelector("#quit-canvas");
     var warningBanner = document.querySelector("#unity-warning");
 
-    function unityShowBanner(msg, type) {
-    }
+    function unityShowBanner(msg, type) {}
 
     var buildUrl = "Build";
     var loaderUrl = buildUrl + "/Build.loader.js";
     var config = {
       dataUrl: buildUrl + "/Build.data",
       frameworkUrl: buildUrl + "/Build.framework.js",
-        codeUrl: buildUrl + "/Build.wasm",
+      codeUrl: buildUrl + "/Build.wasm",
       streamingAssetsUrl: "StreamingAssets",
       companyName: "Paradyme Games",
       productName: "Live - Solar Smash YouTube",
@@ -385,34 +374,21 @@ Unarchiver.loadedFormats = {};
           shouldDecompress = false;
         }
       }
-
-      if (shouldDecompress)
-      {
+      if (shouldDecompress) {
         var blobTypeData = GetBlobType(dataUrl);
-        DecompressFile(dataUrl, blobTypeData, (file) => {
-          config.dataUrl = file;
-          LoadWASM(callback);
-        });
-      }
-      else
-      {
+        DecompressFile(dataUrl, blobTypeData, (file) => { config.dataUrl = file; LoadWASM(callback); });
+      } else {
         LoadWASM(callback);
       }
     }
 
     loadZipData = (url, callback) => {
-      fetch(url)
-        .then(response => response.blob())
-        .then(blob => {
-          callback(blob);
-        });
+      fetch(url).then(response => response.blob()).then(blob => { callback(blob); });
     }
 
-    function LoadWASM(callback)
-    {
+    function LoadWASM(callback) {
       var codeUrl = config.codeUrl;
       var shouldDecompress = true;
-
       if (!codeUrl.includes(subZipStr)) {
         if (UrlExists(codeUrl + subZipStr)) {
           codeUrl = codeUrl + subZipStr;
@@ -420,13 +396,9 @@ Unarchiver.loadedFormats = {};
           shouldDecompress = false;
         }
       }
-
       if (shouldDecompress) {
         var blobTypeWASM = GetBlobType(codeUrl);
-        DecompressFile(codeUrl, blobTypeWASM, (file) => {
-          config.codeUrl = file;
-          callback();
-        });
+        DecompressFile(codeUrl, blobTypeWASM, (file) => { config.codeUrl = file; callback(); });
       } else {
         callback();
       }
@@ -434,25 +406,20 @@ Unarchiver.loadedFormats = {};
 
     function GetBlobType(urlToCheck) {
       var blobType = 'application/octet-stream';
-      if (urlToCheck.includes(subWASMStr)){
-        blobType = 'application/wasm';
-      } else if (urlToCheck.includes(subJSStr)){
-        blobType = 'text/javascript';
-      }
+      if (urlToCheck.includes(subWASMStr)) blobType = 'application/wasm';
+      else if (urlToCheck.includes(subJSStr)) blobType = 'text/javascript';
       return blobType;
     }
 
-    function UrlExists(urlToCheck)
-    {
-        var httpReq = new XMLHttpRequest();
-        httpReq.open('HEAD', urlToCheck, false);
-        httpReq.send();
-        return httpReq.status!=404;
+    function UrlExists(urlToCheck) {
+      var httpReq = new XMLHttpRequest();
+      httpReq.open('HEAD', urlToCheck, false);
+      httpReq.send();
+      return httpReq.status != 404;
     }
 
     function DecompressFile(file, blobMimeType, callback) {
       let decompressedFile;
-
       loadZipData(file, (f) => {
         Unarchiver.open(f).then(async function (archive) {
           for (let entry of archive.entries) {
@@ -475,24 +442,22 @@ Unarchiver.loadedFormats = {};
       script.onload = () => {
         createUnityInstance(canvas, config, (progress) => {
           progressBarFull.style.width = 100 * progress + "%";
-          }).then((unityInstance) => {
-            unityGameInstance = unityInstance;
-            loadingBar.style.display = "none";
-          }).catch((message) => {
-            console.error(message);
-          });
+        }).then((unityInstance) => {
+          unityGameInstance = unityInstance;
+          loadingBar.style.display = "none";
+        }).catch((message) => {
+          console.error(message);
+        });
       };
-
       document.body.appendChild(script);
     }
 
-    // Wait for the local Build.wasm parts + planets parts to finish merging,
-    // then point config.codeUrl at the merged blob and start Unity.
-    window.__solarSmashAssets.then(({ wasmUrl }) => {
-      config.codeUrl = wasmUrl;
-      InitUnitySection();
-    }).catch(err => {
-      console.error("Solar Smash asset merge failed:", err);
+    // Wait for the planets fetch override to be installed BEFORE Unity starts
+    // fetching asset bundles. Without this, Unity may request `planets` before
+    // the override is wired up and get a 404 (or call originalFetch with a bad
+    // `this`, throwing Illegal invocation — the suspected weapons-fail cause).
+    window.__solarSmashPlanets.then(() => {
+      loadResources(InitUnitySection);
     });
   </script>
 
@@ -546,6 +511,5 @@ Unarchiver.loadedFormats = {};
       }
     });
   </script>
-
 </body>
 </html>
