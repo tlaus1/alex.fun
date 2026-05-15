@@ -3,6 +3,14 @@
      CDN-hosted version doesn't reliably load weapons / weapon UIs on GitHub Pages. -->
 <html lang="en-us">
 <head>
+  <script>
+    // Build.framework.js's audio/visibility callbacks fire during early Unity
+    // boot and reference a bare `unityGameInstance` global. Declare it on the
+    // window before ANY other script runs so accessing it never throws.
+    Object.defineProperty(window, 'unityGameInstance', {
+      value: null, writable: true, configurable: true, enumerable: true
+    });
+  </script>
   <script src="./cover-profiles.js"></script>
   <link rel="icon" type="image/png" href="./clever1.png">
   <script>
