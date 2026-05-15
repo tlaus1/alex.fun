@@ -115,11 +115,25 @@
       --island-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
       --island-spring-soft: cubic-bezier(0.32, 0.72, 0, 1);
     }
-    html:not([data-theme="dark"]) #musicIsland {
+    /* Pill themes — explicit overrides take priority over auto-detection */
+    #musicIsland[data-pill-theme="light"] {
       --island-bg: #f5f5f7;
       --island-fg: #1a1a1a;
       --island-accent: #16a34a;
       --island-art-bg: linear-gradient(135deg, #fbbf24, #ec4899);
+    }
+    /* Game/clicker pages position the pill at the bottom */
+    #musicIsland[data-pill-position="bottom"] {
+      top: auto;
+      bottom: 38px;  /* clears the 24-26px status bar most game pages use */
+    }
+    #musicIsland[data-pill-position="bottom"].show {
+      animation: islandIntroBottom .55s var(--island-spring) both;
+    }
+    @keyframes islandIntroBottom {
+      0%   { opacity: 0; transform: translateX(-50%) translateY(14px) scale(.55); }
+      60%  { opacity: 1; }
+      100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
     }
     #musicIsland.show {
       display: block;
@@ -408,6 +422,39 @@
 
   function pillEl() { return document.getElementById("musicIsland"); }
 
+  // Game pages + 67 Clicker get the pill at the bottom; dashboard at top.
+  function isGamePage() {
+    const path = location.pathname.toLowerCase();
+    return !(path === "/" || path === "" || path.endsWith("/index.html") || path.endsWith("/"));
+  }
+  function applyPagePosition() {
+    const el = pillEl(); if (!el) return;
+    el.dataset.pillPosition = isGamePage() ? "bottom" : (window.__alexFunPillPosition || "top");
+  }
+  // Pick the pill theme based on the body background luminance (so it always
+  // contrasts), unless the page sets html[data-theme="dark"|"light"] which we
+  // honor first.
+  function applyAutoTheme() {
+    const el = pillEl(); if (!el) return;
+    const declared = document.documentElement.getAttribute("data-theme");
+    if (declared === "dark")  { el.dataset.pillTheme = "dark";  return; }
+    if (declared === "light") { el.dataset.pillTheme = "light"; return; }
+    // No explicit declaration — sample the body background
+    try {
+      const bg = getComputedStyle(document.body).backgroundColor || "rgb(255,255,255)";
+      const m  = bg.match(/(\d+)\D+(\d+)\D+(\d+)/);
+      if (!m) { el.dataset.pillTheme = "dark"; return; }
+      const lum = 0.299*+m[1] + 0.587*+m[2] + 0.114*+m[3];
+      el.dataset.pillTheme = lum < 140 ? "dark" : "light";
+    } catch (_) { el.dataset.pillTheme = "dark"; }
+  }
+  // Public helper: pages can override "top" / "bottom" for the pill
+  window.__alexFunSetPillPosition = function (pos) {
+    window.__alexFunPillPosition = pos;
+    const el = pillEl();
+    if (el) el.dataset.pillPosition = isGamePage() ? "bottom" : (pos || "top");
+  };
+
   function scheduleSave() {
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
@@ -583,6 +630,13 @@
     });
 
     watchCoverState();
+    applyPagePosition();
+    applyAutoTheme();
+    // Re-evaluate theme/position whenever <html>'s data-theme flips (the
+    // shared light/dark toggle on index.html mutates that attribute).
+    new MutationObserver(applyAutoTheme).observe(document.documentElement, {
+      attributes: true, attributeFilter: ["data-theme"]
+    });
 
     // Warm up the Spotify SDK in the background so the first user click
     // doesn't have to wait for it to download + initialize.
