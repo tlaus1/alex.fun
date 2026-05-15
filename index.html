@@ -272,7 +272,7 @@
 
     body.no-page-scroll { overflow:hidden; }
 
-    /* ── Music modal ── */
+    /* ── Music modal (Spotify embed) ── */
     .music-modal {
       position: fixed; inset: 0; z-index: 10050;
       background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
@@ -280,10 +280,11 @@
     }
     .music-modal.show { display: flex; }
     .music-modal-frame {
-      width: min(960px, 96vw); height: min(640px, 86vh);
+      width: min(640px, 96vw);
       border-radius: 18px; overflow: hidden; position: relative;
-      background: #0a0a0a; box-shadow: 0 24px 80px rgba(0,0,0,.5);
+      background: #121212; box-shadow: 0 24px 80px rgba(0,0,0,.5);
       border: 1px solid rgba(255,255,255,.12);
+      display: flex; flex-direction: column;
     }
     .music-modal-close {
       position: absolute; top: 10px; right: 10px; z-index: 2;
@@ -294,8 +295,33 @@
       backdrop-filter: blur(8px);
     }
     .music-modal-close:hover { background: rgba(0,0,0,.9); }
-    .music-modal-frame iframe {
-      width: 100%; height: 100%; border: 0; display: block;
+    .music-modal-bar {
+      display: flex; gap: 8px; padding: 16px 56px 12px 16px;
+    }
+    .music-modal-bar input {
+      flex: 1; min-width: 0; padding: 10px 14px;
+      border: 1px solid rgba(255,255,255,.15); border-radius: 999px;
+      background: rgba(255,255,255,.06); color: #fff;
+      font: 600 13px Inter, sans-serif; outline: none;
+    }
+    .music-modal-bar input:focus { border-color: #1db954; }
+    .music-modal-bar input::placeholder { color: rgba(255,255,255,.4); }
+    .music-modal-bar button {
+      padding: 10px 22px; border: 0; border-radius: 999px;
+      background: #1db954; color: #000;
+      font: 700 13px Inter, sans-serif; cursor: pointer;
+      transition: background .15s;
+    }
+    .music-modal-bar button:hover { background: #1ed760; }
+    .music-modal-tip {
+      padding: 0 16px 14px;
+      font: 500 11px Inter, sans-serif;
+      color: rgba(255,255,255,.4);
+    }
+    #musicSpotifyEmbed { padding: 0 16px 16px; min-height: 84px; }
+    #musicSpotifyEmbed iframe {
+      width: 100%; height: 152px; border: 0; border-radius: 12px;
+      display: block;
     }
 
     /* ══════════════════════════════════════════════════════════
@@ -1340,11 +1366,16 @@
     </div>
   </aside>
 
-  <!-- ══ Music modal + Dynamic-Island-style pill ════════════════ -->
+  <!-- ══ Music modal (Spotify embed) + Dynamic-Island-style pill ══ -->
   <div id="musicModal" class="music-modal" aria-hidden="true">
     <div class="music-modal-frame" id="musicModalFrame">
       <button class="music-modal-close" id="musicModalClose" type="button" aria-label="Close">✕</button>
-      <!-- iframe gets appended here at runtime to keep audio alive after closing -->
+      <div class="music-modal-bar">
+        <input type="text" id="musicSpotifyInput" placeholder="Paste a Spotify track / album / playlist URL…" autocomplete="off" spellcheck="false">
+        <button id="musicSpotifyLoadBtn" type="button">Load</button>
+      </div>
+      <div class="music-modal-tip">Tip: in Spotify, click ⋯ on any track / playlist → Share → "Copy link"</div>
+      <div id="musicSpotifyEmbed"><!-- Spotify Iframe API mounts the embed here --></div>
     </div>
   </div>
 
@@ -1743,72 +1774,125 @@
     document.getElementById("settingsCloseBtn").addEventListener("click", closeSettings);
     settingsModal.addEventListener("click", e => { if(e.target === settingsModal) closeSettings(); });
 
-    // ── Music player ──────────────────────────────────────────
-    // Opens playlistsound.com in an in-site modal. When the modal is closed,
-    // the iframe stays in the DOM (audio keeps playing) and a Dynamic-Island
-    // style pill appears at the top center. Hovering the pill reveals a pause
-    // button that fully kills the iframe (stops audio).
+    // ── Music player (Spotify Iframe API) ─────────────────────
+    // We use Spotify's official IFrame API so we can actually call play()
+    // and pause() on cross-origin embed content. Cover-image toggle and the
+    // pill's pause/play button both go through the API, so playback
+    // position is preserved across pauses.
     const musicModal      = document.getElementById("musicModal");
-    const musicModalFrame = document.getElementById("musicModalFrame");
     const musicModalClose = document.getElementById("musicModalClose");
     const musicPill       = document.getElementById("musicIsland");
     const musicPillFg     = musicPill ? musicPill.querySelector(".island-fg") : null;
     const musicPillPause  = document.getElementById("musicPillPauseBtn");
-    const MUSIC_URL       = "https://playlistsound.com/";
-    let   musicIframe     = null;
+    const musicSpotifyInput   = document.getElementById("musicSpotifyInput");
+    const musicSpotifyLoadBtn = document.getElementById("musicSpotifyLoadBtn");
+    const DEFAULT_SPOTIFY_URI = "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M"; // Today's Top Hits
+    let   spotifyApi          = null;
+    let   spotifyController   = null;
+    let   spotifyIsPaused     = true;
+    let   coverPausedSpotify  = false;
 
-    function musicEnsureIframe() {
-      if (musicIframe) return;
-      musicIframe = document.createElement("iframe");
-      musicIframe.src = MUSIC_URL;
-      musicIframe.title = "playlistsound.com";
-      musicIframe.allow = "autoplay; encrypted-media; clipboard-read; clipboard-write";
-      musicIframe.referrerPolicy = "no-referrer";
-      musicModalFrame.appendChild(musicIframe);
+    function loadSpotifyIframeAPI() {
+      if (spotifyApi) return Promise.resolve(spotifyApi);
+      return new Promise(resolve => {
+        if (window.SpotifyIframeApi) { spotifyApi = window.SpotifyIframeApi; resolve(spotifyApi); return; }
+        window.onSpotifyIframeApiReady = (api) => {
+          spotifyApi = api;
+          window.SpotifyIframeApi = api;
+          resolve(api);
+        };
+        const s = document.createElement("script");
+        s.src = "https://open.spotify.com/embed/iframe-api/v1";
+        s.async = true;
+        document.head.appendChild(s);
+      });
     }
+
+    function urlToSpotifyUri(input) {
+      input = (input || "").trim();
+      if (!input) return null;
+      if (/^spotify:(track|playlist|album|artist|episode|show):[a-zA-Z0-9]+$/.test(input)) return input;
+      const m = input.match(/open\.spotify\.com\/(?:embed\/)?(track|playlist|album|artist|episode|show)\/([a-zA-Z0-9]+)/);
+      return m ? `spotify:${m[1]}:${m[2]}` : null;
+    }
+
+    async function ensureSpotifyController(uri) {
+      const api = await loadSpotifyIframeAPI();
+      const el  = document.getElementById("musicSpotifyEmbed");
+      const finalUri = uri || DEFAULT_SPOTIFY_URI;
+
+      if (spotifyController) {
+        if (uri) spotifyController.loadUri(finalUri);
+        return spotifyController;
+      }
+      return new Promise(resolve => {
+        api.createController(el, { uri: finalUri, theme: "0" }, (controller) => {
+          spotifyController = controller;
+          controller.addListener("playback_update", (e) => {
+            spotifyIsPaused = !!e.data.isPaused;
+            musicPill.classList.toggle("paused", spotifyIsPaused);
+          });
+          resolve(controller);
+        });
+      });
+    }
+
     function openMusicModal() {
-      musicEnsureIframe();
       musicModal.classList.add("show");
       musicModal.setAttribute("aria-hidden", "false");
       musicPill.classList.remove("show");
-      closeSettings(); // close the settings panel if it was open
+      closeSettings();
+      ensureSpotifyController();
     }
     function closeMusicModal() {
       musicModal.classList.remove("show");
       musicModal.setAttribute("aria-hidden", "true");
-      if (musicIframe) musicPill.classList.add("show"); // iframe still alive → show pill
+      if (spotifyController) musicPill.classList.add("show");
     }
-    function stopMusic() {
-      if (musicIframe) {
-        musicIframe.remove();
-        musicIframe = null;
-      }
-      musicPill.classList.remove("show");
+    function togglePlayPause() {
+      if (!spotifyController) return;
+      if (spotifyIsPaused) spotifyController.play();
+      else                 spotifyController.pause();
     }
 
     document.getElementById("settingsMusicBtn").addEventListener("click", openMusicModal);
     musicModalClose.addEventListener("click", closeMusicModal);
     musicModal.addEventListener("click", e => { if (e.target === musicModal) closeMusicModal(); });
 
-    // Click the pill's main body (not the pause orb) → reopen the modal
+    musicSpotifyLoadBtn.addEventListener("click", () => {
+      const uri = urlToSpotifyUri(musicSpotifyInput.value);
+      if (!uri) { musicSpotifyInput.focus(); musicSpotifyInput.placeholder = "Invalid URL — try a Spotify track/album/playlist link"; return; }
+      ensureSpotifyController(uri);
+      musicSpotifyInput.value = "";
+    });
+    musicSpotifyInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); musicSpotifyLoadBtn.click(); }
+    });
+
+    // Click the pill body → reopen modal; pause-orb → play/pause toggle
     if (musicPillFg) {
       musicPillFg.addEventListener("click", openMusicModal);
       musicPillFg.addEventListener("keydown", e => {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMusicModal(); }
       });
     }
-    musicPillPause.addEventListener("click", e => { e.stopPropagation(); stopMusic(); });
+    musicPillPause.addEventListener("click", e => { e.stopPropagation(); togglePlayPause(); });
 
-    // Called from inside showIdle() / dismissIdleCover() below (same closure)
-    // so cross-origin iframe audio is killed whenever the cover image goes up.
-    // Cover image toggle: just flip the pill's visual paused state. Don't
-    // kill the iframe — the previous "remove iframe" approach lost playback
-    // state entirely. Now the pill stays visible and shows ▶ when paused.
+    // Cover-image hooks. We actually call .pause()/.play() on the Spotify
+    // controller, so playback position is preserved.
     function musicPauseForCover() {
-      if (musicIframe) musicPill.classList.add("paused");
+      if (spotifyController && !spotifyIsPaused) {
+        coverPausedSpotify = true;
+        spotifyController.pause();
+      }
+      if (spotifyController) musicPill.classList.add("paused");
     }
     function musicResumeFromCover() {
-      musicPill.classList.remove("paused");
+      if (coverPausedSpotify && spotifyController) {
+        coverPausedSpotify = false;
+        spotifyController.play();
+      }
+      // playback_update listener will toggle .paused off when audio resumes
     }
 
     settingsDarkModeToggle.addEventListener("change", () => {
