@@ -12,7 +12,9 @@
 <head>
   <script src="./cover-profiles.js"></script>
   <link rel="icon" type="image/png" href="./clever1.png">
-  <base href="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@a2e4bb68955f2665d16669bbbf7be3123870c2e0/solar-smash/">
+  <!-- Load assets from local repo (Build/, StreamingAssets/, TemplateData/) — no CDN dependency
+       The previous <base href> pointed to a jsDelivr commit, which caused asset bundles
+       (weapons, dynamic_ui) to fail loading intermittently on GitHub Pages deployments. -->
   <meta charset="UTF-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -75,58 +77,44 @@
     <div id="unity-warning"> </div>
   </div>
 
-<script async>
+<script>
+    // Merge multi-part files (planets bundles, Build.wasm) from local repo.
+    // GitHub has a 100MB per-file limit, so large files are committed as multiple parts.
     function mergeFiles(fileParts) {
-        return new Promise((resolve, reject) => {
-            let buffers = [];
-
-            function fetchPart(index) {
-                if (index >= fileParts.length) {
-                    let mergedBlob = new Blob(buffers, { type: "application/octet-stream" });
-                    resolve(mergedBlob);
-                    return;
-                }
-                fetch(fileParts[index])
-                    .then((response) => response.arrayBuffer())
-                    .then((data) => {
-                        buffers.push(data);
-                        fetchPart(index + 1);
-                    })
-                    .catch(reject);
-            }
-            fetchPart(0);
-        });
+      return Promise.all(fileParts.map(p => fetch(p).then(r => r.arrayBuffer())))
+        .then(buffers => new Blob(buffers, { type: "application/octet-stream" }));
+    }
+    function getNumberedParts(file, start, end) {
+      const parts = [];
+      for (let i = start; i <= end; i++) parts.push(file + ".part" + i);
+      return parts;
+    }
+    function getLetteredParts(file, letters) {
+      return letters.map(l => file + ".part." + l);
     }
 
-    function getParts(file, start, end) {
-        let parts = [];
-        for (let i = start; i <= end; i++) {
-            parts.push(file + ".part" + i);
+    // Promise that resolves to merged blobs and a blob URL for Build.wasm.
+    window.__solarSmashAssets = Promise.all([
+      mergeFiles(getNumberedParts("StreamingAssets/AssetBundles/WebGL/planets",  1, 2)),
+      mergeFiles(getNumberedParts("StreamingAssets/AssetBundles/WebGL/planets2", 1, 2)),
+      mergeFiles(getLetteredParts("Build/Build.wasm", ["aa", "ab", "ac", "ad", "ae"]))
+    ]).then(([planets1, planets2, wasmBlob]) => {
+      const wasmUrl = URL.createObjectURL(new Blob([wasmBlob], { type: "application/wasm" }));
+      const originalFetch = window.fetch.bind(window);
+
+      window.fetch = function (...args) {
+        const url = args[0];
+        if (typeof url === "string") {
+          if (url.includes("StreamingAssets/AssetBundles/WebGL/planets")) {
+            if (url.includes("planets2")) return Promise.resolve(new Response(planets2, { status: 200 }));
+            if (url.includes("planets3")) return originalFetch(...args);
+            return Promise.resolve(new Response(planets1, { status: 200 }));
+          }
         }
-        return parts;
-    }
+        return originalFetch(...args);
+      };
 
-    Promise.all([
-        mergeFiles(getParts("StreamingAssets/AssetBundles/WebGL/planets", 1, 2)),
-        mergeFiles(getParts("StreamingAssets/AssetBundles/WebGL/planets2", 1, 2))
-    ]).then(([planets1, planets2]) => {
-        const originalFetch = window.fetch;
-
-        window.fetch = async function (...args) {
-            const url = args[0];
-
-            if (typeof url === "string" && url.includes("StreamingAssets/AssetBundles/WebGL/planets")) {
-                if (url.includes("planets2")) {
-                    return new Response(planets2, { status: 200 });
-                } else if (url.includes("planets3")) {
-                    return originalFetch.apply(this, args);
-                } else {
-                    return new Response(planets1, { status: 200 });
-                }
-            }
-
-            return originalFetch.apply(this, args);
-        };
+      return { wasmUrl };
     });
 </script>
 
@@ -498,7 +486,14 @@ Unarchiver.loadedFormats = {};
       document.body.appendChild(script);
     }
 
-    loadResources(InitUnitySection);
+    // Wait for the local Build.wasm parts + planets parts to finish merging,
+    // then point config.codeUrl at the merged blob and start Unity.
+    window.__solarSmashAssets.then(({ wasmUrl }) => {
+      config.codeUrl = wasmUrl;
+      InitUnitySection();
+    }).catch(err => {
+      console.error("Solar Smash asset merge failed:", err);
+    });
   </script>
 
   <div class="alex-topbar">
