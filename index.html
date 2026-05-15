@@ -272,6 +272,78 @@
 
     body.no-page-scroll { overflow:hidden; }
 
+    /* ── Music modal ── */
+    .music-modal {
+      position: fixed; inset: 0; z-index: 10050;
+      background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center; padding: 24px;
+    }
+    .music-modal.show { display: flex; }
+    .music-modal-frame {
+      width: min(960px, 96vw); height: min(640px, 86vh);
+      border-radius: 18px; overflow: hidden; position: relative;
+      background: #0a0a0a; box-shadow: 0 24px 80px rgba(0,0,0,.5);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .music-modal-close {
+      position: absolute; top: 10px; right: 10px; z-index: 2;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(0,0,0,.72); color: #fff; border: 1px solid rgba(255,255,255,.2);
+      cursor: pointer; font-size: 16px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    .music-modal-close:hover { background: rgba(0,0,0,.9); }
+    .music-modal-frame iframe {
+      width: 100%; height: 100%; border: 0; display: block;
+    }
+
+    /* ── Dynamic Island music pill ── */
+    #musicPill {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 10030;
+      background: #000; color: #fff;
+      border-radius: 999px; padding: 8px 16px;
+      display: none; align-items: center; gap: 10px;
+      font-size: 12px; font-weight: 700;
+      box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.08) inset;
+      cursor: pointer; user-select: none;
+      transition: transform .25s cubic-bezier(.34,1.56,.64,1), padding .25s, gap .25s;
+    }
+    #musicPill.show { display: inline-flex; animation: pillIn .4s cubic-bezier(.34,1.56,.64,1); }
+    #musicPill:hover { padding: 8px 14px 8px 16px; gap: 12px; }
+    @keyframes pillIn {
+      from { transform: translateX(-50%) scale(.6); opacity: 0; }
+      to   { transform: translateX(-50%) scale(1);  opacity: 1; }
+    }
+    #musicPill .equalizer {
+      display: inline-flex; gap: 2px; height: 14px; align-items: flex-end;
+    }
+    #musicPill .equalizer span {
+      display: block; width: 3px; background: #4ade80;
+      border-radius: 1px;
+      animation: pillBar 1s infinite ease-in-out;
+    }
+    #musicPill .equalizer span:nth-child(1) { animation-delay: 0s;   height: 60%; }
+    #musicPill .equalizer span:nth-child(2) { animation-delay: .2s;  height: 100%; }
+    #musicPill .equalizer span:nth-child(3) { animation-delay: .35s; height: 50%; }
+    #musicPill .equalizer span:nth-child(4) { animation-delay: .5s;  height: 80%; }
+    #musicPill.paused .equalizer span { animation-play-state: paused; opacity: .35; }
+    @keyframes pillBar {
+      0%, 100% { transform: scaleY(0.4); }
+      50%      { transform: scaleY(1);   }
+    }
+    #musicPill .pill-label { white-space: nowrap; }
+    #musicPill .pill-pause-btn {
+      display: none;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(255,255,255,.16); color: #fff;
+      border: 0; cursor: pointer; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; line-height: 1;
+    }
+    #musicPill .pill-pause-btn:hover { background: rgba(255,255,255,.28); }
+    #musicPill:hover .pill-pause-btn { display: inline-flex; }
+
     /* ── Settings modal ── */
     .settings-modal {
       position:fixed; inset:0; z-index:10040; display:none; place-items:center; padding:24px;
@@ -1097,6 +1169,20 @@
     </div>
   </aside>
 
+  <!-- ══ Music modal + Dynamic-Island-style pill ════════════════ -->
+  <div id="musicModal" class="music-modal" aria-hidden="true">
+    <div class="music-modal-frame" id="musicModalFrame">
+      <button class="music-modal-close" id="musicModalClose" type="button" aria-label="Close">✕</button>
+      <!-- iframe gets appended here at runtime to keep audio alive after closing -->
+    </div>
+  </div>
+
+  <div id="musicPill" role="button" tabindex="0" aria-label="Music player — click to open, hover to pause">
+    <span class="equalizer" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+    <span class="pill-label">Music</span>
+    <button class="pill-pause-btn" id="musicPillPauseBtn" type="button" aria-label="Pause music">⏸</button>
+  </div>
+
   <!-- ══ Settings modal ════════════════════════════════════════ -->
   <div id="settingsModal" class="settings-modal" aria-hidden="true">
     <div class="settings-card">
@@ -1114,6 +1200,10 @@
           <input type="checkbox" id="settingsCoverShortcut" checked>
           <span class="slider"></span>
         </label>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Music<small>Open playlistsound.com inside the site</small></span>
+        <button class="btn" id="settingsMusicBtn" type="button" style="padding:6px 14px;">🎵 Open</button>
       </div>
       <div class="settings-row settings-row-block">
         <span class="settings-label">Tab disguise<small>Sets the tab title, favicon &amp; cover image</small></span>
@@ -1453,6 +1543,79 @@
     document.getElementById("settingsCloseBtn").addEventListener("click", closeSettings);
     settingsModal.addEventListener("click", e => { if(e.target === settingsModal) closeSettings(); });
 
+    // ── Music player ──────────────────────────────────────────
+    // Opens playlistsound.com in an in-site modal. When the modal is closed,
+    // the iframe stays in the DOM (audio keeps playing) and a Dynamic-Island
+    // style pill appears at the top center. Hovering the pill reveals a pause
+    // button that fully kills the iframe (stops audio).
+    const musicModal      = document.getElementById("musicModal");
+    const musicModalFrame = document.getElementById("musicModalFrame");
+    const musicModalClose = document.getElementById("musicModalClose");
+    const musicPill       = document.getElementById("musicPill");
+    const musicPillPause  = document.getElementById("musicPillPauseBtn");
+    const MUSIC_URL       = "https://playlistsound.com/";
+    let   musicIframe     = null;
+    let   musicSuspendedByCover = false;
+
+    function musicEnsureIframe() {
+      if (musicIframe) return;
+      musicIframe = document.createElement("iframe");
+      musicIframe.src = MUSIC_URL;
+      musicIframe.title = "playlistsound.com";
+      musicIframe.allow = "autoplay; encrypted-media; clipboard-read; clipboard-write";
+      musicIframe.referrerPolicy = "no-referrer";
+      musicModalFrame.appendChild(musicIframe);
+    }
+    function openMusicModal() {
+      musicEnsureIframe();
+      musicModal.classList.add("show");
+      musicModal.setAttribute("aria-hidden", "false");
+      musicPill.classList.remove("show");
+      closeSettings(); // close the settings panel if it was open
+    }
+    function closeMusicModal() {
+      musicModal.classList.remove("show");
+      musicModal.setAttribute("aria-hidden", "true");
+      if (musicIframe) musicPill.classList.add("show"); // iframe still alive → show pill
+    }
+    function stopMusic() {
+      if (musicIframe) {
+        musicIframe.remove();
+        musicIframe = null;
+      }
+      musicPill.classList.remove("show");
+    }
+
+    document.getElementById("settingsMusicBtn").addEventListener("click", openMusicModal);
+    musicModalClose.addEventListener("click", closeMusicModal);
+    musicModal.addEventListener("click", e => { if (e.target === musicModal) closeMusicModal(); });
+
+    // Click the pill background → reopen the modal so the user can interact
+    musicPill.addEventListener("click", e => {
+      if (e.target.closest("#musicPillPauseBtn")) return; // pause handled separately
+      openMusicModal();
+    });
+    musicPill.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMusicModal(); }
+    });
+    musicPillPause.addEventListener("click", e => { e.stopPropagation(); stopMusic(); });
+
+    // Called from inside showIdle() / dismissIdleCover() below (same closure)
+    // so cross-origin iframe audio is killed whenever the cover image goes up.
+    function musicPauseForCover() {
+      if (musicIframe && !musicSuspendedByCover) {
+        musicSuspendedByCover = true;
+        stopMusic();
+      }
+    }
+    function musicResumeFromCover() {
+      if (musicSuspendedByCover) {
+        musicSuspendedByCover = false;
+        musicEnsureIframe();
+        musicPill.classList.add("show");
+      }
+    }
+
     settingsDarkModeToggle.addEventListener("change", () => {
       const isDark = settingsDarkModeToggle.checked;
       if(isDark){
@@ -1579,6 +1742,7 @@
       idlePhoto.classList.remove("no-transition");
       idlePhoto.classList.remove("hidden");
       clearTimeout(idleTimer);
+      musicPauseForCover();
     }
 
     function isEmbeddedGameActive() {
@@ -1610,6 +1774,7 @@
       if (!document.hidden && document.hasFocus()) {
         idleTimer = setTimeout(() => showIdle(false), IDLE_MS);
       }
+      musicResumeFromCover();
     }
 
     function hideIdleAndArmTimer() {
