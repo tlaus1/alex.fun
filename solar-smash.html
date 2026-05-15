@@ -5,6 +5,44 @@
 <head>
   <script src="./cover-profiles.js"></script>
   <link rel="icon" type="image/png" href="./clever1.png">
+  <script>
+    // Stub the YouTube Playables API. The Unity build expects window.ytgame
+    // and hangs on the loading screen if any of these calls throw.
+    window.ytgame = {
+      game: {
+        setLoadComplete: () => {},
+        onVisibilityChanged: () => {},
+        onStopCalled: () => {},
+        onQuit: () => {},
+      },
+      in_game_purchase: {
+        getVerifiedPurchases: () => Promise.resolve([]),
+        getPurchasedSkus:     () => Promise.resolve([]),
+        openChannelMembershipsPanel: () => {},
+        isAvailable: () => Promise.resolve(false),
+      },
+      data: {
+        setItem:    (k, v) => { try { localStorage.setItem('ytg_' + k, JSON.stringify(v)); } catch(e){} return Promise.resolve(); },
+        getItem:    (k)    => { try { return Promise.resolve(JSON.parse(localStorage.getItem('ytg_' + k))); } catch(e){ return Promise.resolve(null); } },
+        removeItem: (k)    => { try { localStorage.removeItem('ytg_' + k); } catch(e){} return Promise.resolve(); },
+        clear:      ()     => Promise.resolve(),
+      },
+      ads: {
+        showAd:      () => Promise.resolve({ result: 'not_available' }),
+        isAvailable: () => Promise.resolve(false),
+      },
+      audio: {
+        setVolume:       () => {},
+        getVolume:       () => Promise.resolve(1),
+        onVolumeChanged: () => {},
+      },
+      system: {
+        getLanguage: () => 'en',
+        getCountry:  () => 'US',
+        getTimeZone: () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch(e){ return 'UTC'; } },
+      },
+    };
+  </script>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
