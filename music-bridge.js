@@ -280,7 +280,9 @@
             <input type="text" id="musicSpotifyInput" placeholder="Paste a Spotify track / album / playlist URL…" autocomplete="off" spellcheck="false">
             <button id="musicSpotifyLoadBtn" type="button">Load</button>
           </div>
-          <div class="music-modal-tip">Tip: in Spotify, click ⋯ on any track / playlist → Share → "Copy link"</div>
+          <div class="music-modal-tip">
+            Log in &amp; grab a link from <a href="https://open.spotify.com" target="_blank" rel="noopener noreferrer" style="color:#1db954;text-decoration:none;">open.spotify.com ↗</a> — Share → Copy link, paste here. Spotify blocks its own login page from being iframed, so we can't show it inline.
+          </div>
           <div id="musicSpotifyEmbed"></div>
         </div>
       </div>
@@ -335,8 +337,61 @@
     input = (input || "").trim();
     if (!input) return null;
     if (/^spotify:(track|playlist|album|artist|episode|show):[a-zA-Z0-9]+$/.test(input)) return input;
-    const m = input.match(/open\.spotify\.com\/(?:embed\/)?(track|playlist|album|artist|episode|show)\/([a-zA-Z0-9]+)/);
-    return m ? `spotify:${m[1]}:${m[2]}` : null;
+    // Accept any spotify URL: optional intl-xx/ locale prefix, optional embed/,
+    // and tolerate query string after the ID (e.g. ?si=...)
+    const m = input.match(/spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?(track|playlist|album|artist|episode|show)\/([a-zA-Z0-9]+)/i);
+    return m ? `spotify:${m[1].toLowerCase()}:${m[2]}` : null;
+  }
+
+  function uriToUrl(uri) {
+    const m = uri.match(/^spotify:(track|playlist|album|artist|episode|show):([a-zA-Z0-9]+)$/);
+    return m ? `https://open.spotify.com/${m[1]}/${m[2]}` : null;
+  }
+
+  // Spotify's public oEmbed endpoint: returns { title, thumbnail_url, ... }
+  // for any public Spotify URL — no auth required, CORS open. Used to populate
+  // the pill's song title + album art (the Iframe API itself doesn't expose
+  // any track metadata).
+  async function fetchOEmbed(uri) {
+    const url = uriToUrl(uri);
+    if (!url) return null;
+    try {
+      const res = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (_) { return null; }
+  }
+
+  // Pull the high-res cover art from inside the oEmbed `html` payload, which
+  // contains the real `<iframe>` with a `src` like .../embed/iframe/v3/... and
+  // a metadata snippet. As a fallback we use the `thumbnail_url` (300px max).
+  function pickThumbnail(oembed) {
+    if (!oembed) return null;
+    if (oembed.thumbnail_url) return oembed.thumbnail_url;
+    return null;
+  }
+
+  async function updatePillInfo(uri) {
+    if (!uri) return;
+    const oe = await fetchOEmbed(uri);
+    const title = (oe && oe.title) || "Now Playing";
+    const thumb = pickThumbnail(oe);
+    const titleEl = document.querySelector(".island-songtitle");
+    const subEl   = document.querySelector(".island-songsub");
+    const artEl   = document.querySelector(".island-art");
+    if (titleEl) titleEl.textContent = title;
+    if (subEl)   subEl.textContent   = (oe && oe.provider_name) || "Spotify";
+    if (artEl) {
+      if (thumb) {
+        artEl.style.background = `url("${thumb}") center/cover, var(--island-art-bg)`;
+        artEl.textContent = "";
+      } else {
+        artEl.style.background = "";
+        artEl.textContent = "♪";
+      }
+    }
+    // Persist so the pill is populated immediately on the next page load
+    if (oe) saveState({ title: title, thumb: thumb });
   }
 
   function pillEl() { return document.getElementById("musicIsland"); }
@@ -355,11 +410,15 @@
   async function ensureController(uri, seekMs) {
     const api      = await loadSpotifyIframeAPI();
     const el       = document.getElementById("musicSpotifyEmbed");
+    const prevUri  = lastUri;
     const finalUri = uri || lastUri || DEFAULT_URI;
     lastUri = finalUri;
 
+    // Fire-and-forget metadata fetch so the pill shows the song title + art
+    updatePillInfo(finalUri);
+
     if (spotifyController) {
-      if (uri && uri !== lastUri) spotifyController.loadUri(uri);
+      if (uri && uri !== prevUri) spotifyController.loadUri(finalUri);
       if (typeof seekMs === "number" && seekMs > 0) {
         setTimeout(() => { try { spotifyController.seek(seekMs / 1000); } catch (_) {} }, 600);
       }
@@ -436,7 +495,10 @@
     modal.classList.add("show");
     modal.setAttribute("aria-hidden", "false");
     pillEl().classList.remove("show");
-    ensureController();
+    // Only auto-create the controller if we already have something to play
+    // (e.g. user is reopening the modal while a track is loaded). Otherwise
+    // wait for the user to paste a URL — empty state is intentional.
+    if (lastUri || spotifyController) ensureController();
   }
   function closeModal() {
     const modal = document.getElementById("musicModal");
@@ -491,6 +553,17 @@
     // Restore previous playback on page load
     const saved = loadState();
     if (saved && saved.uri) {
+      // Paint the pill from cached metadata immediately so it doesn't flicker
+      // through "Now Playing — Spotify" while oEmbed re-fetches in the bg.
+      if (saved.title || saved.thumb) {
+        const titleEl = document.querySelector(".island-songtitle");
+        const artEl   = document.querySelector(".island-art");
+        if (titleEl && saved.title) titleEl.textContent = saved.title;
+        if (artEl && saved.thumb) {
+          artEl.style.background = `url("${saved.thumb}") center/cover, var(--island-art-bg)`;
+          artEl.textContent = "";
+        }
+      }
       // Estimate where music WOULD be now, accounting for elapsed wall-clock
       // time since save (if it was playing when saved).
       const elapsed = Math.max(0, Date.now() - (saved.timestamp || Date.now()));
