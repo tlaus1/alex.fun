@@ -7,8 +7,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta charset="utf-8">
-  <link rel="icon" type="image/x-icon" href="https://cdn.jsdelivr.net/gh/selenite-cc/selenite-old@9c743188888af0986c8c7b293dbac8f9e421a4ee/retrobowl/retrobowl.ico">
-  <title>Retro Bowl</title>
+  <link rel="icon" type="image/png" href="./clever1.png">
+  <title>Retro Bowl — alex.fun</title>
+  <script src="./cover-profiles.js"></script>
   <script>
     if (localStorage.getItem("theme") === "dark") {
       document.documentElement.setAttribute("data-theme", "dark");
@@ -257,8 +258,6 @@
         document.documentElement.removeAttribute("data-theme");
       }
     }
-
-    coverImage.src = new URL("cover-screencastify.png", window.location.href).href;
 
     function showCover() {
       coverOverlay.classList.add("show");
