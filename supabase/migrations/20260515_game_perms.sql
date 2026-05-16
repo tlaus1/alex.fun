@@ -71,7 +71,7 @@ begin
   -- differs from { token uuid, username text, expires_at timestamptz }.
   select s.username
     into v_username
-  from public.sessions s
+  from public.player_sessions s
   where s.token = p_token
     and (s.expires_at is null or s.expires_at > now())
   limit 1;

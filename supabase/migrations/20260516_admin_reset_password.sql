@@ -34,7 +34,7 @@ begin
   -- names here if your sessions table differs.
   select s.username
     into v_caller
-  from public.sessions s
+  from public.player_sessions s
   where s.token = p_token
     and (s.expires_at is null or s.expires_at > now())
   limit 1;
@@ -69,7 +69,7 @@ begin
   -- log in again with the new password. Comment out if you'd rather keep
   -- the user logged in on their existing devices.
   begin
-    delete from public.sessions
+    delete from public.player_sessions
      where lower(username) = v_target;
   exception when others then
     -- non-fatal; just means the sessions table doesn't have that shape.

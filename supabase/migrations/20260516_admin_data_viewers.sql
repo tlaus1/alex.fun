@@ -20,7 +20,7 @@ declare v_caller text;
 begin
   select s.username
     into v_caller
-  from public.sessions s
+  from public.player_sessions s
   where s.token = p_token
     and (s.expires_at is null or s.expires_at > now())
   limit 1;
@@ -91,7 +91,7 @@ begin
   perform public._require_alex(p_token);
   return query
     select to_jsonb(s) - 'token'
-      from public.sessions s
+      from public.player_sessions s
       where s.expires_at is null or s.expires_at > now()
       order by coalesce(s.created_at, s.expires_at) desc nulls last
       limit 200;
