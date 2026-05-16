@@ -2633,7 +2633,8 @@
         return;
       }
       document.getElementById("adminAnnouncement").value = "";
-      showNotice("📢 Announcement broadcast!");
+      // Show admin the same centered popup recipients will see.
+      showTopNotification("Broadcast", broadcastBody, "broadcast");
     });
 
     document.getElementById("adminUnlockAllBtn").addEventListener("click", () => {
