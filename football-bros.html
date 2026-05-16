@@ -219,10 +219,12 @@
     coverOverlay.addEventListener('click', toggleCover);
     document.getElementById('alexCoverHint').addEventListener('click', toggleCover);
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey && e.target === document.body) {
-        e.preventDefault();
-        toggleCover();
-      }
+      if (e.key !== 'Backspace' || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Don't steal Backspace when user is typing
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      e.preventDefault();
+      toggleCover();
     }, true);
   </script>
 </body>

@@ -615,13 +615,21 @@
       coverPaused = true;
       try { ytPlayer.pauseVideo(); } catch (_) {}
     }
-    if (ytPlayer) pillEl().classList.add("paused");
+    const p = pillEl();
+    if (p) {
+      p.classList.add("paused");
+      // Hide the pill while the cover is up so it can't leak through any
+      // game pages whose cover overlay sits at a lower z-index than the pill.
+      p.style.visibility = "hidden";
+    }
   }
   function handleCoverHidden() {
     if (coverPaused && ytPlayer) {
       coverPaused = false;
       try { ytPlayer.playVideo(); } catch (_) {}
     }
+    const p = pillEl();
+    if (p) p.style.visibility = "";
   }
   function watchCoverState() {
     const cover = document.getElementById("coverOverlay");
