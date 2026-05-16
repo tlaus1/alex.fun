@@ -144,6 +144,77 @@
     .card-superhot img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
     .card-superhot.card::after { background:linear-gradient(to top,rgba(0,0,0,.78) 0%,rgba(255,30,30,.10) 48%,transparent 72%); }
 
+    /* ── Alex-only: per-game 3-dot permission menu ── */
+    .card-menu-btn {
+      position: absolute; top: 8px; right: 8px; z-index: 6;
+      width: 30px; height: 30px;
+      display: none; align-items: center; justify-content: center;
+      border: 0; padding: 0; margin: 0;
+      background: rgba(0,0,0,.55); backdrop-filter: blur(8px);
+      color: #fff; border-radius: 999px; cursor: pointer;
+      font-size: 18px; font-weight: 900; line-height: 1;
+      opacity: 0; transform: scale(.85);
+      transition: opacity .15s ease, transform .15s ease, background .15s ease;
+      pointer-events: none;
+    }
+    .card-menu-btn::before { content: "⋯"; letter-spacing: 1px; transform: translateY(-2px); }
+    body.is-alex .card:hover .card-menu-btn,
+    body.is-alex .card-menu-btn:focus,
+    body.is-alex .card-menu-btn.open {
+      display: flex; opacity: 1; transform: scale(1); pointer-events: auto;
+    }
+    .card-menu-btn:hover { background: rgba(255,60,60,.85); }
+    body.is-alex .card[data-locked="true"] .card-menu-btn { display: flex; opacity: .85; pointer-events: auto; background: rgba(255,60,60,.75); }
+    .card[data-locked="true"]::before {
+      content: "🔒"; position: absolute; top: 10px; left: 10px; z-index: 5;
+      font-size: 14px; background: rgba(0,0,0,.55); padding: 4px 8px; border-radius: 999px;
+      backdrop-filter: blur(8px); pointer-events: none;
+    }
+    body:not(.is-alex) .card.perm-hidden { display: none !important; }
+
+    /* Permission modal */
+    .perm-overlay {
+      position: fixed; inset: 0; z-index: 12000;
+      background: rgba(0,0,0,.65); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s ease;
+    }
+    .perm-overlay.show { opacity: 1; pointer-events: auto; }
+    .perm-modal {
+      width: min(440px, 92vw);
+      background: #0b1220; color: #fff;
+      border: 1.5px solid rgba(255,80,80,.5);
+      border-radius: 16px; padding: 20px;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    }
+    .perm-modal h3 { margin: 0 0 6px; font-size: 18px; font-weight: 900; }
+    .perm-modal .perm-sub { color: rgba(255,255,255,.55); font-size: 12px; margin-bottom: 16px; }
+    .perm-modal label.row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px;
+      background: rgba(255,255,255,.04); cursor: pointer;
+      margin-bottom: 12px; font-size: 14px; font-weight: 700;
+    }
+    .perm-modal label.row input { transform: scale(1.2); cursor: pointer; }
+    .perm-modal .lbl { display: block; font-size: 12px; font-weight: 700; color: rgba(255,255,255,.7); margin-bottom: 6px; }
+    .perm-modal textarea {
+      width: 100%; min-height: 80px; padding: 10px;
+      background: #060a14; color: #fff;
+      border: 1px solid rgba(255,255,255,.18); border-radius: 10px;
+      font-family: inherit; font-size: 13px; resize: vertical;
+    }
+    .perm-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+    .perm-btn {
+      appearance: none; border: 0; border-radius: 999px;
+      padding: 8px 16px; font-weight: 800; font-size: 12px;
+      text-transform: uppercase; letter-spacing: .5px; cursor: pointer;
+      font-family: inherit;
+    }
+    .perm-btn.cancel { background: rgba(255,255,255,.08); color: #fff; }
+    .perm-btn.save { background: linear-gradient(135deg, #ff3838, #ff7a00); color: #fff; }
+    .perm-btn:hover { filter: brightness(1.1); }
+
     .mini-browser {
       max-width: 1180px; margin: 0 auto; padding: 20px 18px 18px;
       height: calc(100vh - var(--status-h)); min-height: 0;
@@ -965,83 +1036,101 @@
     <main class="grid">
 
       <!-- Space Waves -->
-      <a class="card card-spacewaves" href="./space-waves.html" style="cursor:pointer">
+      <a class="card card-spacewaves" data-game-id="space-waves" data-game-name="Space Waves" href="./space-waves.html" style="cursor:pointer">
         <img src="./cover-space-waves.jpg" alt="Space Waves preview">
         <h3 class="card-title">🚀 Space Waves</h3>
       </a>
 
-      <article class="card card-67" id="open67">
+      <article class="card card-67" data-game-id="67-clicker" data-game-name="67 Clicker" id="open67">
         <img src="./67.svg" alt="67 Clicker preview">
         <div class="cursor-click">🖱️</div>
         <h3 class="card-title">67 Clicker</h3>
       </article>
 
-      <article class="card card-ic" onclick="location.href='./infinite-craft.html'" style="cursor:pointer">
+      <article class="card card-ic" data-game-id="infinite-craft" data-game-name="Infinite Craft" onclick="location.href='./infinite-craft.html'" style="cursor:pointer">
         <img src="./infinite-craft-icon.svg" alt="Infinite Craft preview">
         <h3 class="card-title">Infinite Craft</h3>
       </article>
 
-      <article class="card card-pw" onclick="location.href='./password-game.html'" style="cursor:pointer">
+      <article class="card card-pw" data-game-id="password-game" data-game-name="The Password Game" onclick="location.href='./password-game.html'" style="cursor:pointer">
         <img src="./password-icon.svg" alt="Password Game preview">
         <h3 class="card-title">The Password Game</h3>
       </article>
 
-      <article class="card card-elon" onclick="location.href='./spend-elon.html'" style="cursor:pointer">
+      <article class="card card-elon" data-game-id="spend-elon" data-game-name="Spend Elon's Money" onclick="location.href='./spend-elon.html'" style="cursor:pointer">
         <img src="./spend-elon-icon.svg" alt="Spend Elon's Money preview">
         <h3 class="card-title" style="color:#2ecc71;text-shadow:0 1px 8px rgba(0,0,0,0.8);">Spend Elon's Money</h3>
       </article>
 
-      <article class="card card-snake" id="openSnake" style="cursor:pointer">
+      <article class="card card-snake" data-game-id="google-snake" data-game-name="Google Snake" id="openSnake" style="cursor:pointer">
         <img src="./snake-card.webp" alt="Google Snake preview">
         <h3 class="card-title">Google Snake</h3>
       </article>
 
-      <article class="card card-browser" id="openBrowser" style="cursor:pointer">
+      <article class="card card-browser" data-game-id="mini-browser" data-game-name="Mini Browser" id="openBrowser" style="cursor:pointer">
         <div class="browser-preview"></div>
         <h3 class="card-title">Mini Browser</h3>
       </article>
 
-      <article class="card card-crossy" onclick="location.href='./crossy-road.html'" style="cursor:pointer">
+      <article class="card card-crossy" data-game-id="crossy-road" data-game-name="Crossy Road" onclick="location.href='./crossy-road.html'" style="cursor:pointer">
         <img src="./crossy-road-card.jpg" alt="Crossy Road preview">
         <h3 class="card-title">Crossy Road</h3>
       </article>
 
-      <a class="card card-solar" href="./solar-smash.html" style="cursor:pointer">
+      <a class="card card-solar" data-game-id="solar-smash" data-game-name="Solar Smash" href="./solar-smash.html" style="cursor:pointer">
         <img src="./solar-smash-cover.png" alt="Solar Smash preview">
         <h3 class="card-title">Solar Smash</h3>
       </a>
 
-      <a class="card card-retrobowl" href="./retrobowl.html" style="cursor:pointer">
+      <a class="card card-retrobowl" data-game-id="retro-bowl" data-game-name="Retro Bowl" href="./retrobowl.html" style="cursor:pointer">
         <img src="./retrobowl-card.avif" alt="Retro Bowl preview">
         <h3 class="card-title">Retro Bowl</h3>
       </a>
 
-      <a class="card card-driftboss" href="./drift-boss.html" style="cursor:pointer">
+      <a class="card card-driftboss" data-game-id="drift-boss" data-game-name="Drift Boss" href="./drift-boss.html" style="cursor:pointer">
         <img src="./drift-boss-game.png" alt="Drift Boss preview">
         <h3 class="card-title">Drift Boss</h3>
       </a>
 
-      <a class="card card-baseball" href="./google-baseball.html" style="cursor:pointer">
+      <a class="card card-baseball" data-game-id="google-baseball" data-game-name="Google Baseball" href="./google-baseball.html" style="cursor:pointer">
         <img src="./google-baseball-card.gif" alt="Google Baseball preview">
         <h3 class="card-title">⚾ Google Baseball</h3>
       </a>
 
-      <a class="card card-football" href="./football-bros.html" style="cursor:pointer">
+      <a class="card card-football" data-game-id="football-bros" data-game-name="Football Bros" href="./football-bros.html" style="cursor:pointer">
         <img src="./football-bros-card.jpg" alt="Football Bros preview">
         <h3 class="card-title">🏈 Football Bros</h3>
       </a>
 
-      <a class="card card-bstars" href="./basketball-stars.html" style="cursor:pointer">
+      <a class="card card-bstars" data-game-id="basketball-stars" data-game-name="Basketball Stars" href="./basketball-stars.html" style="cursor:pointer">
         <img src="./basketball-stars-card.avif" alt="Basketball Stars preview">
         <h3 class="card-title">🏀 Basketball Stars</h3>
       </a>
 
-      <a class="card card-superhot hidden" id="openSuperHot" href="./super-hot.html" style="cursor:pointer">
+      <a class="card card-superhot hidden" data-game-id="super-hot" data-game-name="SUPERHOT" data-alex-only="true" id="openSuperHot" href="./super-hot.html" style="cursor:pointer">
         <img src="./super-hot-card.avif" alt="SUPERHOT preview">
         <h3 class="card-title">🔴 SUPERHOT</h3>
       </a>
 
     </main>
+  </div>
+
+  <!-- Game permission editor (Alex only) -->
+  <div class="perm-overlay" id="gamePermOverlay" aria-hidden="true">
+    <div class="perm-modal" role="dialog" aria-labelledby="gamePermTitle">
+      <h3 id="gamePermTitle">Game access</h3>
+      <div class="perm-sub" id="gamePermSub">Manage who can see and play this game.</div>
+      <label class="row">
+        <input type="checkbox" id="gameLockToggle">
+        <span>Lock this game (only Alex + people in the list below)</span>
+      </label>
+      <label class="lbl" for="gameAllowedUsers">Allowed users (comma-separated)</label>
+      <textarea id="gameAllowedUsers" placeholder="e.g. mason, jordan, riley"></textarea>
+      <div class="perm-actions">
+        <button class="perm-btn cancel" id="gamePermCancel" type="button">Cancel</button>
+        <button class="perm-btn save"   id="gamePermSave"   type="button">Save</button>
+      </div>
+    </div>
   </div>
 
   <button id="signOutBtn" class="signout-btn hidden" type="button">Sign out</button>
@@ -1319,8 +1408,6 @@
     function updateMiniBrowserAccess(){
       const allowed = isAlexAccount();
       if(openBrowserCard) openBrowserCard.classList.toggle("hidden", !allowed);
-      const superHotCard = document.getElementById("openSuperHot");
-      if(superHotCard) superHotCard.classList.toggle("hidden", !allowed);
       const browser = document.getElementById("miniBrowser");
       const frame = document.getElementById("browserFrame");
       if(!allowed && browser && !browser.classList.contains("hidden")){
@@ -1330,7 +1417,120 @@
         setGameStatusVisible(false);
         document.getElementById("dashboard").classList.remove("hidden");
       }
+      // Run the per-game permission pass too — the 3-dot menus and locked-card
+      // visibility both depend on whether Alex is the active user.
+      applyAlexMode();
     }
+
+    // ── Per-game permissions (Alex-only 3-dot menu) ──────────────────────
+    // Stored in localStorage so Alex can revoke/grant access without round-tripping
+    // a server. Note: this is per-device — if you want the lock to apply on
+    // *other* people's browsers too, we'd need a Supabase table to mirror it.
+    const GAME_PERMS_KEY = "alexFunGamePermsV1";
+
+    function loadGamePerms(){
+      try { return JSON.parse(localStorage.getItem(GAME_PERMS_KEY)) || {}; }
+      catch(_) { return {}; }
+    }
+    function saveGamePerms(p){
+      try { localStorage.setItem(GAME_PERMS_KEY, JSON.stringify(p)); } catch(_) {}
+    }
+    function getGamePerm(gameId){
+      const perms = loadGamePerms();
+      const card = document.querySelector(`[data-game-id="${gameId}"]`);
+      const alexOnlyDefault = card && card.dataset.alexOnly === "true";
+      if(perms[gameId]) return perms[gameId];
+      // No stored perm yet — if the card is marked alex-only by default, start
+      // it as locked with an empty allow-list (Alex can add people).
+      return { locked: !!alexOnlyDefault, allowed: [] };
+    }
+    function setGamePerm(gameId, perm){
+      const perms = loadGamePerms();
+      perms[gameId] = perm;
+      saveGamePerms(perms);
+    }
+    function canPlayGame(gameId, user){
+      const norm = normalizeUsername(user || "");
+      if(norm === "alex") return true;
+      const perm = getGamePerm(gameId);
+      if(!perm.locked) return true;
+      return (perm.allowed || []).map(normalizeUsername).includes(norm);
+    }
+    function applyGamePermissions(){
+      document.querySelectorAll(".card[data-game-id]").forEach(card => {
+        const id = card.dataset.gameId;
+        const perm = getGamePerm(id);
+        card.dataset.locked = String(!!perm.locked);
+        const allowed = canPlayGame(id, activeUser);
+        if(allowed){
+          card.classList.remove("perm-hidden", "hidden");
+        } else {
+          card.classList.add("perm-hidden");
+        }
+      });
+    }
+    function injectCardMenus(){
+      document.querySelectorAll(".card[data-game-id]").forEach(card => {
+        if(card.querySelector(".card-menu-btn")) return;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "card-menu-btn";
+        btn.setAttribute("aria-label", "Game access");
+        btn.addEventListener("click", function(e){
+          e.preventDefault(); e.stopPropagation();
+          openGamePermModal(card.dataset.gameId, card.dataset.gameName || card.dataset.gameId);
+        });
+        card.appendChild(btn);
+      });
+    }
+    function openGamePermModal(gameId, gameName){
+      if(!isAlexAccount()) return;
+      const overlay = document.getElementById("gamePermOverlay");
+      const perm = getGamePerm(gameId);
+      document.getElementById("gamePermTitle").textContent = `Access · ${gameName}`;
+      document.getElementById("gameLockToggle").checked = !!perm.locked;
+      document.getElementById("gameAllowedUsers").value = (perm.allowed || []).join(", ");
+      overlay.dataset.gameId = gameId;
+      overlay.classList.add("show");
+      overlay.setAttribute("aria-hidden", "false");
+    }
+    function closeGamePermModal(){
+      const overlay = document.getElementById("gamePermOverlay");
+      overlay.classList.remove("show");
+      overlay.setAttribute("aria-hidden", "true");
+      delete overlay.dataset.gameId;
+    }
+    function saveCurrentGamePerm(){
+      const overlay = document.getElementById("gamePermOverlay");
+      const gameId = overlay.dataset.gameId;
+      if(!gameId) return;
+      const locked = document.getElementById("gameLockToggle").checked;
+      const allowed = document.getElementById("gameAllowedUsers").value
+        .split(",").map(s => normalizeUsername(s)).filter(Boolean);
+      setGamePerm(gameId, { locked, allowed });
+      applyGamePermissions();
+      closeGamePermModal();
+    }
+    function applyAlexMode(){
+      const isAlex = isAlexAccount();
+      document.body.classList.toggle("is-alex", isAlex);
+      if(isAlex) injectCardMenus();
+      applyGamePermissions();
+    }
+    document.addEventListener("DOMContentLoaded", () => {
+      applyAlexMode();
+      const cancelBtn = document.getElementById("gamePermCancel");
+      const saveBtn   = document.getElementById("gamePermSave");
+      const overlay   = document.getElementById("gamePermOverlay");
+      if(cancelBtn) cancelBtn.addEventListener("click", closeGamePermModal);
+      if(saveBtn)   saveBtn.addEventListener("click", saveCurrentGamePerm);
+      if(overlay)   overlay.addEventListener("click", (e) => {
+        if(e.target.id === "gamePermOverlay") closeGamePermModal();
+      });
+      document.addEventListener("keydown", (e) => {
+        if(e.key === "Escape" && overlay && overlay.classList.contains("show")) closeGamePermModal();
+      });
+    });
 
     function updateSignOutButton(){
       signOutBtn.classList.toggle("hidden", !localStorage.getItem(ACTIVE_USER_KEY));
