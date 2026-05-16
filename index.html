@@ -380,6 +380,20 @@
     .admin-actions, .user-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .cheat-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-top:10px; max-height:220px; overflow:auto; }
     .cheat-grid button { padding:7px 8px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--fg); font-size:10px; font-weight:900; cursor:pointer; text-align:left; line-height:1.15; }
+    /* Data Viewer */
+    .admin-data-tabs { display:flex; gap:6px; align-items:center; margin-bottom:6px; flex-wrap:wrap; }
+    .admin-tab { padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--fg); font-family:inherit; font-size:10px; font-weight:900; letter-spacing:.5px; text-transform:uppercase; cursor:pointer; }
+    .admin-tab:hover { background:rgba(255,255,255,.05); }
+    .admin-tab.active { background:linear-gradient(135deg,#ff3838,#ff7a00); border-color:transparent; color:#fff; }
+    .admin-tab-refresh { margin-left:auto; padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--fg); font-family:inherit; font-size:14px; font-weight:900; cursor:pointer; }
+    .admin-tab-refresh:hover { background:rgba(255,255,255,.05); }
+    .admin-data-pane { max-height:280px; overflow:auto; border:1px solid var(--border); border-radius:10px; background:var(--surface); }
+    .admin-data-status { padding:14px; font-size:11px; font-weight:700; color:var(--muted); text-align:center; }
+    .admin-data-table { width:100%; border-collapse:collapse; font-size:10px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .admin-data-table th, .admin-data-table td { padding:6px 8px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
+    .admin-data-table th { position:sticky; top:0; background:#0b1220; color:rgba(255,255,255,.7); font-weight:900; font-size:9px; letter-spacing:.5px; text-transform:uppercase; z-index:1; }
+    .admin-data-table tr:hover td { background:rgba(255,255,255,.04); }
+    .admin-data-table td.json-cell { font-size:9.5px; color:rgba(255,255,255,.7); cursor:help; }
     .friends-panel, .messages-panel {
       position:fixed; top:auto; bottom:calc(var(--status-h) + 10px); right:12px;
       width:min(340px, calc(100vw - 24px)); max-height:min(520px, calc(100vh - var(--status-h) - 24px));
@@ -1185,6 +1199,20 @@
     <div class="admin-actions" style="margin-top:6px;">
       <button class="btn" id="adminAnnounceBtn" type="button">📢 Broadcast</button>
     </div>
+
+    <!-- ── Data Viewer ─────────────────────────────────────────── -->
+    <div style="margin-top:14px;font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Data Viewer</div>
+    <div class="admin-data-tabs">
+      <button class="admin-tab active" data-tab="players"     type="button">Players</button>
+      <button class="admin-tab"        data-tab="suggestions" type="button">Suggestions</button>
+      <button class="admin-tab"        data-tab="appeals"     type="button">Appeals</button>
+      <button class="admin-tab"        data-tab="sessions"    type="button">Sessions</button>
+      <button class="admin-tab-refresh" id="adminDataRefresh" type="button" title="Refresh">⟳</button>
+    </div>
+    <div class="admin-data-pane" id="adminDataPane">
+      <div class="admin-data-status">Click a tab to load.</div>
+    </div>
+
     <div class="cheat-grid" id="cheatGrid67"></div>
   </div>
   <div id="dashboardBar" class="dashboard-bottom-bar">
@@ -2942,6 +2970,108 @@
       }
     }
     document.getElementById("adminResetPasswordBtn").addEventListener("click", runAdminResetPassword);
+
+    // ── Admin Data Viewer ───────────────────────────────────────────
+    const ADMIN_DATA_RPC = {
+      players:     "admin_list_players",
+      suggestions: "admin_list_suggestions",
+      appeals:     "admin_list_appeals",
+      sessions:    "admin_list_sessions",
+    };
+    let adminActiveTab = "players";
+
+    function formatAdminCell(value){
+      if(value === null || value === undefined) return "—";
+      if(typeof value === "boolean") return value ? "✓" : "✗";
+      if(typeof value === "number") return String(value);
+      if(typeof value === "string"){
+        // Heuristic: ISO timestamps → friendlier local format
+        if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)){
+          try { return new Date(value).toLocaleString(); } catch(_) { return value; }
+        }
+        return value;
+      }
+      try { return JSON.stringify(value); } catch(_) { return String(value); }
+    }
+
+    function renderAdminTable(rows){
+      const pane = document.getElementById("adminDataPane");
+      if(!Array.isArray(rows) || rows.length === 0){
+        pane.innerHTML = '<div class="admin-data-status">No rows.</div>';
+        return;
+      }
+      // Union of all keys across rows so sparse columns still appear.
+      const keys = Array.from(rows.reduce((set, row) => {
+        if(row && typeof row === "object") Object.keys(row).forEach(k => set.add(k));
+        return set;
+      }, new Set()));
+      const thead = `<thead><tr>${keys.map(k => `<th>${k}</th>`).join("")}</tr></thead>`;
+      const tbody = `<tbody>${rows.map(row => {
+        return `<tr>${keys.map(k => {
+          const v = row ? row[k] : null;
+          const text = formatAdminCell(v);
+          const safe = String(text).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+          const isObj = v !== null && typeof v === "object";
+          return `<td${isObj ? ' class="json-cell" title="' + safe.replace(/"/g, "&quot;") + '"' : ""}>${safe}</td>`;
+        }).join("")}</tr>`;
+      }).join("")}</tbody>`;
+      pane.innerHTML = `<table class="admin-data-table">${thead}${tbody}</table>`;
+    }
+
+    async function loadAdminTab(tab){
+      if(!isAlexAccount()) return;
+      if(!supabaseClient || !currentSessionToken){
+        document.getElementById("adminDataPane").innerHTML =
+          '<div class="admin-data-status">Supabase not connected.</div>';
+        return;
+      }
+      const rpc = ADMIN_DATA_RPC[tab];
+      if(!rpc) return;
+      const pane = document.getElementById("adminDataPane");
+      pane.innerHTML = '<div class="admin-data-status">Loading…</div>';
+      try {
+        const { data, error } = await supabaseClient.rpc(rpc, { p_token: currentSessionToken });
+        if(error) throw error;
+        // Each row comes back as a JSONB object (from the SQL RPCs).
+        const rows = Array.isArray(data) ? data : [];
+        renderAdminTable(rows);
+      } catch(err){
+        const msg = (err && err.message) || String(err);
+        const installHint = /schema cache|admin_list_/i.test(msg)
+          ? " — run the latest migration in Supabase SQL Editor."
+          : "";
+        pane.innerHTML = `<div class="admin-data-status">Error: ${msg}${installHint}</div>`;
+      }
+    }
+
+    function setAdminTab(tab){
+      adminActiveTab = tab;
+      document.querySelectorAll(".admin-tab").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.tab === tab);
+      });
+      loadAdminTab(tab);
+    }
+
+    document.querySelectorAll(".admin-tab").forEach(btn => {
+      btn.addEventListener("click", () => setAdminTab(btn.dataset.tab));
+    });
+    document.getElementById("adminDataRefresh").addEventListener("click", () => loadAdminTab(adminActiveTab));
+
+    // Auto-load the first tab whenever Alex opens the admin panel.
+    (function hookAdminPanelOpen(){
+      const fab = document.getElementById("adminFab");
+      if(!fab) return;
+      fab.addEventListener("click", () => {
+        const panel = document.getElementById("alexAdminPanel");
+        // setTimeout: panel.classList.toggle("open") runs in the other listener,
+        // we read its state after that tick.
+        setTimeout(() => {
+          if(panel.classList.contains("open") && isAlexAccount()){
+            setAdminTab(adminActiveTab);
+          }
+        }, 0);
+      });
+    })();
     document.getElementById("adminFab").addEventListener("click", () => {
       if(!isAlexAccount()) return;
       const panel = document.getElementById("alexAdminPanel");
