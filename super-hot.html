@@ -8,15 +8,32 @@
   <script defer src="./music-bridge.js"></script>
   <link rel="icon" type="image/png" href="./clever1.png">
 
-  <!-- Alex-only gate. If a non-Alex user opens this page directly, bounce them
-       back to the dashboard before any Unity assets start downloading. -->
+  <!-- Access gate. Alex always gets in. Anyone else needs to be in the
+       super-hot allow-list from the game-perms cache (set by Alex via the
+       dashboard 3-dot menu; mirrored to localStorage on every load). -->
   <script>
     (function () {
       try {
         var ACTIVE_USER_KEY = "alexFunActiveUserV1";
-        function normalize(u){ return (u||"").trim().toLowerCase().replace(/[^a-z0-9_-]/g, ""); }
-        var active = localStorage.getItem(ACTIVE_USER_KEY) || "";
-        if (normalize(active) !== "alex") {
+        var GAME_PERMS_KEY  = "alexFunGamePermsV1";
+        var GAME_ID         = "super-hot";
+
+        function normalize(u){
+          return (u||"").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+        }
+        function isAllowed(){
+          var active = normalize(localStorage.getItem(ACTIVE_USER_KEY) || "");
+          if (active === "alex") return true;
+          var perms = {};
+          try { perms = JSON.parse(localStorage.getItem(GAME_PERMS_KEY)) || {}; }
+          catch (_) { perms = {}; }
+          var perm = perms[GAME_ID];
+          if (!perm) return false;           // no perm row → still alex-only
+          if (!perm.locked) return true;     // Alex explicitly unlocked for everyone
+          var list = (perm.allowed || []).map(normalize);
+          return list.indexOf(active) !== -1;
+        }
+        if (!isAllowed()) {
           window.location.replace(new URL("index.html", window.location.href).href);
         }
       } catch (_) {}
