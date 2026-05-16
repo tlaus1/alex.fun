@@ -34,6 +34,12 @@
           return u.pathname === "/ping" && /^[a-z]{2,4}\.alexfun\.is-a\.dev$/i.test(u.hostname);
         } catch (_) { return false; }
       }
+      function fakeImageLoad(img) {
+        setTimeout(function () {
+          try { img.dispatchEvent(new Event("load")); } catch (_) {}
+          if (typeof img.onload === "function") { try { img.onload(); } catch (_) {} }
+        }, 40);
+      }
       // Fetch interception
       const origFetch = window.fetch;
       window.fetch = function (input, init) {
@@ -79,6 +85,42 @@
         };
         return xhr;
       };
+      // Image src interception (the game uses `new Image().src = ...` for pings —
+      // this bypasses fetch and XHR entirely).
+      try {
+        const imgProto = HTMLImageElement.prototype;
+        const origSrcDesc = Object.getOwnPropertyDescriptor(imgProto, "src");
+        if (origSrcDesc && origSrcDesc.set) {
+          Object.defineProperty(imgProto, "src", {
+            configurable: true,
+            enumerable: true,
+            get() { return origSrcDesc.get.call(this); },
+            set(v) {
+              if (isRegionPing(v)) { fakeImageLoad(this); return; }
+              origSrcDesc.set.call(this, v);
+            },
+          });
+        }
+        // Also catch img.setAttribute('src', url)
+        const origSetAttr = Element.prototype.setAttribute;
+        Element.prototype.setAttribute = function (name, value) {
+          if (this instanceof HTMLImageElement && /^src$/i.test(name) && isRegionPing(value)) {
+            fakeImageLoad(this);
+            return;
+          }
+          return origSetAttr.apply(this, arguments);
+        };
+      } catch (_) {}
+      // sendBeacon interception
+      try {
+        const origBeacon = navigator.sendBeacon && navigator.sendBeacon.bind(navigator);
+        if (origBeacon) {
+          navigator.sendBeacon = function (url, data) {
+            if (isRegionPing(url)) return true;
+            return origBeacon(url, data);
+          };
+        }
+      } catch (_) {}
       // Final safety net — swallow uncaught errors from FootballBros.js's
       // ping-result parser so they don't crash the boot.
       window.addEventListener("error", function (e) {
