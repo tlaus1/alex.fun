@@ -67,11 +67,11 @@ begin
     raise exception 'game_id required';
   end if;
 
-  -- Resolve token → username. Adjust columns here if your sessions table
-  -- differs from { token uuid, username text, expires_at timestamptz }.
-  select s.username
+  -- Resolve token → username via the player_sessions ↔ players join.
+  select p.username
     into v_username
   from public.player_sessions s
+  join public.players p on p.id = s.player_id
   where s.token = p_token
     and (s.expires_at is null or s.expires_at > now())
   limit 1;

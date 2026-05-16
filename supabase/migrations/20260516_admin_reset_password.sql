@@ -29,12 +29,11 @@ begin
     raise exception 'password must be at least 4 characters';
   end if;
 
-  -- Resolve caller's session token → username.
-  -- Same lookup pattern used by save_clicker / set_game_perm. Adjust column
-  -- names here if your sessions table differs.
-  select s.username
+  -- Resolve caller's session token → username via player_sessions ↔ players.
+  select p.username
     into v_caller
   from public.player_sessions s
+  join public.players p on p.id = s.player_id
   where s.token = p_token
     and (s.expires_at is null or s.expires_at > now())
   limit 1;
@@ -70,7 +69,7 @@ begin
   -- the user logged in on their existing devices.
   begin
     delete from public.player_sessions
-     where lower(username) = v_target;
+     where player_id in (select id from public.players where lower(username) = v_target);
   exception when others then
     -- non-fatal; just means the sessions table doesn't have that shape.
     null;
