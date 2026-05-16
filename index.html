@@ -1423,16 +1423,19 @@
     }
 
     // ── Per-game permissions (Alex-only 3-dot menu) ──────────────────────
-    // Stored in localStorage so Alex can revoke/grant access without round-tripping
-    // a server. Note: this is per-device — if you want the lock to apply on
-    // *other* people's browsers too, we'd need a Supabase table to mirror it.
+    // Source of truth: Supabase `game_perms` (read by anyone, written only via
+    // set_game_perm RPC which validates the session token belongs to "alex").
+    // Mirrored to localStorage so the UI is instant on subsequent loads and
+    // still works if the RPC isn't deployed yet.
     const GAME_PERMS_KEY = "alexFunGamePermsV1";
+    let remoteGamePerms = null;   // set after first successful fetch
 
     function loadGamePerms(){
+      if(remoteGamePerms) return remoteGamePerms;
       try { return JSON.parse(localStorage.getItem(GAME_PERMS_KEY)) || {}; }
       catch(_) { return {}; }
     }
-    function saveGamePerms(p){
+    function saveGamePermsLocal(p){
       try { localStorage.setItem(GAME_PERMS_KEY, JSON.stringify(p)); } catch(_) {}
     }
     function getGamePerm(gameId){
@@ -1440,14 +1443,48 @@
       const card = document.querySelector(`[data-game-id="${gameId}"]`);
       const alexOnlyDefault = card && card.dataset.alexOnly === "true";
       if(perms[gameId]) return perms[gameId];
-      // No stored perm yet — if the card is marked alex-only by default, start
-      // it as locked with an empty allow-list (Alex can add people).
       return { locked: !!alexOnlyDefault, allowed: [] };
     }
-    function setGamePerm(gameId, perm){
-      const perms = loadGamePerms();
-      perms[gameId] = perm;
-      saveGamePerms(perms);
+    async function fetchRemoteGamePerms(){
+      if(!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient.rpc("list_game_perms");
+        if(error) throw error;
+        const map = {};
+        (data || []).forEach(row => {
+          map[row.game_id] = {
+            locked:  !!row.locked,
+            allowed: Array.isArray(row.allowed_users) ? row.allowed_users : [],
+          };
+        });
+        remoteGamePerms = map;
+        saveGamePermsLocal(map);   // keep local copy in sync
+        applyGamePermissions();
+      } catch(err) {
+        // RPC not deployed yet, or transient network issue — silently fall
+        // back to whatever's in localStorage. Re-throwing would just spam.
+        console.log("[game-perms] remote fetch failed, using local cache:", err?.message || err);
+      }
+    }
+    async function setGamePerm(gameId, perm){
+      // Optimistic local update first so the UI feels instant.
+      const perms = { ...loadGamePerms(), [gameId]: perm };
+      remoteGamePerms = perms;
+      saveGamePermsLocal(perms);
+      // Mirror to Supabase if we have a session.
+      if(supabaseClient && currentSessionToken){
+        try {
+          const { error } = await supabaseClient.rpc("set_game_perm", {
+            p_token:   currentSessionToken,
+            p_game_id: gameId,
+            p_locked:  !!perm.locked,
+            p_allowed: perm.allowed || [],
+          });
+          if(error) throw error;
+        } catch(err) {
+          console.log("[game-perms] remote write failed (kept local change):", err?.message || err);
+        }
+      }
     }
     function canPlayGame(gameId, user){
       const norm = normalizeUsername(user || "");
@@ -1500,16 +1537,22 @@
       overlay.setAttribute("aria-hidden", "true");
       delete overlay.dataset.gameId;
     }
-    function saveCurrentGamePerm(){
+    async function saveCurrentGamePerm(){
       const overlay = document.getElementById("gamePermOverlay");
       const gameId = overlay.dataset.gameId;
       if(!gameId) return;
       const locked = document.getElementById("gameLockToggle").checked;
       const allowed = document.getElementById("gameAllowedUsers").value
         .split(",").map(s => normalizeUsername(s)).filter(Boolean);
-      setGamePerm(gameId, { locked, allowed });
-      applyGamePermissions();
-      closeGamePermModal();
+      const saveBtn = document.getElementById("gamePermSave");
+      if(saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "Saving…"; }
+      try {
+        await setGamePerm(gameId, { locked, allowed });
+        applyGamePermissions();
+        closeGamePermModal();
+      } finally {
+        if(saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "Save"; }
+      }
     }
     function applyAlexMode(){
       const isAlex = isAlexAccount();
@@ -1519,6 +1562,9 @@
     }
     document.addEventListener("DOMContentLoaded", () => {
       applyAlexMode();
+      // Pull the latest perms from Supabase. If the RPC isn't deployed yet,
+      // this silently no-ops and we keep using the localStorage cache.
+      fetchRemoteGamePerms();
       const cancelBtn = document.getElementById("gamePermCancel");
       const saveBtn   = document.getElementById("gamePermSave");
       const overlay   = document.getElementById("gamePermOverlay");
