@@ -11,7 +11,7 @@
 create extension if not exists pgcrypto;
 
 create or replace function public.admin_reset_password(
-  p_token            uuid,
+  p_token            text,
   p_target_username  text,
   p_new_password     text,
   p_reason           text default null
@@ -78,4 +78,4 @@ begin
 end;
 $$;
 
-grant execute on function public.admin_reset_password(uuid, text, text, text) to anon, authenticated;
+grant execute on function public.admin_reset_password(text, text, text, text) to anon, authenticated;

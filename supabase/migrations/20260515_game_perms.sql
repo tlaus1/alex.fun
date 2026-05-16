@@ -50,7 +50,7 @@ $$;
 -- Adjust the sessions-lookup inside if your sessions table uses different
 -- column names (this matches the pattern used by save_clicker / submit_suggestion).
 create or replace function public.set_game_perm(
-  p_token     uuid,
+  p_token     text,
   p_game_id   text,
   p_locked    boolean,
   p_allowed   text[]
@@ -100,4 +100,4 @@ $$;
 
 -- 5. Permissions: allow anon + authenticated to call both functions.
 grant execute on function public.list_game_perms()                                       to anon, authenticated;
-grant execute on function public.set_game_perm(uuid, text, boolean, text[])              to anon, authenticated;
+grant execute on function public.set_game_perm(text, text, boolean, text[])              to anon, authenticated;

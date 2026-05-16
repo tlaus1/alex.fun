@@ -10,7 +10,7 @@
 -- ─────────────────────────────────────────────────────────────────────────
 
 -- Helper: token + alex-only check, returns the resolved username.
-create or replace function public._require_alex(p_token uuid)
+create or replace function public._require_alex(p_token text)
 returns void
 language plpgsql
 security definer
@@ -30,7 +30,7 @@ end;
 $$;
 
 -- 1. All players
-create or replace function public.admin_list_players(p_token uuid)
+create or replace function public.admin_list_players(p_token text)
 returns setof jsonb
 language plpgsql
 security definer
@@ -46,7 +46,7 @@ end;
 $$;
 
 -- 2. Suggestions, newest first
-create or replace function public.admin_list_suggestions(p_token uuid)
+create or replace function public.admin_list_suggestions(p_token text)
 returns setof jsonb
 language plpgsql
 security definer
@@ -63,7 +63,7 @@ end;
 $$;
 
 -- 3. Ban appeals, newest first
-create or replace function public.admin_list_appeals(p_token uuid)
+create or replace function public.admin_list_appeals(p_token text)
 returns setof jsonb
 language plpgsql
 security definer
@@ -81,7 +81,7 @@ $$;
 
 -- 4. Active sessions (not expired). Strips the actual token so an over-the-
 -- shoulder peek at Alex's screen can't hijack anyone else's account.
-create or replace function public.admin_list_sessions(p_token uuid)
+create or replace function public.admin_list_sessions(p_token text)
 returns setof jsonb
 language plpgsql
 security definer
@@ -98,7 +98,7 @@ begin
 end;
 $$;
 
-grant execute on function public.admin_list_players(uuid)     to anon, authenticated;
-grant execute on function public.admin_list_suggestions(uuid) to anon, authenticated;
-grant execute on function public.admin_list_appeals(uuid)     to anon, authenticated;
-grant execute on function public.admin_list_sessions(uuid)    to anon, authenticated;
+grant execute on function public.admin_list_players(text)     to anon, authenticated;
+grant execute on function public.admin_list_suggestions(text) to anon, authenticated;
+grant execute on function public.admin_list_appeals(text)     to anon, authenticated;
+grant execute on function public.admin_list_sessions(text)    to anon, authenticated;
