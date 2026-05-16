@@ -17,6 +17,79 @@
   <meta name="author" content="Blue Wizard Digital">
   <title>Football Bros</title>
 
+  <!-- Stub the regional ping endpoints BEFORE FootballBros.js loads.
+       The game hard-codes pings to `<region>.<hostname>/ping` (8 regions) to
+       find the lowest-latency multiplayer server. alexfun.is-a.dev doesn't
+       have those subdomains, so every ping fails with ERR_NAME_NOT_RESOLVED,
+       and the game then throws "Cannot read properties of undefined (reading
+       'length')" when it tries to parse the empty response.
+       We intercept both fetch and XHR and return a fake 999ms latency so the
+       game treats it as "all servers slow" and falls back to single-player. -->
+  <script>
+    (function () {
+      function isRegionPing(url) {
+        if (typeof url !== "string") return false;
+        try {
+          const u = new URL(url, location.href);
+          return u.pathname === "/ping" && /^[a-z]{2,4}\.alexfun\.is-a\.dev$/i.test(u.hostname);
+        } catch (_) { return false; }
+      }
+      // Fetch interception
+      const origFetch = window.fetch;
+      window.fetch = function (input, init) {
+        const url = typeof input === "string" ? input : (input && input.url);
+        if (isRegionPing(url)) {
+          return Promise.resolve(new Response("999", {
+            status: 200,
+            headers: { "Content-Type": "text/plain" }
+          }));
+        }
+        return origFetch.apply(this, arguments);
+      };
+      // XHR interception
+      const OriginalXHR = window.XMLHttpRequest;
+      window.XMLHttpRequest = function () {
+        const xhr = new OriginalXHR();
+        const origOpen = xhr.open;
+        const origSend = xhr.send;
+        let isStub = false;
+        xhr.open = function (method, url) {
+          if (isRegionPing(url)) { isStub = true; return; }
+          return origOpen.apply(xhr, arguments);
+        };
+        xhr.send = function () {
+          if (!isStub) return origSend.apply(xhr, arguments);
+          setTimeout(function () {
+            try {
+              Object.defineProperty(xhr, "readyState",   { value: 4,    configurable: true });
+              Object.defineProperty(xhr, "status",       { value: 200,  configurable: true });
+              Object.defineProperty(xhr, "responseText", { value: "999",configurable: true });
+              Object.defineProperty(xhr, "response",     { value: "999",configurable: true });
+            } catch (_) {}
+            try { xhr.dispatchEvent(new Event("readystatechange")); } catch (_) {}
+            try { xhr.dispatchEvent(new Event("load")); } catch (_) {}
+            try { xhr.dispatchEvent(new Event("loadend")); } catch (_) {}
+            if (typeof xhr.onreadystatechange === "function") {
+              try { xhr.onreadystatechange(); } catch (_) {}
+            }
+            if (typeof xhr.onload === "function") {
+              try { xhr.onload(); } catch (_) {}
+            }
+          }, 40);
+        };
+        return xhr;
+      };
+      // Final safety net — swallow uncaught errors from FootballBros.js's
+      // ping-result parser so they don't crash the boot.
+      window.addEventListener("error", function (e) {
+        const msg = (e.error && e.error.message) || e.message || "";
+        if (/reading 'length'/.test(msg) && /FootballBros\.js/.test(e.filename || "")) {
+          e.preventDefault();
+        }
+      });
+    })();
+  </script>
+
   <script type="text/javascript" src="./FootballBros.js?th=272"></script>
 
   <script>
