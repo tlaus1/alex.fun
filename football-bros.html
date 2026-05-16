@@ -17,14 +17,22 @@
   <meta name="author" content="Blue Wizard Digital">
   <title>Football Bros</title>
 
+  <!-- Host-page globals that FootballBros.js expects to find pre-defined.
+       Without these the title screen crashes in AddScroller / SetText with
+       "Cannot read properties of undefined (reading 'length')" 586 times/sec. -->
+  <script>
+    window.scrollerMessage = "Welcome to Football Bros! Bone-crushing hits, long bombs, and tons more!";
+    window.doFeedback = function () {};
+  </script>
+
   <!-- Stub the regional ping endpoints BEFORE FootballBros.js loads.
        The game hard-codes pings to `<region>.<hostname>/ping` (8 regions) to
        find the lowest-latency multiplayer server. alexfun.is-a.dev doesn't
        have those subdomains, so every ping fails with ERR_NAME_NOT_RESOLVED,
        and the game then throws "Cannot read properties of undefined (reading
        'length')" when it tries to parse the empty response.
-       We intercept both fetch and XHR and return a fake 999ms latency so the
-       game treats it as "all servers slow" and falls back to single-player. -->
+       We intercept fetch/XHR/Image/sendBeacon and fire `error` events so the
+       game treats every region as unreachable and falls back to single-player. -->
   <script>
     (function () {
       function isRegionPing(url) {
