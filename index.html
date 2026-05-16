@@ -140,6 +140,9 @@
     .card-bstars { background: #1a0d05; }
     .card-bstars img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
     .card-bstars.card::after { background:linear-gradient(to top,rgba(26,13,5,.74) 0%,rgba(255,165,0,.08) 50%,transparent 72%); }
+    .card-superhot { background: #1a0000; }
+    .card-superhot img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-superhot.card::after { background:linear-gradient(to top,rgba(0,0,0,.78) 0%,rgba(255,30,30,.10) 48%,transparent 72%); }
 
     .mini-browser {
       max-width: 1180px; margin: 0 auto; padding: 20px 18px 18px;
@@ -1033,6 +1036,11 @@
         <h3 class="card-title">🏀 Basketball Stars</h3>
       </a>
 
+      <a class="card card-superhot hidden" id="openSuperHot" href="./super-hot.html" style="cursor:pointer">
+        <img src="./super-hot-card.avif" alt="SUPERHOT preview">
+        <h3 class="card-title">🔴 SUPERHOT</h3>
+      </a>
+
     </main>
   </div>
 
@@ -1311,6 +1319,8 @@
     function updateMiniBrowserAccess(){
       const allowed = isAlexAccount();
       if(openBrowserCard) openBrowserCard.classList.toggle("hidden", !allowed);
+      const superHotCard = document.getElementById("openSuperHot");
+      if(superHotCard) superHotCard.classList.toggle("hidden", !allowed);
       const browser = document.getElementById("miniBrowser");
       const frame = document.getElementById("browserFrame");
       if(!allowed && browser && !browser.classList.contains("hidden")){

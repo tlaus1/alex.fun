@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<!-- Ultimate Game Stash file -->
+<html lang="en-us">
+<head>
+  <!-- alex.fun helpers — must come BEFORE <base> so they resolve to our origin -->
+  <script src="./cover-profiles.js"></script>
+  <script src="./supabase-config.js"></script>
+  <script defer src="./music-bridge.js"></script>
+  <link rel="icon" type="image/png" href="./clever1.png">
+
+  <!-- Alex-only gate. If a non-Alex user opens this page directly, bounce them
+       back to the dashboard before any Unity assets start downloading. -->
+  <script>
+    (function () {
+      try {
+        var ACTIVE_USER_KEY = "alexFunActiveUserV1";
+        function normalize(u){ return (u||"").trim().toLowerCase().replace(/[^a-z0-9_-]/g, ""); }
+        var active = localStorage.getItem(ACTIVE_USER_KEY) || "";
+        if (normalize(active) !== "alex") {
+          window.location.replace(new URL("index.html", window.location.href).href);
+        }
+      } catch (_) {}
+    })();
+  </script>
+
+  <base href="https://cdn.jsdelivr.net/gh/bubbls/UGS-Assets@main/superhot/">
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SUPERHOT</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    :root { --status-h: 26px; --panel: rgba(0,0,0,.82); --fg: #fff; --border: rgba(255,255,255,.35); }
+
+    html, body {
+      height: 100%; width: 100%; margin: 0; padding: 0;
+      overflow: hidden; background: #000;
+    }
+    canvas.emscripten {
+      position: fixed; left: 0; top: 0;
+      width: 100%; height: 100%; display: block;
+    }
+
+    /* ── alex.fun chrome ── */
+    .alex-topbar {
+      position: fixed; top: 10px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      pointer-events: none; z-index: 9000;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+    .alex-actions { display: flex; gap: 8px; pointer-events: auto; }
+    .alex-btn {
+      appearance: none; border: 1.5px solid var(--border); border-radius: 999px;
+      background: var(--panel); color: var(--fg); padding: 8px 14px;
+      font-family: inherit; font-size: 12px; font-weight: 900;
+      cursor: pointer; backdrop-filter: blur(10px);
+      box-shadow: 0 8px 22px rgba(0,0,0,.45);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .alex-btn:hover { background: rgba(40,0,0,.95); border-color: #ff2a2a; color: #ff4d4d; }
+
+    #alexStatusBar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: var(--status-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px;
+      background: #050000; border-top: 1px solid rgba(255,50,50,.3);
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      font-size: 11px; font-weight: 800; color: rgba(255,80,80,.8);
+      z-index: 9100;
+    }
+    #alexStatusBar .sb-cover { cursor: pointer; user-select: none; }
+    #alexStatusBar .sb-cover:hover { color: #ff6464; }
+
+    /* Cover overlay (Backspace) — sits above the music pill (z-index 10030) */
+    #coverOverlay {
+      position: fixed; inset: 0; z-index: 11000;
+      background: #fff; opacity: 0; pointer-events: none;
+      transition: opacity .45s cubic-bezier(.4,0,.2,1); cursor: pointer;
+    }
+    #coverOverlay.show { opacity: 1; pointer-events: auto; }
+    #coverOverlay img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  </style>
+</head>
+<body style="margin: 0;">
+  <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+
+  <!-- alex.fun top bar -->
+  <div class="alex-topbar">
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexBackBtn" type="button">Back</button>
+    </div>
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexFullscreenBtn" type="button">Fullscreen</button>
+    </div>
+  </div>
+
+  <!-- alex.fun cover overlay -->
+  <div id="coverOverlay" aria-hidden="true">
+    <img data-cover-image alt="Cover">
+  </div>
+
+  <!-- alex.fun status bar -->
+  <div id="alexStatusBar">
+    <span>SUPERHOT</span>
+    <span class="sb-cover" id="alexCoverHint">Backspace Cover Image</span>
+  </div>
+
+  <!-- Original game loader (kept verbatim) -->
+  <script>
+    window.mergedBlobUrls = {};
+    window.assetsReady = false;
+
+    async function mergeSplitFile(fileUrlBase, numParts = 2) {
+      const partUrls = Array.from({ length: numParts }, (_, i) =>
+        `${fileUrlBase}.part${i + 1}`
+      );
+      try {
+        const responses = await Promise.all(partUrls.map(url => fetch(url)));
+        if (responses.some(r => !r.ok)) return null;
+        const parts = await Promise.all(responses.map(r => r.arrayBuffer()));
+        const combinedBlob = new Blob(parts, { type: 'application/octet-stream' });
+        return URL.createObjectURL(combinedBlob);
+      } catch (error) { return null; }
+    }
+
+    function setupXHRInterceptor() {
+      if (window.xhrInterceptorInstalled) return;
+      const originalOpen = XMLHttpRequest.prototype.open;
+      const originalSend = XMLHttpRequest.prototype.send;
+
+      XMLHttpRequest.prototype.open = function(method, url, ...args) {
+        this._url = url;
+        this._method = method;
+        this._args = args;
+        let finalUrl = url;
+        for (const [filename, blobUrl] of Object.entries(window.mergedBlobUrls)) {
+          if (url.includes(filename)) { finalUrl = blobUrl; break; }
+        }
+        return originalOpen.call(this, method, finalUrl, ...args);
+      };
+
+      XMLHttpRequest.prototype.send = function(...args) {
+        const xhr = this;
+        if (!window.assetsReady) {
+          const checkReady = setInterval(() => {
+            if (window.assetsReady) {
+              clearInterval(checkReady);
+              originalSend.apply(xhr, args);
+            }
+          }, 50);
+          return;
+        }
+        return originalSend.apply(this, args);
+      };
+      window.xhrInterceptorInstalled = true;
+    }
+
+    async function prepareGameAssets() {
+      try {
+        window.assetsReady = false;
+        delete window.xhrInterceptorInstalled;
+        window.mergedBlobUrls = {};
+        setupXHRInterceptor();
+        const filesToMerge = [ { filename: 'webgl.jsgz', parts: 2 } ];
+        for (const file of filesToMerge) {
+          const blobUrl = await mergeSplitFile(file.filename, file.parts);
+          if (blobUrl) window.mergedBlobUrls[file.filename] = blobUrl;
+        }
+        window.assetsPrepared = true;
+        window.assetsReady = true;
+        loadGame();
+      } catch (error) {
+        window.assetsPrepared = false;
+        window.assetsReady = true;
+        loadGame();
+      }
+    }
+
+    function loadGame() {
+      var script1 = document.createElement('script');
+      script1.src = 'UnityLoader.js';
+      script1.onload = function() {
+        var script2 = document.createElement('script');
+        script2.src = '/js/main.js';
+        document.body.appendChild(script2);
+      };
+      document.body.appendChild(script1);
+    }
+
+    prepareGameAssets();
+  </script>
+
+  <script>
+    (function () {
+      const canvas = document.getElementById('canvas');
+      function resizeCanvas() {
+        if (!canvas) return;
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        const cssW = window.innerWidth;
+        const cssH = window.innerHeight;
+        canvas.width = Math.floor(cssW * dpr);
+        canvas.height = Math.floor(cssH * dpr);
+        canvas.style.width = cssW + 'px';
+        canvas.style.height = cssH + 'px';
+      }
+      window.addEventListener('resize', resizeCanvas);
+      window.addEventListener('orientationchange', resizeCanvas);
+      resizeCanvas();
+    })();
+  </script>
+
+  <script type="text/javascript">
+    var Module = {
+      TOTAL_MEMORY: 268435456,
+      errorhandler: null,
+      compatibilitycheck: null,
+      dataUrl: "webgl.datagz",
+      codeUrl: "webgl.jsgz",
+      memUrl: "webgl.memgz",
+    };
+  </script>
+
+  <!-- alex.fun chrome JS -->
+  <script>
+    document.getElementById('alexBackBtn').addEventListener('click', function () {
+      window.location.href = new URL('index.html', window.location.href).href;
+    });
+
+    var alexFsBtn = document.getElementById('alexFullscreenBtn');
+    alexFsBtn.addEventListener('click', async function () {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          alexFsBtn.textContent = 'Exit Fullscreen';
+        } else {
+          await document.exitFullscreen();
+          alexFsBtn.textContent = 'Fullscreen';
+        }
+      } catch (e) { console.log('Fullscreen failed:', e); }
+    });
+    document.addEventListener('fullscreenchange', function () {
+      alexFsBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+    });
+
+    var coverOverlay = document.getElementById('coverOverlay');
+    function toggleCover() {
+      var showing = coverOverlay.classList.toggle('show');
+      coverOverlay.setAttribute('aria-hidden', String(!showing));
+    }
+    coverOverlay.addEventListener('click', toggleCover);
+    document.getElementById('alexCoverHint').addEventListener('click', toggleCover);
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Backspace' || e.metaKey || e.ctrlKey || e.altKey) return;
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      e.preventDefault();
+      toggleCover();
+    }, true);
+  </script>
+</body>
+</html>
