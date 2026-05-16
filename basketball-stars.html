@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<!-- Ultimate Game Stash file -->
+<html lang="en">
+<head>
+  <!-- Load before any remote scripts so they resolve to the local server -->
+  <script src="./cover-profiles.js"></script>
+  <script src="./supabase-config.js"></script>
+  <script defer src="./music-bridge.js"></script>
+  <link rel="icon" type="image/png" href="./clever1.png">
+
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />
+  <link rel="stylesheet" href="https://36043189-480959866522093217.preview.editmysite.com/uploads/b/139890129-743801889220072865/files/assets/css/app.css" type="text/css" />
+  <title>Basketball Stars</title>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+  <style>
+    /* ── alex.fun chrome ── */
+    :root { --status-h: 26px; --panel: rgba(10,20,40,.85); --fg: #fff; --border: rgba(255,165,0,.45); }
+
+    html, body {
+      margin: 0; padding: 0;
+      height: 100vh; width: 100vw;
+      overflow: hidden;
+      background: #0b1220;
+    }
+
+    /* Push game container to leave room for status bar */
+    #content { width: 100%; height: calc(100% - var(--status-h)); position: relative; }
+
+    .alex-topbar {
+      position: fixed; top: 10px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      pointer-events: none; z-index: 9000;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+    .alex-actions { display: flex; gap: 8px; pointer-events: auto; }
+    .alex-btn {
+      appearance: none; border: 1.5px solid var(--border); border-radius: 999px;
+      background: var(--panel); color: var(--fg); padding: 8px 14px;
+      font-family: inherit; font-size: 12px; font-weight: 900;
+      cursor: pointer; backdrop-filter: blur(10px);
+      box-shadow: 0 8px 22px rgba(0,0,0,.45);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .alex-btn:hover { background: rgba(30,40,70,.95); border-color: #ffa500; color: #ffd700; }
+
+    #alexStatusBar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: var(--status-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px;
+      background: #050a14; border-top: 1px solid rgba(255,165,0,.25);
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      font-size: 11px; font-weight: 800; color: rgba(255,165,0,.7);
+      z-index: 9100;
+    }
+    #alexStatusBar .sb-cover { cursor: pointer; user-select: none; }
+    #alexStatusBar .sb-cover:hover { color: #ffd700; }
+
+    /* Cover overlay (Backspace) */
+    #coverOverlay {
+      position: fixed; inset: 0; z-index: 10000;
+      background: #fff; opacity: 0; pointer-events: none;
+      transition: opacity .45s cubic-bezier(.4,0,.2,1); cursor: pointer;
+    }
+    #coverOverlay.show { opacity: 1; pointer-events: auto; }
+    #coverOverlay img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  </style>
+</head>
+<body>
+  <!-- alex.fun top bar -->
+  <div class="alex-topbar">
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexBackBtn" type="button">Back</button>
+    </div>
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexFullscreenBtn" type="button">Fullscreen</button>
+    </div>
+  </div>
+
+  <!-- Game host elements expected by Basketball Stars engine -->
+  <div id="content"></div>
+  <div id="orientation"></div>
+  <div id="loader">Loading ...</div>
+
+  <!-- alex.fun cover overlay -->
+  <div id="coverOverlay" aria-hidden="true">
+    <img data-cover-image alt="Cover">
+  </div>
+
+  <!-- alex.fun status bar -->
+  <div id="alexStatusBar">
+    <span>Basketball Stars</span>
+    <span class="sb-cover" id="alexCoverHint">Backspace Cover Image</span>
+  </div>
+
+  <!-- Original game scripts (kept verbatim) -->
+  <script type="text/javascript" src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
+  <script type="text/javascript" src="https://36043189-480959866522093217.preview.editmysite.com/uploads/b/139890129-743801889220072865/files/assets/lib/nape.min.js"></script>
+  <script type="text/javascript" src="https://36043189-480959866522093217.preview.editmysite.com/uploads/b/139890129-743801889220072865/files/assets/lib/jquery-3.1.1.min.js"></script>
+  <script type="text/javascript" src="https://36043189-480959866522093217.preview.editmysite.com/uploads/b/139890129-743801889220072865/files/assets/lib/easeljs-0.8.2.combined.js"></script>
+  <script type="text/javascript" src="https://36043189-480959866522093217.preview.editmysite.com/uploads/b/139890129-743801889220072865/files/assets/lib/bluebird.min.js"></script>
+  <script type="text/javascript" src="https://36043189-480959866522093217.preview.editmysite.com/uploads/b/139890129-743801889220072865/files/assets/lib/phaser.min.js"></script>
+  <script type="text/javascript" src="https://36043189-480959866522093217.preview.editmysite.com/uploads/b/139890129-743801889220072865/files/assets/lib/phaser-cachebuster.min.js"></script>
+  <script type="text/javascript" src="https://36043189-480959866522093217.preview.editmysite.com/uploads/b/139890129-743801889220072865/files/assets/lib/phaser-super-storage.min.js"></script>
+  <script type="text/javascript" src="https://36043189-480959866522093217.preview.editmysite.com/uploads/b/139890129-743801889220072865/files/assets/lib/dragonBones.min.js"></script>
+
+  <script type="text/javascript">
+    var notIE11 = (typeof (Event) === 'function');
+    window.SDK_OPTIONS = {
+      gameId: "ycc9yyyfyazoiibce061j1b7jx91tt8a",
+      onEvent: function (event) {
+        switch (event.name) {
+          case "SDK_GAME_START": {
+            var e = notIE11 ? new Event("SDK_GAME_START") : document.createEvent('Event');
+            if (!notIE11) e.initEvent('SDK_GAME_START', true, true);
+            document.getElementById("content").dispatchEvent(e);
+            break;
+          }
+          case "SDK_GAME_PAUSE": {
+            var e = notIE11 ? new Event("SDK_GAME_PAUSE") : document.createEvent('Event');
+            if (!notIE11) e.initEvent('SDK_GAME_PAUSE', true, true);
+            document.getElementById("content").dispatchEvent(e);
+            break;
+          }
+          case "SDK_READY":
+            console.log("SDK_READY");
+            break;
+        }
+      },
+    };
+    (function (a, b, c) {
+      var d = a.getElementsByTagName(b)[0];
+      a.getElementById(c) || (a = a.createElement(b), a.id = c, a.src = "https://cdn.jsdelivr.net/gh/st39/sdk@main/sdk.js", d.parentNode.insertBefore(a, d));
+    })(document, "script", "gamemonetize-sdk");
+  </script>
+  <script type="text/javascript" src="https://36043189-480959866522093217.preview.editmysite.com/uploads/b/139890129-743801889220072865/files/bs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/st39/sdk@main/api.js"></script>
+
+  <!-- alex.fun chrome JS -->
+  <script>
+    document.getElementById('alexBackBtn').addEventListener('click', function () {
+      window.location.href = new URL('index.html', window.location.href).href;
+    });
+
+    var alexFsBtn = document.getElementById('alexFullscreenBtn');
+    alexFsBtn.addEventListener('click', async function () {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          alexFsBtn.textContent = 'Exit Fullscreen';
+        } else {
+          await document.exitFullscreen();
+          alexFsBtn.textContent = 'Fullscreen';
+        }
+      } catch (e) { console.log('Fullscreen failed:', e); }
+    });
+    document.addEventListener('fullscreenchange', function () {
+      alexFsBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+    });
+
+    var coverOverlay = document.getElementById('coverOverlay');
+    function toggleCover() {
+      var showing = coverOverlay.classList.toggle('show');
+      coverOverlay.setAttribute('aria-hidden', String(!showing));
+    }
+    coverOverlay.addEventListener('click', toggleCover);
+    document.getElementById('alexCoverHint').addEventListener('click', toggleCover);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        // Only toggle cover when not in a typeable field (game has none, but safe)
+        var t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        e.preventDefault();
+        toggleCover();
+      }
+    }, true);
+  </script>
+</body>
+</html>
