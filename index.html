@@ -168,23 +168,29 @@
     }
     body.frenzy-active::before {
       z-index: 9990;
-      border: 5px solid #ff7a1a;
+      border: 8px solid #ff0040;
       box-sizing: border-box;
       border-radius: 6px;
-      animation: frenzyBorder 0.85s ease-in-out infinite alternate;
+      animation: frenzyBorder 0.6s linear infinite;
     }
     body.frenzy-active::after {
       z-index: 9989;
-      box-shadow: inset 0 0 60px rgba(255, 122, 26, .55);
-      animation: frenzyGlow 0.85s ease-in-out infinite alternate;
+      box-shadow: inset 0 0 120px rgba(255, 0, 102, .9);
+      animation: frenzyGlow 0.6s linear infinite;
     }
     @keyframes frenzyBorder {
-      from { border-color: #ff7a1a; }
-      to   { border-color: #ffcc00; }
+      0%   { border-color: #ff0040; }
+      25%  { border-color: #ff6b00; }
+      50%  { border-color: #ffe600; }
+      75%  { border-color: #ff00aa; }
+      100% { border-color: #ff0040; }
     }
     @keyframes frenzyGlow {
-      from { box-shadow: inset 0 0 30px  rgba(255, 122, 26, .35); }
-      to   { box-shadow: inset 0 0 100px rgba(255, 204, 0,  .65); }
+      0%   { box-shadow: inset 0 0  80px rgba(255,   0,  64, .85); }
+      25%  { box-shadow: inset 0 0 140px rgba(255, 107,   0, .9 ); }
+      50%  { box-shadow: inset 0 0 180px rgba(255, 230,   0, .85); }
+      75%  { box-shadow: inset 0 0 140px rgba(255,   0, 170, .9 ); }
+      100% { box-shadow: inset 0 0  80px rgba(255,   0,  64, .85); }
     }
 
     /* Mason Frenzy banner — appears when player clicks floating Mason; gives
@@ -306,17 +312,39 @@
     .request-row { border:1px solid var(--border); border-radius:10px; padding:8px; margin:8px 0; background:var(--surface); }
     .button-badge { display:none; min-width:17px; height:17px; margin-left:5px; border-radius:999px; padding:0 5px; background:#dc2626; color:#fff; font-size:10px; line-height:17px; font-weight:900; text-align:center; }
     .button-badge.show { display:inline-block; }
+    /* Stack lives center-screen so broadcasts pop right in front of the user. */
     .notification-stack {
-      position:fixed; top:14px; right:14px; z-index:12000; display:grid; gap:8px;
-      width:min(330px, calc(100vw - 28px)); pointer-events:none;
+      position:fixed; top:50%; left:50%;
+      transform:translate(-50%, -50%);
+      z-index:12000; display:flex; flex-direction:column; gap:12px;
+      width:min(460px, calc(100vw - 32px)); pointer-events:none;
+      align-items:center;
     }
     .notification-card {
-      border:1px solid var(--border); border-radius:14px; padding:10px 12px;
-      background:var(--surface2); color:var(--fg); box-shadow:0 14px 38px rgba(0,0,0,.22);
-      font-size:12px; font-weight:850; pointer-events:auto; animation:noticeSlide .22s ease both;
+      border:1.5px solid var(--border); border-radius:18px; padding:18px 22px;
+      background:var(--surface2); color:var(--fg);
+      box-shadow:0 24px 80px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.04) inset;
+      font-size:15px; font-weight:800; line-height:1.4;
+      pointer-events:auto; animation:noticeSlide .35s cubic-bezier(.34,1.56,.64,1) both;
+      width:100%;
     }
-    .notification-card strong { display:block; margin-bottom:2px; font-size:11px; color:#dc2626; text-transform:uppercase; letter-spacing:.7px; }
-    @keyframes noticeSlide { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+    .notification-card strong { display:block; margin-bottom:6px; font-size:11px; color:#dc2626; text-transform:uppercase; letter-spacing:1.2px; }
+    /* Broadcast-styled card — orange→pink gradient, larger, centered text */
+    .notification-card.broadcast {
+      background: linear-gradient(135deg, #ff6b00 0%, #ff0044 50%, #c800a0 100%);
+      color: #fff;
+      border: 0;
+      box-shadow: 0 24px 80px rgba(255,0,80,.5), 0 0 0 2px rgba(255,255,255,.18) inset;
+      text-align: center;
+      font-size: 16px;
+      padding: 22px 26px;
+    }
+    .notification-card.broadcast strong { color:#fff8a0; font-size:12px; letter-spacing:2px; margin-bottom:8px; }
+    @keyframes noticeSlide {
+      0%   { opacity:0; transform:scale(.55); }
+      60%  { opacity:1; }
+      100% { opacity:1; transform:scale(1); }
+    }
     .ban-screen {
       position:fixed; inset:0; z-index:13000; display:none; place-items:center; padding:24px;
       background:linear-gradient(180deg, rgba(127,29,29,.86), rgba(0,0,0,.88));
@@ -2593,9 +2621,12 @@
         alert("Broadcasts require Supabase to be connected.");
         return;
       }
+      // Prefix with 📢 so recipients' clients render this as a centered
+      // broadcast popup instead of a regular DM notification.
+      const broadcastBody = message.startsWith("📢") ? message : `📢 ${message}`;
       const { error } = await supabaseClient.rpc("admin_broadcast", {
         p_token: currentSessionToken,
-        p_message: message
+        p_message: broadcastBody
       });
       if(error){
         alert(error.message || "Broadcast failed. Make sure admin_broadcast RPC exists in Supabase.");
@@ -2657,13 +2688,16 @@
       };
     }
     function currentSocial(){ return socialState || normalizeSocialState(loadSocial()); }
-    function showTopNotification(title, body){
+    function showTopNotification(title, body, kind){
       const stack = document.getElementById("notificationStack");
       const card = document.createElement("div");
-      card.className = "notification-card";
-      card.innerHTML = `<strong>${escapeHtml(title)}</strong>${escapeHtml(body)}`;
+      const isBroadcast = kind === "broadcast" || /^\s*📢/.test(body || "");
+      card.className = "notification-card" + (isBroadcast ? " broadcast" : "");
+      const label = isBroadcast ? "📢 Broadcast" : title;
+      card.innerHTML = `<strong>${escapeHtml(label)}</strong>${escapeHtml(body)}`;
+      card.addEventListener("click", () => card.remove());
       stack.prepend(card);
-      setTimeout(()=>card.remove(), 6500);
+      setTimeout(()=>card.remove(), isBroadcast ? 9000 : 6500);
     }
     function updateSocialBadges(){
       const social = currentSocial();
