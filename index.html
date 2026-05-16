@@ -225,6 +225,26 @@
     #masonFrenzyBanner .mfb-bar-fill { height:100%; width:100%; background:#1a0700; border-radius:999px; }
     #masonFrenzyBanner .mfb-time { min-width:18px; text-align:right; font-variant-numeric: tabular-nums; font-size:14px; }
 
+    /* Mason flyers — chaotic background swarm during 2× Frenzy.
+       Z-index keeps them BEHIND the clicker (which is z-index:3+ in playArea).
+       Each flyer is placed at centre via top/left:50% then translated to a
+       random offset by the keyframe so individual paths look chaotic. */
+    .mason-flyer {
+      position: absolute;
+      top: 50%; left: 50%;
+      pointer-events: none;
+      z-index: 1;
+      filter: drop-shadow(0 4px 16px rgba(255, 107, 0, .65));
+      animation: masonFly var(--dur, 2s) linear var(--delay, 0s) infinite;
+      will-change: transform, opacity;
+    }
+    @keyframes masonFly {
+      0%   { transform: translate(var(--start-x), var(--start-y)) rotate(0deg); opacity: 0; }
+      10%  { opacity: var(--peak-opacity, .85); }
+      90%  { opacity: var(--peak-opacity, .85); }
+      100% { transform: translate(var(--end-x), var(--end-y)) rotate(var(--spin, 720deg)); opacity: 0; }
+    }
+
     .mason-bonus {
       position:absolute; width:78px; height:78px; border:0; border-radius:50%; padding:0; overflow:hidden;
       background:#071b1d; box-shadow:0 0 24px rgba(34,211,238,.55), 0 8px 24px rgba(0,0,0,.25);
@@ -1836,6 +1856,7 @@
       masonBonus?.classList.remove("visible");
       document.body.classList.remove("no-page-scroll");
       document.body.classList.remove("frenzy-active"); // hide outline outside 67-Clicker
+      if (typeof stopMasonFlyers === "function") stopMasonFlyers();
       setGameStatusVisible(false);
       dashboard.classList.remove("hidden");
       hideIdleAndArmTimer();
@@ -2355,10 +2376,56 @@
       scheduleMasonBonus();
     });
 
+    // ── Mason flyers swarm during 2× Frenzy ──
+    let masonFlyers = [];
+    function spawnMasonFlyers(){
+      stopMasonFlyers();
+      if (!playArea) return;
+      const COUNT = 22;
+      for (let i = 0; i < COUNT; i++) {
+        const flyer = document.createElement("img");
+        flyer.src = "./mason67.png";
+        flyer.className = "mason-flyer";
+        flyer.alt = "";
+        // Random size, direction, spin, opacity, timing
+        const size      = 50 + Math.random() * 110;          // 50–160px
+        const duration  = 1.2 + Math.random() * 2.4;         // 1.2–3.6s
+        const delay     = Math.random() * 1.8;               // 0–1.8s stagger
+        const opacity   = 0.45 + Math.random() * 0.45;       // 0.45–0.9
+        const spin      = (Math.random() < .5 ? -1 : 1) * (360 + Math.random() * 720);
+        // Random vector across the screen
+        const angle     = Math.random() * Math.PI * 2;
+        const dist      = 1100 + Math.random() * 500;
+        const startX    = Math.cos(angle) * -dist;
+        const startY    = Math.sin(angle) * -dist;
+        const endX      = Math.cos(angle) *  dist;
+        const endY      = Math.sin(angle) *  dist;
+        flyer.style.width = `${size}px`;
+        flyer.style.height = "auto";
+        flyer.style.marginLeft = `${-size/2}px`;             // centre on its own box
+        flyer.style.marginTop  = `${-size/2}px`;
+        flyer.style.setProperty("--start-x", `${startX}px`);
+        flyer.style.setProperty("--start-y", `${startY}px`);
+        flyer.style.setProperty("--end-x",   `${endX}px`);
+        flyer.style.setProperty("--end-y",   `${endY}px`);
+        flyer.style.setProperty("--dur",     `${duration}s`);
+        flyer.style.setProperty("--delay",   `${delay}s`);
+        flyer.style.setProperty("--spin",    `${spin}deg`);
+        flyer.style.setProperty("--peak-opacity", String(opacity));
+        playArea.appendChild(flyer);
+        masonFlyers.push(flyer);
+      }
+    }
+    function stopMasonFlyers(){
+      masonFlyers.forEach(f => f.remove());
+      masonFlyers = [];
+    }
+
     // ── Mason Frenzy banner (Blooket-style 2× indicator) ──
     // Also toggles body.frenzy-active for the orange pulsing viewport border.
     function showMasonFrenzy(){
       document.body.classList.add("frenzy-active");
+      spawnMasonFlyers();
 
       let banner = document.getElementById("masonFrenzyBanner");
       if (!banner) {
@@ -2390,6 +2457,7 @@
           banner.classList.remove("show");
           banner.classList.add("hide");
           document.body.classList.remove("frenzy-active");
+          stopMasonFlyers();
           updateUI();
         }
       };
