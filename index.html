@@ -1172,6 +1172,14 @@
       <button class="btn" id="adminGivePointsBtn" type="button">💰 Give Points</button>
       <button class="btn" id="adminTakePointsBtn" type="button">💸 Take Points</button>
     </div>
+    <div style="margin-top:10px;font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Reset Password (target user)</div>
+    <div class="admin-grid">
+      <input id="adminNewPassword" type="text" autocomplete="off" placeholder="new password (min 4 chars)">
+    </div>
+    <div class="admin-actions">
+      <button class="btn" id="adminResetPasswordBtn" type="button">🔑 Reset password</button>
+    </div>
+
     <div style="margin-top:10px;font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Global Announcement</div>
     <textarea id="adminAnnouncement" rows="2" placeholder="Broadcast a message to all users..." style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--fg);font:inherit;font-size:12px;font-weight:800;resize:vertical;"></textarea>
     <div class="admin-actions" style="margin-top:6px;">
@@ -2890,6 +2898,50 @@
     document.getElementById("adminBanBtn").addEventListener("click", () => runAdminAction("ban"));
     document.getElementById("adminUnbanBtn").addEventListener("click", () => runAdminAction("unban"));
     document.getElementById("adminWipeBtn").addEventListener("click", () => runAdminAction("wipe"));
+
+    async function runAdminResetPassword(){
+      if(!isAlexAccount()) return;
+      const target = normalizeUsername(document.getElementById("adminTargetUser").value);
+      const newPass = document.getElementById("adminNewPassword").value;
+      const reason = document.getElementById("adminReason").value.trim() || "password reset by admin";
+      if(!target){
+        alert("Enter the target username first.");
+        return;
+      }
+      if(!newPass || newPass.length < 4){
+        alert("New password must be at least 4 characters.");
+        return;
+      }
+      if(!supabaseClient || !currentSessionToken){
+        alert("Admin actions require Supabase to be connected.");
+        return;
+      }
+      if(!confirm(`Reset ${target}'s password to "${newPass}"?`)) return;
+      const btn = document.getElementById("adminResetPasswordBtn");
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = "Resetting…";
+      try {
+        const { error } = await supabaseClient.rpc("admin_reset_password", {
+          p_token: currentSessionToken,
+          p_target_username: target,
+          p_new_password: newPass,
+          p_reason: reason,
+        });
+        if(error){
+          const msg = error.message || "";
+          if(/admin_reset_password|schema cache/i.test(msg)){
+            alert("Password reset is not installed in Supabase yet. Run the latest migration in the Supabase SQL Editor, then try again.");
+          } else {
+            alert(msg || "Password reset failed.");
+          }
+          return;
+        }
+        showNotice(`Password reset for ${target}: new password "${newPass}"`);
+        document.getElementById("adminNewPassword").value = "";
+      } finally {
+        btn.disabled = false; btn.textContent = orig;
+      }
+    }
+    document.getElementById("adminResetPasswordBtn").addEventListener("click", runAdminResetPassword);
     document.getElementById("adminFab").addEventListener("click", () => {
       if(!isAlexAccount()) return;
       const panel = document.getElementById("alexAdminPanel");
