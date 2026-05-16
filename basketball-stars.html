@@ -59,9 +59,9 @@
     #alexStatusBar .sb-cover { cursor: pointer; user-select: none; }
     #alexStatusBar .sb-cover:hover { color: #ffd700; }
 
-    /* Cover overlay (Backspace) */
+    /* Cover overlay (Backspace) — sits above the music pill (z-index 10030) */
     #coverOverlay {
-      position: fixed; inset: 0; z-index: 10000;
+      position: fixed; inset: 0; z-index: 11000;
       background: #fff; opacity: 0; pointer-events: none;
       transition: opacity .45s cubic-bezier(.4,0,.2,1); cursor: pointer;
     }
