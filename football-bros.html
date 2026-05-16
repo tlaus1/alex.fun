@@ -34,25 +34,24 @@
           return u.pathname === "/ping" && /^[a-z]{2,4}\.alexfun\.is-a\.dev$/i.test(u.hostname);
         } catch (_) { return false; }
       }
-      function fakeImageLoad(img) {
+      function fakeImageError(img) {
         setTimeout(function () {
-          try { img.dispatchEvent(new Event("load")); } catch (_) {}
-          if (typeof img.onload === "function") { try { img.onload(); } catch (_) {} }
+          try { img.dispatchEvent(new Event("error")); } catch (_) {}
+          if (typeof img.onerror === "function") { try { img.onerror(); } catch (_) {} }
         }, 40);
       }
-      // Fetch interception
+      // Fetch interception — reject so the game's ping code treats it as
+      // an unreachable server (rather than parsing a bogus body).
       const origFetch = window.fetch;
       window.fetch = function (input, init) {
         const url = typeof input === "string" ? input : (input && input.url);
         if (isRegionPing(url)) {
-          return Promise.resolve(new Response("999", {
-            status: 200,
-            headers: { "Content-Type": "text/plain" }
-          }));
+          return Promise.reject(new TypeError("Failed to fetch"));
         }
         return origFetch.apply(this, arguments);
       };
-      // XHR interception
+      // XHR interception — fire `error` (not `load`) so the game's parser
+      // never tries to read a synthetic response body.
       const OriginalXHR = window.XMLHttpRequest;
       window.XMLHttpRequest = function () {
         const xhr = new OriginalXHR();
@@ -66,27 +65,15 @@
         xhr.send = function () {
           if (!isStub) return origSend.apply(xhr, arguments);
           setTimeout(function () {
-            try {
-              Object.defineProperty(xhr, "readyState",   { value: 4,    configurable: true });
-              Object.defineProperty(xhr, "status",       { value: 200,  configurable: true });
-              Object.defineProperty(xhr, "responseText", { value: "999",configurable: true });
-              Object.defineProperty(xhr, "response",     { value: "999",configurable: true });
-            } catch (_) {}
-            try { xhr.dispatchEvent(new Event("readystatechange")); } catch (_) {}
-            try { xhr.dispatchEvent(new Event("load")); } catch (_) {}
+            try { xhr.dispatchEvent(new Event("error")); } catch (_) {}
             try { xhr.dispatchEvent(new Event("loadend")); } catch (_) {}
-            if (typeof xhr.onreadystatechange === "function") {
-              try { xhr.onreadystatechange(); } catch (_) {}
-            }
-            if (typeof xhr.onload === "function") {
-              try { xhr.onload(); } catch (_) {}
-            }
+            if (typeof xhr.onerror === "function") { try { xhr.onerror(); } catch (_) {} }
           }, 40);
         };
         return xhr;
       };
       // Image src interception (the game uses `new Image().src = ...` for pings —
-      // this bypasses fetch and XHR entirely).
+      // bypasses fetch and XHR entirely). Fire `error` to mimic an unreachable host.
       try {
         const imgProto = HTMLImageElement.prototype;
         const origSrcDesc = Object.getOwnPropertyDescriptor(imgProto, "src");
@@ -96,7 +83,7 @@
             enumerable: true,
             get() { return origSrcDesc.get.call(this); },
             set(v) {
-              if (isRegionPing(v)) { fakeImageLoad(this); return; }
+              if (isRegionPing(v)) { fakeImageError(this); return; }
               origSrcDesc.set.call(this, v);
             },
           });
@@ -105,7 +92,7 @@
         const origSetAttr = Element.prototype.setAttribute;
         Element.prototype.setAttribute = function (name, value) {
           if (this instanceof HTMLImageElement && /^src$/i.test(name) && isRegionPing(value)) {
-            fakeImageLoad(this);
+            fakeImageError(this);
             return;
           }
           return origSetAttr.apply(this, arguments);
@@ -121,13 +108,18 @@
           };
         }
       } catch (_) {}
-      // Final safety net — swallow uncaught errors from FootballBros.js's
-      // ping-result parser so they don't crash the boot.
+      // Final safety net — swallow ALL uncaught errors from FootballBros.js.
+      // The game's multiplayer ping/parser code is the only thing failing here,
+      // and we're killing that whole subsystem deliberately. Single-player and
+      // the core game loop run fine without it.
       window.addEventListener("error", function (e) {
-        const msg = (e.error && e.error.message) || e.message || "";
-        if (/reading 'length'/.test(msg) && /FootballBros\.js/.test(e.filename || "")) {
+        if (/FootballBros\.js/.test(e.filename || "")) {
           e.preventDefault();
         }
+      }, true);
+      window.addEventListener("unhandledrejection", function (e) {
+        const msg = (e.reason && (e.reason.message || e.reason)) || "";
+        if (/Failed to fetch/.test(String(msg))) e.preventDefault();
       });
     })();
   </script>
