@@ -1067,7 +1067,7 @@
         <h3 class="card-title">Google Snake</h3>
       </article>
 
-      <article class="card card-browser" data-game-id="mini-browser" data-game-name="Mini Browser" id="openBrowser" style="cursor:pointer">
+      <article class="card card-browser hidden" data-game-id="mini-browser" data-game-name="Mini Browser" data-alex-only="true" id="openBrowser" style="cursor:pointer">
         <div class="browser-preview"></div>
         <h3 class="card-title">Mini Browser</h3>
       </article>
@@ -1406,20 +1406,22 @@
     }
 
     function updateMiniBrowserAccess(){
-      const allowed = isAlexAccount();
-      if(openBrowserCard) openBrowserCard.classList.toggle("hidden", !allowed);
+      // Mini browser is now managed by the per-game permission system
+      // (data-game-id="mini-browser", data-alex-only="true"). Apply the
+      // shared pass — it'll show/hide the card and the 3-dot menu correctly.
+      applyAlexMode();
+      // If the browser is currently open but the active user just lost
+      // access (sign-out, perm revoke, etc.), close it.
+      const allowed = canPlayGame("mini-browser", activeUser);
       const browser = document.getElementById("miniBrowser");
       const frame = document.getElementById("browserFrame");
       if(!allowed && browser && !browser.classList.contains("hidden")){
         browser.classList.add("hidden");
         document.body.classList.remove("no-page-scroll");
-        frame.src = "about:blank";
+        if(frame) frame.src = "about:blank";
         setGameStatusVisible(false);
         document.getElementById("dashboard").classList.remove("hidden");
       }
-      // Run the per-game permission pass too — the 3-dot menus and locked-card
-      // visibility both depend on whether Alex is the active user.
-      applyAlexMode();
     }
 
     // ── Per-game permissions (Alex-only 3-dot menu) ──────────────────────
@@ -2176,7 +2178,7 @@
     snakeFrame.addEventListener("load", installSnakeCoverHook);
 
     openBrowserCard.addEventListener("click", () => {
-      if(!isAlexAccount()){
+      if(!canPlayGame("mini-browser", activeUser)){
         updateMiniBrowserAccess();
         return;
       }
