@@ -25,13 +25,36 @@
       --status-h: 26px;
     }
     [data-theme="dark"] {
-      --bg:       #111;
+      --bg:       #0c0f14;
       --fg:       #ececec;
-      --muted:    #666;
-      --border:   #282828;
-      --surface:  #181818;
-      --surface2: #1e1e1e;
-      --hover:    #222;
+      --muted:    #7a7f88;
+      --border:   #20242c;
+      --surface:  #14181f;
+      --surface2: #1a1f28;
+      --hover:    #222a36;
+    }
+
+    /* ── Polish tokens (shared) ── */
+    :root {
+      --accent:   #ff6b3d;
+      --accent-2: #ff9a3d;
+      --danger:   #ef4444;
+      --success:  #22c55e;
+      --info:     #38bdf8;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 22px;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,.08);
+      --shadow-md: 0 8px 24px rgba(0,0,0,.12);
+      --shadow-lg: 0 24px 60px rgba(0,0,0,.25);
+      --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+      --ease-soft:   cubic-bezier(.4, 0, .2, 1);
+    }
+    [data-theme="dark"] {
+      --shadow-sm: 0 2px 8px rgba(0,0,0,.45);
+      --shadow-md: 0 8px 24px rgba(0,0,0,.55);
+      --shadow-lg: 0 24px 60px rgba(0,0,0,.7);
     }
 
     *, *::before, *::after {
@@ -1021,6 +1044,352 @@
       .friends-panel, .messages-panel { left:12px; width:auto; }
       .messages-layout { grid-template-columns:1fr; }
     }
+
+    /* ════════════════════════════════════════════════════════════════
+       ── Polish layer (added 2026-05-16) ──
+       Sits at the bottom of the stylesheet so it overrides earlier rules.
+       Goal: tighter typography, smoother motion, cleaner chrome, no functional
+       changes. Touches: cards, perm modal, admin panel, auth, status bars.
+       ════════════════════════════════════════════════════════════════ */
+
+    /* — Body / global motion — */
+    body {
+      font-feature-settings: "cv11", "ss01";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    ::selection { background: var(--accent); color: #fff; }
+
+    /* — Cards: smoother lift, refined shadow, animated halo — */
+    .card {
+      border-width: 1px;
+      transition:
+        transform .35s var(--ease-spring),
+        box-shadow .35s var(--ease-soft),
+        border-color .25s var(--ease-soft);
+      will-change: transform;
+    }
+    .card:hover {
+      transform: translateY(-6px) scale(1.015);
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(255,255,255,.18);
+    }
+    [data-theme="dark"] .card:hover { border-color: rgba(255,255,255,.12); }
+    .card::after { transition: opacity .3s var(--ease-soft); }
+    .card-title {
+      font-feature-settings: "ss01";
+      letter-spacing: -.01em;
+    }
+
+    /* — 3-dot menu: cleaner glyph, springy entrance — */
+    .card-menu-btn {
+      width: 32px; height: 32px;
+      background: rgba(0,0,0,.6);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 4px 14px rgba(0,0,0,.35);
+      transition:
+        opacity .2s var(--ease-soft),
+        transform .25s var(--ease-spring),
+        background .15s var(--ease-soft),
+        border-color .15s var(--ease-soft);
+    }
+    .card-menu-btn::before {
+      content: ""; display: block;
+      width: 14px; height: 4px;
+      background:
+        radial-gradient(circle at 3px 50%, currentColor 1.4px, transparent 1.8px),
+        radial-gradient(circle at 7px 50%, currentColor 1.4px, transparent 1.8px),
+        radial-gradient(circle at 11px 50%, currentColor 1.4px, transparent 1.8px);
+      transform: none;
+    }
+    .card-menu-btn:hover {
+      background: rgba(255,107,61,.85);
+      border-color: rgba(255,255,255,.25);
+      transform: scale(1.08);
+    }
+    body.is-alex .card[data-locked="true"] .card-menu-btn {
+      background: rgba(239,68,68,.88);
+      border-color: rgba(255,200,200,.3);
+    }
+
+    /* — Lock chip: refined typography — */
+    .card[data-locked="true"]::before {
+      font-size: 11px;
+      padding: 4px 9px 4px 7px;
+      letter-spacing: .3px;
+      font-weight: 800;
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 4px 12px rgba(0,0,0,.3);
+    }
+
+    /* — Permission modal: glassy, layered, less utilitarian — */
+    .perm-overlay {
+      background: radial-gradient(circle at 30% 0%, rgba(255,107,61,.12), transparent 50%), rgba(0,0,0,.7);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .perm-modal {
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(255,255,255,.08);
+      background:
+        linear-gradient(180deg, rgba(255,107,61,.06), transparent 40%),
+        var(--surface2);
+      box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,.04);
+      padding: 24px;
+      animation: permIn .4s var(--ease-spring) both;
+    }
+    @keyframes permIn {
+      from { transform: translateY(10px) scale(.97); opacity: 0; }
+      to   { transform: none; opacity: 1; }
+    }
+    .perm-modal h3 {
+      font-size: 19px; letter-spacing: -.01em; font-weight: 900;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .perm-modal h3::before {
+      content: ""; width: 8px; height: 8px; border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 12px var(--accent);
+    }
+    .perm-modal .perm-sub { font-size: 12.5px; color: rgba(255,255,255,.55); }
+    .perm-modal label.row {
+      background: rgba(255,255,255,.035);
+      border: 1px solid rgba(255,255,255,.05);
+      transition: background .15s var(--ease-soft), border-color .15s;
+    }
+    .perm-modal label.row:hover {
+      background: rgba(255,107,61,.08);
+      border-color: rgba(255,107,61,.25);
+    }
+
+    /* — Custom toggle switch (replaces stock checkbox visually) — */
+    .perm-modal label.row input[type="checkbox"] {
+      appearance: none;
+      width: 38px; height: 22px;
+      background: rgba(255,255,255,.12);
+      border-radius: 999px;
+      position: relative; cursor: pointer;
+      transition: background .2s var(--ease-soft);
+      transform: none;
+      flex-shrink: 0;
+    }
+    .perm-modal label.row input[type="checkbox"]::before {
+      content: ""; position: absolute;
+      width: 16px; height: 16px;
+      top: 3px; left: 3px;
+      background: #fff; border-radius: 999px;
+      box-shadow: 0 2px 4px rgba(0,0,0,.3);
+      transition: transform .25s var(--ease-spring), background .2s;
+    }
+    .perm-modal label.row input[type="checkbox"]:checked {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    }
+    .perm-modal label.row input[type="checkbox"]:checked::before {
+      transform: translateX(16px);
+    }
+
+    /* — Friends chips picker inside perm modal — */
+    .perm-chips {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 10px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius-md);
+      min-height: 44px;
+      margin-bottom: 8px;
+    }
+    .perm-chip {
+      appearance: none; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05); color: var(--fg);
+      padding: 5px 11px; border-radius: 999px;
+      font: inherit; font-size: 12px; font-weight: 800;
+      cursor: pointer;
+      transition: all .15s var(--ease-soft);
+    }
+    .perm-chip:hover { transform: translateY(-1px); border-color: rgba(255,107,61,.4); }
+    .perm-chip.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: transparent; color: #fff;
+      box-shadow: 0 4px 12px rgba(255,107,61,.4);
+    }
+    .perm-chip.active::before { content: "✓ "; }
+    .perm-chips-empty { padding: 4px 6px; font-size: 11px; color: var(--muted); font-style: italic; }
+
+    .perm-modal textarea {
+      background: rgba(0,0,0,.25);
+      border-color: rgba(255,255,255,.08);
+      transition: border-color .2s, background .2s;
+    }
+    .perm-modal textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(0,0,0,.4);
+    }
+    .perm-btn {
+      padding: 9px 18px;
+      font-size: 11.5px;
+      transition: all .15s var(--ease-soft);
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .perm-btn.save {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 4px 14px rgba(255,107,61,.4);
+    }
+    .perm-btn:hover { transform: translateY(-1px); filter: brightness(1.12); }
+    .perm-btn:active { transform: translateY(0); }
+
+    /* — Admin panel: tighter rhythm, sectioned look — */
+    .admin-panel { border-radius: var(--radius-xl); }
+    .admin-panel input, .admin-panel textarea {
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .admin-panel input:focus, .admin-panel textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,107,61,.15);
+    }
+    .admin-panel .btn { transition: all .15s var(--ease-soft); }
+    .admin-panel .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+
+    /* — Admin data viewer: sticky tabs, refined table — */
+    .admin-data-tabs {
+      position: sticky; top: 0;
+      padding: 8px 0;
+      background: linear-gradient(180deg, var(--surface2), var(--surface2) 80%, transparent);
+      z-index: 2;
+      backdrop-filter: blur(6px);
+    }
+    .admin-tab {
+      transition: all .15s var(--ease-soft);
+      border-color: rgba(255,255,255,.08);
+    }
+    .admin-tab:hover { background: rgba(255,255,255,.06); transform: translateY(-1px); }
+    .admin-tab.active {
+      box-shadow: 0 4px 12px rgba(255,107,61,.35);
+      transform: none;
+    }
+    .admin-tab-refresh:hover { transform: rotate(180deg); transition: transform .4s var(--ease-soft); }
+    .admin-data-pane {
+      border-radius: var(--radius-md);
+      border-color: rgba(255,255,255,.06);
+      background: rgba(0,0,0,.18);
+    }
+    .admin-data-pane::-webkit-scrollbar { width: 8px; height: 8px; }
+    .admin-data-pane::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,.12); border-radius: 999px;
+    }
+    .admin-data-pane::-webkit-scrollbar-thumb:hover { background: rgba(255,107,61,.4); }
+    .admin-data-table th {
+      background: #0a0e15 !important;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .admin-data-table td { border-bottom: 1px solid rgba(255,255,255,.04); }
+    .admin-data-table tr:hover td { background: rgba(255,107,61,.06) !important; }
+
+    /* Search bar inside the data viewer pane */
+    .admin-data-search {
+      width: 100%;
+      padding: 8px 12px;
+      font: inherit; font-size: 11px; font-weight: 700;
+      background: var(--surface);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .admin-data-search:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,107,61,.15);
+    }
+    .admin-data-table th[data-sort] { cursor: pointer; user-select: none; }
+    .admin-data-table th[data-sort]:hover { color: var(--accent); }
+    .admin-data-table th[data-sort]::after {
+      content: " ↕"; opacity: .35; font-size: 9px;
+    }
+    .admin-data-table th[data-sort="asc"]::after  { content: " ↑"; opacity: 1; color: var(--accent); }
+    .admin-data-table th[data-sort="desc"]::after { content: " ↓"; opacity: 1; color: var(--accent); }
+
+    /* — Auth overlay: warmer accent, refined inputs — */
+    .auth-overlay {
+      background:
+        radial-gradient(circle at 15% 10%, rgba(255,107,61,.22), transparent 38%),
+        radial-gradient(circle at 85% 85%, rgba(56,189,248,.10), transparent 38%),
+        rgba(0,0,0,.78);
+    }
+    .auth-card {
+      border-radius: 26px;
+      box-shadow: var(--shadow-lg);
+      animation: authIn .5s var(--ease-spring) both;
+    }
+    @keyframes authIn {
+      from { transform: translateY(20px) scale(.96); opacity: 0; }
+      to   { transform: none; opacity: 1; }
+    }
+    .auth-card h2 {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .auth-card input { transition: border-color .2s, box-shadow .2s, background .2s; }
+    .auth-card input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,107,61,.18);
+      background: var(--surface2);
+    }
+
+    /* — Status / dashboard bars: subtler — */
+    .dashboard-bottom-bar, #statusBar {
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      background: color-mix(in srgb, var(--surface2) 85%, transparent);
+    }
+    .dashboard-bottom-bar button {
+      transition: all .15s var(--ease-soft);
+      border: 1px solid transparent;
+    }
+    .dashboard-bottom-bar button:hover {
+      background: var(--hover);
+      border-color: rgba(255,107,61,.25);
+      transform: translateY(-1px);
+    }
+    .button-badge { transition: transform .2s var(--ease-spring); }
+    .button-badge:not(:empty) { animation: badgePop .35s var(--ease-spring); }
+    @keyframes badgePop {
+      from { transform: scale(0); }
+      60%  { transform: scale(1.2); }
+      to   { transform: scale(1); }
+    }
+
+    /* — Sign-out button: subtler shadow, smoother hover — */
+    .signout-btn {
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(6px);
+    }
+    .signout-btn:hover {
+      box-shadow: var(--shadow-md);
+      border-color: rgba(255,107,61,.4);
+    }
+    .admin-fab {
+      transition: all .2s var(--ease-spring) !important;
+    }
+    .admin-fab:hover { transform: translateY(-2px) scale(1.04); }
+
+    /* — Notification stack: cleaner shadow — */
+    .notification-stack { gap: 8px; }
+    .notice-toast {
+      box-shadow: var(--shadow-md);
+      border-radius: var(--radius-md);
+    }
+
+    /* — Focus ring (accessibility + polish) — */
+    button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, [role="button"]:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
   </style>
 </head>
 <body>
@@ -1138,8 +1507,10 @@
         <input type="checkbox" id="gameLockToggle">
         <span>Lock this game (only Alex + people in the list below)</span>
       </label>
-      <label class="lbl" for="gameAllowedUsers">Allowed users (comma-separated)</label>
-      <textarea id="gameAllowedUsers" placeholder="e.g. mason, jordan, riley"></textarea>
+      <label class="lbl">Allowed users — tap your friends to toggle</label>
+      <div class="perm-chips" id="gameAllowedChips"></div>
+      <label class="lbl" for="gameAllowedUsers" style="margin-top:6px;">Or paste extras (comma-separated)</label>
+      <textarea id="gameAllowedUsers" placeholder="e.g. mason, jordan, riley" style="min-height:54px;"></textarea>
       <div class="perm-actions">
         <button class="perm-btn cancel" id="gamePermCancel" type="button">Cancel</button>
         <button class="perm-btn save"   id="gamePermSave"   type="button">Save</button>
@@ -1558,6 +1929,41 @@
         card.appendChild(btn);
       });
     }
+    function renderPermChips(currentAllowed){
+      const wrap = document.getElementById("gameAllowedChips");
+      if(!wrap) return;
+      wrap.innerHTML = "";
+      const friends = Array.from(new Set((typeof social !== "undefined" && social.friends ? social.friends : [])
+        .map(normalizeUsername).filter(Boolean))).sort();
+      const allowedSet = new Set((currentAllowed || []).map(normalizeUsername));
+      if(friends.length === 0){
+        wrap.innerHTML = '<div class="perm-chips-empty">No friends yet — add people in the Friends panel or paste usernames below.</div>';
+        return;
+      }
+      friends.forEach(name => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "perm-chip" + (allowedSet.has(name) ? " active" : "");
+        chip.textContent = name;
+        chip.addEventListener("click", () => {
+          chip.classList.toggle("active");
+          syncChipsToTextarea();
+        });
+        wrap.appendChild(chip);
+      });
+    }
+    function syncChipsToTextarea(){
+      const wrap = document.getElementById("gameAllowedChips");
+      if(!wrap) return;
+      const chipNames = Array.from(wrap.querySelectorAll(".perm-chip.active")).map(c => c.textContent.trim());
+      // Merge with anything the user typed manually (preserves non-friend entries).
+      const ta = document.getElementById("gameAllowedUsers");
+      const typed = ta.value.split(",").map(s => normalizeUsername(s)).filter(Boolean);
+      const friendsAll = Array.from(wrap.querySelectorAll(".perm-chip")).map(c => c.textContent.trim());
+      const typedNonFriend = typed.filter(u => !friendsAll.includes(u));
+      const merged = Array.from(new Set([...chipNames, ...typedNonFriend]));
+      ta.value = merged.join(", ");
+    }
     function openGamePermModal(gameId, gameName){
       if(!isAlexAccount()) return;
       const overlay = document.getElementById("gamePermOverlay");
@@ -1565,6 +1971,7 @@
       document.getElementById("gamePermTitle").textContent = `Access · ${gameName}`;
       document.getElementById("gameLockToggle").checked = !!perm.locked;
       document.getElementById("gameAllowedUsers").value = (perm.allowed || []).join(", ");
+      renderPermChips(perm.allowed || []);
       overlay.dataset.gameId = gameId;
       overlay.classList.add("show");
       overlay.setAttribute("aria-hidden", "false");
@@ -2994,28 +3401,115 @@
       try { return JSON.stringify(value); } catch(_) { return String(value); }
     }
 
-    function renderAdminTable(rows){
-      const pane = document.getElementById("adminDataPane");
-      if(!Array.isArray(rows) || rows.length === 0){
-        pane.innerHTML = '<div class="admin-data-status">No rows.</div>';
-        return;
+    // Cached state per tab so we can filter/sort without re-fetching.
+    const adminTabState = { rows: [], filter: "", sortKey: null, sortDir: "asc" };
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    }
+
+    function buildAdminTableMarkup(rows, keys){
+      if(!rows.length){
+        return '<div class="admin-data-status">No matching rows.</div>';
       }
-      // Union of all keys across rows so sparse columns still appear.
-      const keys = Array.from(rows.reduce((set, row) => {
-        if(row && typeof row === "object") Object.keys(row).forEach(k => set.add(k));
-        return set;
-      }, new Set()));
-      const thead = `<thead><tr>${keys.map(k => `<th>${k}</th>`).join("")}</tr></thead>`;
+      const thead = `<thead><tr>${keys.map(k => {
+        const dir = adminTabState.sortKey === k ? adminTabState.sortDir : "";
+        return `<th data-sort="${escapeHtml(dir)}" data-key="${escapeHtml(k)}">${escapeHtml(k)}</th>`;
+      }).join("")}</tr></thead>`;
       const tbody = `<tbody>${rows.map(row => {
         return `<tr>${keys.map(k => {
           const v = row ? row[k] : null;
           const text = formatAdminCell(v);
-          const safe = String(text).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+          const safe = escapeHtml(text);
           const isObj = v !== null && typeof v === "object";
           return `<td${isObj ? ' class="json-cell" title="' + safe.replace(/"/g, "&quot;") + '"' : ""}>${safe}</td>`;
         }).join("")}</tr>`;
       }).join("")}</tbody>`;
-      pane.innerHTML = `<table class="admin-data-table">${thead}${tbody}</table>`;
+      return `<table class="admin-data-table">${thead}${tbody}</table>`;
+    }
+
+    function rowsMatchFilter(row, query){
+      if(!query) return true;
+      const q = query.toLowerCase();
+      return Object.values(row).some(v => {
+        if(v === null || v === undefined) return false;
+        const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+        return s.toLowerCase().includes(q);
+      });
+    }
+
+    function applyAdminSortFilter(){
+      const all = adminTabState.rows;
+      const filtered = all.filter(r => rowsMatchFilter(r, adminTabState.filter));
+      const key = adminTabState.sortKey;
+      let sorted = filtered;
+      if(key){
+        const dir = adminTabState.sortDir === "desc" ? -1 : 1;
+        sorted = [...filtered].sort((a, b) => {
+          const av = a ? a[key] : null;
+          const bv = b ? b[key] : null;
+          if(av === bv) return 0;
+          if(av === null || av === undefined) return 1;
+          if(bv === null || bv === undefined) return -1;
+          if(typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
+          return String(av).localeCompare(String(bv), undefined, { numeric: true }) * dir;
+        });
+      }
+      return sorted;
+    }
+
+    function renderAdminTable(rows){
+      adminTabState.rows = Array.isArray(rows) ? rows : [];
+      const pane = document.getElementById("adminDataPane");
+      if(!adminTabState.rows.length){
+        pane.innerHTML = '<div class="admin-data-status">No rows.</div>';
+        return;
+      }
+      const keys = Array.from(adminTabState.rows.reduce((set, row) => {
+        if(row && typeof row === "object") Object.keys(row).forEach(k => set.add(k));
+        return set;
+      }, new Set()));
+      const filterValue = adminTabState.filter || "";
+      const sorted = applyAdminSortFilter();
+      pane.innerHTML =
+        `<input class="admin-data-search" id="adminDataSearch" type="search" placeholder="Filter ${adminTabState.rows.length} rows…" value="${escapeHtml(filterValue)}">` +
+        buildAdminTableMarkup(sorted, keys);
+      const search = document.getElementById("adminDataSearch");
+      if(search){
+        search.addEventListener("input", () => {
+          adminTabState.filter = search.value;
+          // Update only the table, keep focus on the search input.
+          const tableHtml = buildAdminTableMarkup(applyAdminSortFilter(), keys);
+          const old = pane.querySelector("table");
+          if(old) old.outerHTML = tableHtml;
+          else pane.insertAdjacentHTML("beforeend", tableHtml);
+          attachSortHandlers(keys);
+        });
+        // Restore caret to end after innerHTML rebuild.
+        const len = search.value.length;
+        search.focus();
+        try { search.setSelectionRange(len, len); } catch(_) {}
+      }
+      attachSortHandlers(keys);
+    }
+
+    function attachSortHandlers(keys){
+      const pane = document.getElementById("adminDataPane");
+      pane.querySelectorAll("th[data-key]").forEach(th => {
+        th.addEventListener("click", () => {
+          const k = th.dataset.key;
+          if(adminTabState.sortKey === k){
+            adminTabState.sortDir = adminTabState.sortDir === "asc" ? "desc" : "asc";
+          } else {
+            adminTabState.sortKey = k;
+            adminTabState.sortDir = "asc";
+          }
+          const tableHtml = buildAdminTableMarkup(applyAdminSortFilter(), keys);
+          const old = pane.querySelector("table");
+          if(old) old.outerHTML = tableHtml;
+          attachSortHandlers(keys);
+        });
+      });
     }
 
     async function loadAdminTab(tab){
@@ -3046,6 +3540,10 @@
 
     function setAdminTab(tab){
       adminActiveTab = tab;
+      // Reset per-tab UI state so sort/filter from the previous tab doesn't leak.
+      adminTabState.filter = "";
+      adminTabState.sortKey = null;
+      adminTabState.sortDir = "asc";
       document.querySelectorAll(".admin-tab").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.tab === tab);
       });
