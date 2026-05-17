@@ -71,13 +71,19 @@
   }
 
   function setFavicon(profile){
-    let icon = document.querySelector("link[rel~='icon']");
-    if(!icon){
-      icon = document.createElement("link");
-      icon.rel = "icon";
-      document.head.appendChild(icon);
-    }
-    icon.href = resolveSiteUrl(profile.icon);
+    // Remove every existing icon link first — Chrome picks the LAST one it sees,
+    // and a stale <link rel="icon"> from the HTML head can override our update.
+    document.querySelectorAll("link[rel~='icon']").forEach(el => el.remove());
+    const href = resolveSiteUrl(profile.icon);
+    const link = document.createElement("link");
+    link.rel  = "icon";
+    // Declaring the MIME type explicitly so browsers don't reject SVGs.
+    if(/\.svg($|\?)/i.test(href))      link.type = "image/svg+xml";
+    else if(/\.png($|\?)/i.test(href)) link.type = "image/png";
+    // Cache-bust so a swapped icon shows up immediately instead of the
+    // browser keeping the previous favicon pinned.
+    link.href = href + (href.includes("?") ? "&" : "?") + "v=" + Date.now();
+    document.head.appendChild(link);
   }
 
   function resolveSiteUrl(value){
