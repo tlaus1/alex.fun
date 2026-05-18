@@ -1269,21 +1269,50 @@
     .card {
       border-width: 1px;
       transition:
-        transform .35s var(--ease-spring),
-        box-shadow .35s var(--ease-soft),
+        transform .4s var(--ease-spring),
+        box-shadow .4s var(--ease-soft),
         border-color .25s var(--ease-soft);
       will-change: transform;
     }
     .card:hover {
-      transform: translateY(-6px) scale(1.015);
-      box-shadow: var(--shadow-lg);
+      transform: translateY(-8px) scale(1.02);
+      box-shadow:
+        0 22px 50px rgba(0,0,0,.45),
+        0 0 0 1px rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.22);
+    }
+    [data-theme="dark"] .card:hover {
+      box-shadow:
+        0 22px 50px rgba(0,0,0,.65),
+        0 0 0 1px rgba(255,255,255,.10);
       border-color: rgba(255,255,255,.18);
     }
-    [data-theme="dark"] .card:hover { border-color: rgba(255,255,255,.12); }
     .card::after { transition: opacity .3s var(--ease-soft); }
+    .card:hover::after { opacity: .85; }
+    /* Image: stronger, smoother zoom on hover so every card matches the
+       SUPERHOT / Football-Bros feel even when the source art is less dramatic. */
+    .card > img {
+      transition: transform .55s var(--ease-soft), filter .35s var(--ease-soft);
+    }
+    .card:hover > img {
+      transform: scale(1.08);
+      filter: saturate(1.12) brightness(1.04);
+    }
     .card-title {
       font-feature-settings: "ss01";
       letter-spacing: -.01em;
+      transition: transform .35s var(--ease-spring);
+    }
+    .card:hover .card-title { transform: translateY(-2px); }
+    /* Cards without a cover <img> (mini-browser, 67 Clicker) still get a
+       subtle inner zoom so every card hover feels identical. */
+    .browser-preview, .card-67 .cursor-click {
+      transition: transform .55s var(--ease-soft), filter .35s var(--ease-soft);
+    }
+    .card:hover .browser-preview,
+    .card:hover .cursor-click {
+      transform: scale(1.06);
+      filter: brightness(1.06);
     }
 
     /* — 3-dot menu: cleaner glyph, springy entrance — */
