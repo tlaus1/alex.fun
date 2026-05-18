@@ -2346,6 +2346,7 @@
       localStorage.removeItem(SESSION_TOKEN_KEY);
       localStorage.removeItem(ACTIVE_USER_KEY);
       clearInterval(socialPollTimer);
+      if(typeof stopHeartbeat === "function") stopHeartbeat();
       socialState = null;
       updateSignOutButton();
       reset67StateToDefaults();
@@ -4245,7 +4246,33 @@
       clearInterval(socialPollTimer);
       refreshSocial({ notify:true });
       socialPollTimer = setInterval(()=>refreshSocial({ notify:true }), 10000);
+      startHeartbeat();
     }
+
+    // ── Presence heartbeat ────────────────────────────────────────────
+    // Pings the server every 30s while the tab is visible. Server marks
+    // players online if their last heartbeat was within the past 60s.
+    let heartbeatTimer = null;
+    async function sendHeartbeat(){
+      if(!supabaseClient || !currentSessionToken) return;
+      if(document.hidden) return; // don't lie about presence while hidden
+      try {
+        await supabaseClient.rpc("heartbeat", { p_token: currentSessionToken });
+      } catch(_) { /* silent — RPC may not be deployed yet */ }
+    }
+    function startHeartbeat(){
+      stopHeartbeat();
+      sendHeartbeat();                          // immediate ping on sign-in
+      heartbeatTimer = setInterval(sendHeartbeat, 30000);
+    }
+    function stopHeartbeat(){
+      if(heartbeatTimer){ clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    }
+    document.addEventListener("visibilitychange", () => {
+      // When the tab becomes visible again, fire a heartbeat right away so the
+      // user shows online without waiting up to 30s for the next interval.
+      if(!document.hidden) sendHeartbeat();
+    });
     async function fetchUsersForSocial(){
       if(socialState && socialState.users.length) return socialState.users;
       if(supabaseClient){
