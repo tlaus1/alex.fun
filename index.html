@@ -1561,10 +1561,18 @@
       border-radius: var(--radius-md);
     }
 
-    /* — Focus ring (accessibility + polish) — */
-    button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, [role="button"]:focus-visible {
+    /* — Focus ring (accessibility + polish) —
+       Default: thin offset ring for buttons/links (keyboard nav cue).
+       Inputs/textareas get a soft inset glow instead so the ring doesn't
+       look like a thick alarm border around the field. */
+    button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
       outline: 2px solid var(--accent);
       outline-offset: 2px;
+    }
+    input:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,107,61,.18);
     }
   </style>
 </head>
