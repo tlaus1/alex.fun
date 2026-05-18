@@ -3203,11 +3203,46 @@
     });
 
     function formatNum(n) {
-      if (n >= 1e12) return (n/1e12).toFixed(2)+"T";
-      if (n >= 1e9)  return (n/1e9 ).toFixed(2)+"B";
-      if (n >= 1e6)  return (n/1e6 ).toFixed(2)+"M";
-      if (n >= 1e3)  return (n/1e3 ).toFixed(1)+"K";
-      return Math.floor(n).toString();
+      if (!Number.isFinite(n)) return "∞";
+      const sign = n < 0 ? "-" : "";
+      n = Math.abs(n);
+      // Short-scale magnitudes — extended past Trillion so the top of the
+      // leaderboard doesn't read "4000T". Goes up through Decillion (1e33);
+      // anything beyond that is rendered in scientific notation.
+      // K  thousand        1e3
+      // M  million         1e6
+      // B  billion         1e9
+      // T  trillion        1e12
+      // Qa quadrillion     1e15
+      // Qi quintillion     1e18
+      // Sx sextillion      1e21
+      // Sp septillion      1e24
+      // Oc octillion       1e27
+      // No nonillion       1e30
+      // Dc decillion       1e33
+      const UNITS = [
+        { v: 1e33, s: "Dc" },
+        { v: 1e30, s: "No" },
+        { v: 1e27, s: "Oc" },
+        { v: 1e24, s: "Sp" },
+        { v: 1e21, s: "Sx" },
+        { v: 1e18, s: "Qi" },
+        { v: 1e15, s: "Q"  },
+        { v: 1e12, s: "T"  },
+        { v: 1e9,  s: "B"  },
+        { v: 1e6,  s: "M"  },
+        { v: 1e3,  s: "K"  },
+      ];
+      for (const u of UNITS) {
+        if (n >= u.v) {
+          const val = n / u.v;
+          // 2 decimals for short units (K) feels noisy; everything else gets 2.
+          const decimals = u.s === "K" ? 1 : 2;
+          return sign + val.toFixed(decimals) + u.s;
+        }
+      }
+      if (n >= 1e36) return sign + n.toExponential(2);
+      return sign + Math.floor(n).toString();
     }
 
     function updateUI() {
