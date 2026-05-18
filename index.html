@@ -327,6 +327,16 @@
     #masonFrenzyBanner .mfb-bar { width:110px; height:5px; background:rgba(0,0,0,.22); border-radius:999px; overflow:hidden; }
     #masonFrenzyBanner .mfb-bar-fill { height:100%; width:100%; background:#1a0700; border-radius:999px; }
     #masonFrenzyBanner .mfb-time { min-width:18px; text-align:right; font-variant-numeric: tabular-nums; font-size:14px; }
+    #masonFrenzyBanner.jackpot {
+      background: linear-gradient(135deg, #ff00aa, #ff7a00, #ffd700, #ff00aa);
+      background-size: 300% 300%;
+      animation: mfbPop .55s cubic-bezier(.34,1.56,.64,1), jackpotShimmer 2s ease infinite;
+      box-shadow: 0 0 28px rgba(255,0,170,.55), 0 0 56px rgba(255,122,0,.35);
+    }
+    @keyframes jackpotShimmer {
+      0%,100% { background-position: 0% 50%; }
+      50%     { background-position: 100% 50%; }
+    }
 
     /* Mason flyers — chaotic background swarm during 2× Frenzy.
        Z-index keeps them BEHIND the clicker (which is z-index:3+ in playArea).
@@ -366,9 +376,22 @@
     .leaderboard-modal.show { display:grid; }
     .leaderboard-card { width:min(440px,100%); border-radius:22px; padding:20px; background:var(--surface2); border:1.5px solid var(--border); color:var(--fg); box-shadow:0 24px 80px rgba(0,0,0,.32); }
     .leaderboard-card h2 { font-size:24px; font-weight:900; margin-bottom:10px; }
-    .leader-row { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; font-weight:900; }
+    .leader-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; font-weight:900; }
     .leader-row:last-child { border-bottom:0; }
-    .leader-row span:last-child { color:#e67e00; }
+    .leader-row .leader-score { color:#e67e00; font-variant-numeric: tabular-nums; }
+    .leader-row .leader-name { display:inline-flex; align-items:center; gap:8px; min-width:0; }
+    .leader-row .reb-badge {
+      display:inline-flex; align-items:center; gap:3px;
+      padding:2px 8px; border-radius:999px;
+      background:linear-gradient(135deg, #7c3aed, #ec4899);
+      color:#fff; font-size:10.5px; font-weight:900; letter-spacing:.3px;
+      box-shadow:0 2px 8px rgba(124,58,237,.4);
+      white-space:nowrap;
+    }
+    /* Top 3 podium styling */
+    .leader-row:nth-child(1) { background:linear-gradient(90deg, rgba(255,215,0,.10), transparent); }
+    .leader-row:nth-child(2) { background:linear-gradient(90deg, rgba(192,192,192,.08), transparent); }
+    .leader-row:nth-child(3) { background:linear-gradient(90deg, rgba(205,127,50,.08), transparent); }
     .owner-tag { margin-left:6px; padding:2px 7px; border-radius:999px; background:#dc2626; color:#fff; font-size:10px; font-weight:900; letter-spacing:.5px; text-transform:uppercase; }
     .notice-toast {
       position:fixed; right:18px; bottom:calc(var(--status-h) + 16px); z-index:10040;
@@ -1755,11 +1778,32 @@
         <span class="settings-label">Tab disguise<small>Sets the tab title, favicon &amp; cover image</small></span>
         <div class="disguise-grid" id="disguiseGrid"></div>
       </div>
+      <div class="settings-row">
+        <span class="settings-label">Account<small id="settingsAccountLabel">Change your username</small></span>
+        <button class="btn" id="settingsChangeUsernameBtn" type="button" style="padding:6px 14px;">✏️ Rename</button>
+      </div>
       <div class="settings-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;justify-content:center;flex-direction:column;align-items:center;text-align:center;gap:4px;">
         <span style="font-size:13px;font-weight:800;">alex.fun</span>
         <span style="font-size:11px;font-weight:600;color:var(--muted);">v1.0.0</span>
       </div>
       <button class="btn" id="settingsCloseBtn" type="button" style="width:100%;margin-top:14px;">Done</button>
+    </div>
+  </div>
+
+  <!-- ══ Change-username modal ════════════════════════════════════ -->
+  <div id="renameModal" class="perm-overlay" aria-hidden="true">
+    <div class="perm-modal" role="dialog" aria-labelledby="renameTitle" style="max-width:380px;">
+      <h3 id="renameTitle">Change username</h3>
+      <div class="perm-sub">Pick something new — 2–24 characters, letters/digits/_/- only.</div>
+      <label class="lbl" for="renameNewUser">New username</label>
+      <input id="renameNewUser" type="text" autocomplete="off" maxlength="24" placeholder="e.g. cooler_name" style="width:100%;padding:10px 12px;background:#060a14;color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:10px;font:inherit;font-size:13px;margin-bottom:10px;">
+      <label class="lbl" for="renamePassword">Confirm with your password</label>
+      <input id="renamePassword" type="password" autocomplete="current-password" placeholder="your password" style="width:100%;padding:10px 12px;background:#060a14;color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:10px;font:inherit;font-size:13px;">
+      <div id="renameError" class="perm-sub" style="color:#ff6b6b;display:none;margin-top:8px;"></div>
+      <div class="perm-actions">
+        <button class="perm-btn cancel" id="renameCancel" type="button">Cancel</button>
+        <button class="perm-btn save"   id="renameConfirm" type="button">Rename</button>
+      </div>
     </div>
   </div>
 
@@ -2285,6 +2329,99 @@
     document.getElementById("settingsBtn").addEventListener("click", openSettings);
     document.getElementById("settingsCloseBtn").addEventListener("click", closeSettings);
     settingsModal.addEventListener("click", e => { if(e.target === settingsModal) closeSettings(); });
+
+    // ── Change username ──────────────────────────────────────────────
+    const renameModal      = document.getElementById("renameModal");
+    const renameNewInput   = document.getElementById("renameNewUser");
+    const renamePassInput  = document.getElementById("renamePassword");
+    const renameErrorEl    = document.getElementById("renameError");
+    function showRenameError(msg){
+      renameErrorEl.textContent = msg || "";
+      renameErrorEl.style.display = msg ? "block" : "none";
+    }
+    function openRenameModal(){
+      if(!localStorage.getItem(ACTIVE_USER_KEY)){
+        showNotice("Sign in first to change your username.");
+        return;
+      }
+      if(isAlexAccount()){
+        showNotice("Alex can't rename through this dialog.");
+        return;
+      }
+      renameNewInput.value = "";
+      renamePassInput.value = "";
+      showRenameError("");
+      renameModal.classList.add("show");
+      renameModal.setAttribute("aria-hidden", "false");
+      setTimeout(() => renameNewInput.focus(), 50);
+    }
+    function closeRenameModal(){
+      renameModal.classList.remove("show");
+      renameModal.setAttribute("aria-hidden", "true");
+    }
+    async function submitRename(){
+      const newName = normalizeUsername(renameNewInput.value);
+      const password = renamePassInput.value;
+      showRenameError("");
+      if(!newName){ showRenameError("Enter a new username."); return; }
+      if(!/^[a-z0-9_-]{2,24}$/.test(newName)){
+        showRenameError("2–24 chars, letters/digits/_/- only.");
+        return;
+      }
+      if(!password){ showRenameError("Enter your current password."); return; }
+      if(!supabaseClient || !currentSessionToken){
+        showRenameError("Not connected to Supabase.");
+        return;
+      }
+      const btn = document.getElementById("renameConfirm");
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = "Renaming…";
+      try {
+        const { data, error } = await supabaseClient.rpc("change_username", {
+          p_token: currentSessionToken,
+          p_new_username: newName,
+          p_password: password,
+        });
+        if(error){
+          const msg = (error.message || "").toLowerCase();
+          if(/schema cache|change_username/.test(msg)){
+            showRenameError("Rename not installed in Supabase yet — run the migration.");
+          } else if(/incorrect password/.test(msg)){
+            showRenameError("Incorrect password.");
+          } else if(/already taken/.test(msg)){
+            showRenameError("That username is already taken.");
+          } else if(/reserved/.test(msg)){
+            showRenameError("That username is reserved.");
+          } else {
+            showRenameError(error.message || "Rename failed.");
+          }
+          return;
+        }
+        const finalName = data || newName;
+        activeUser = finalName;
+        localStorage.setItem(ACTIVE_USER_KEY, finalName);
+        showNotice(`Renamed to ${finalName}.`);
+        closeRenameModal();
+        // Refresh anything that shows the username.
+        try { updateMiniBrowserAccess(); } catch(_) {}
+        try { updateAdminPanelVisibility(); } catch(_) {}
+        try { updateLeaderboard(); } catch(_) {}
+      } catch(e) {
+        showRenameError(String(e?.message || e));
+      } finally {
+        btn.disabled = false; btn.textContent = orig;
+      }
+    }
+    document.getElementById("settingsChangeUsernameBtn").addEventListener("click", () => {
+      closeSettings();
+      openRenameModal();
+    });
+    document.getElementById("renameCancel").addEventListener("click", closeRenameModal);
+    document.getElementById("renameConfirm").addEventListener("click", submitRename);
+    renameModal.addEventListener("click", e => { if(e.target === renameModal) closeRenameModal(); });
+    document.addEventListener("keydown", e => {
+      if(e.key === "Escape" && renameModal.classList.contains("show")) closeRenameModal();
+      if(e.key === "Enter" && renameModal.classList.contains("show")) submitRename();
+    });
 
     // ── Music player ──────────────────────────────────────────
     // All music UI/logic lives in music-bridge.js (loaded once, used on every
@@ -3077,9 +3214,16 @@
       e.stopPropagation();
       if(!masonBonus.classList.contains("visible")) return;
       masonBonus.classList.remove("visible");
-      // Activate 2× multiplier for 20 seconds — Blooket Fishing Frenzy style
-      masonFrenzyUntil = Date.now() + 20000;
-      showMasonFrenzy();
+      // Activate 2× multiplier for a random duration — keeps each frenzy
+      // feeling fresh. Roughly 8s to 40s, occasional jackpot length.
+      const roll = Math.random();
+      const FRENZY_DURATION_MS = roll < 0.08
+        ? 50000 + Math.floor(Math.random() * 20000)   //  8% chance: 50-70s jackpot
+        : roll < 0.5
+          ? 8000  + Math.floor(Math.random() * 7000)  // 42% chance:  8-15s short
+          : 16000 + Math.floor(Math.random() * 19000); // 50% chance: 16-35s normal
+      masonFrenzyUntil = Date.now() + FRENZY_DURATION_MS;
+      showMasonFrenzy(FRENZY_DURATION_MS);
       updateUI();
       const rect = masonBonus.getBoundingClientRect();
       const span = document.createElement("span");
@@ -3140,9 +3284,14 @@
 
     // ── Mason Frenzy banner (Blooket-style 2× indicator) ──
     // Also toggles body.frenzy-active for the orange pulsing viewport border.
-    function showMasonFrenzy(){
+    function showMasonFrenzy(durationMs){
       document.body.classList.add("frenzy-active");
       spawnMasonFlyers();
+
+      // Fall back to deriving duration from masonFrenzyUntil if caller forgets.
+      const duration = Number.isFinite(durationMs) && durationMs > 0
+        ? durationMs
+        : Math.max(0, masonFrenzyUntil - Date.now());
 
       let banner = document.getElementById("masonFrenzyBanner");
       if (!banner) {
@@ -3155,11 +3304,14 @@
           <span class="mfb-time">20</span>`;
         game67El.appendChild(banner);
       }
+      // Hot-pink jackpot label if rolled the rare long frenzy.
+      const isJackpot = duration >= 45000;
+      banner.querySelector(".mfb-label").textContent = isJackpot ? "🎰 MEGA FRENZY" : "2× FRENZY";
+      banner.classList.toggle("jackpot", isJackpot);
       banner.classList.remove("hide");
       banner.classList.add("show");
       const fill = banner.querySelector(".mfb-bar-fill");
       const time = banner.querySelector(".mfb-time");
-      const duration = 20000;
       fill.style.transition = "none";
       fill.style.width = "100%";
       void fill.offsetWidth;
@@ -3196,18 +3348,33 @@
       const best = Math.floor(maxPoints || points || 0);
       if (best <= 0) return;
       const rows = loadLeaderboard().filter(r => r.name !== name);
-      rows.push({ name, max: best, when: Date.now() });
-      rows.sort((a,b)=>b.max-a.max);
+      rows.push({ name, max: best, rebirths: Math.floor(rebirths || 0), when: Date.now() });
+      // Rebirths first, then max points within the same rebirth tier.
+      rows.sort((a, b) => (b.rebirths || 0) - (a.rebirths || 0) || (b.max - a.max));
       localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(rows.slice(0, 20)));
     }
     async function fetchCloudLeaderboard(){
       if(!supabaseClient) return null;
+      // Prefer v2 (returns rebirths). Fall back to v1 if the migration
+      // hasn't been deployed yet.
+      try{
+        const v2 = await supabaseClient.rpc("get_clicker_leaderboard_v2");
+        if(!v2.error){
+          return (v2.data || []).map(row => ({
+            name: row.username || "guest",
+            max: Number(row.max_points) || 0,
+            rebirths: Number(row.rebirths) || 0,
+            when: row.updated_at ? Date.parse(row.updated_at) : Date.now()
+          })).filter(row => row.when >= LEADERBOARD_RESET_AT && row.max > 0);
+        }
+      }catch(_) { /* fall through to v1 */ }
       try{
         const { data, error } = await supabaseClient.rpc("get_clicker_leaderboard");
         if(error) throw error;
         return (data || []).map(row => ({
           name: row.username || "guest",
           max: Number(row.max_points) || 0,
+          rebirths: 0,
           when: row.updated_at ? Date.parse(row.updated_at) : Date.now()
         })).filter(row => row.when >= LEADERBOARD_RESET_AT && row.max > 0);
       }catch(e){
@@ -3215,10 +3382,30 @@
         return null;
       }
     }
+    function sortLeaderboardRows(rows){
+      // Rebirths trump points heavily — that's the whole point of the system.
+      // Within the same rebirth tier, sort by max points.
+      return [...rows].sort((a, b) => {
+        const ar = a.rebirths || 0, br = b.rebirths || 0;
+        if (ar !== br) return br - ar;
+        return (b.max || 0) - (a.max || 0);
+      });
+    }
     async function showLeaderboard(){
       const cloudRows = await fetchCloudLeaderboard();
-      const rows = (cloudRows && cloudRows.length ? cloudRows : loadLeaderboard().slice(0, 10));
-      document.getElementById("leaderboardRows").innerHTML = rows.length ? rows.map((r,i)=>`<div class="leader-row"><span>#${i+1} ${leaderboardNameHtml(r.name)}</span><span>${formatNum(r.max)}</span></div>`).join("") : "<p>No scores yet.</p>";
+      const localRows = loadLeaderboard().slice(0, 20).map(r => ({...r, rebirths: r.rebirths || 0}));
+      const rows = sortLeaderboardRows(cloudRows && cloudRows.length ? cloudRows : localRows).slice(0, 20);
+      const html = rows.length ? rows.map((r,i) => {
+        const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i+1}`;
+        const reb = r.rebirths > 0
+          ? `<span class="reb-badge" title="${r.rebirths} rebirths">↻ ${r.rebirths}</span>`
+          : "";
+        return `<div class="leader-row">`
+             + `<span class="leader-name">${medal} ${leaderboardNameHtml(r.name)} ${reb}</span>`
+             + `<span class="leader-score">${formatNum(r.max)}</span>`
+             + `</div>`;
+      }).join("") : "<p>No scores yet.</p>";
+      document.getElementById("leaderboardRows").innerHTML = html;
       document.getElementById("leaderboardModal").classList.add("show");
     }
     document.getElementById("leaderboardBtn").addEventListener("click", showLeaderboard);
