@@ -4719,6 +4719,27 @@
       panel.classList.remove("show");
       panel.setAttribute("aria-hidden", "true");
     });
+
+    // ── Hash routing for the social-bar on game pages ────────────────
+    // Game pages link back here as `index.html#friends` or `#messages` —
+    // honour the hash by clicking the matching button after the dashboard
+    // has settled.
+    function handleSocialHash(){
+      const h = (window.location.hash || "").replace(/^#/, "").toLowerCase();
+      if(h === "friends" || h === "messages"){
+        const btn = document.getElementById(h === "friends" ? "friendsBtn" : "messagesBtn");
+        if(btn){
+          // Defer one frame so any sign-in or boot flow finishes first.
+          requestAnimationFrame(() => {
+            btn.click();
+            // Clear the hash so a refresh doesn't keep re-opening the panel.
+            history.replaceState(null, "", location.pathname + location.search);
+          });
+        }
+      }
+    }
+    window.addEventListener("hashchange", handleSocialHash);
+    handleSocialHash();
     document.getElementById("userSearch").addEventListener("input", renderUsers);
     document.getElementById("messageSearch").addEventListener("input", renderFriends);
 
