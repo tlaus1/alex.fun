@@ -560,6 +560,29 @@
       box-shadow: 0 0 0 2px var(--surface), 0 0 6px rgba(34,197,94,.7);
     }
     .presence-dot.offline { background: #6b7280; opacity:.6; }
+
+    /* Unread-message indicator on friend rows (messages panel) */
+    .dm-row.has-unread {
+      background: linear-gradient(90deg, rgba(239,68,68,.10), rgba(239,68,68,0) 70%);
+      border-color: rgba(239,68,68,.32);
+    }
+    .dm-row.has-unread strong { color: var(--fg); }
+    .dm-unread-dot {
+      margin-left: auto;
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 20px; height: 20px; padding: 0 6px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+      font-size: 11px; font-weight: 900; letter-spacing: .2px;
+      box-shadow: 0 2px 8px rgba(239,68,68,.45);
+      animation: dmDotPop .35s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes dmDotPop {
+      from { transform: scale(0); }
+      60%  { transform: scale(1.2); }
+      to   { transform: scale(1); }
+    }
     .message-thread { border:1px solid var(--border); border-radius:10px; padding:10px; background:var(--surface); min-height:190px; max-height:280px; overflow:auto; }
     .message-bubble { margin:5px 0; padding:7px 9px; border-radius:10px; background:var(--surface2); font-size:12px; font-weight:800; }
     .message-sender { display:block; margin-bottom:3px; font-size:10px; font-weight:900; letter-spacing:.4px; text-transform:uppercase; color:var(--muted); }
@@ -4355,22 +4378,55 @@
       const label = isOnline ? "Online" : "Offline";
       return `<span class="${cls}" title="${label}" aria-label="${label}"></span>`;
     }
+    function unreadFromFriend(social, name){
+      const thread = (social.messages || {})[name] || [];
+      return thread.filter(m => m && !m.mine && !m.read_at).length;
+    }
+    function lastIncomingAt(social, name){
+      const thread = (social.messages || {})[name] || [];
+      let newest = 0;
+      for(const m of thread){
+        if(m && !m.mine){
+          const t = Date.parse(m.created_at || 0) || 0;
+          if(t > newest) newest = t;
+        }
+      }
+      return newest;
+    }
     function renderFriends(){
       const social = currentSocial();
       const query = document.getElementById("messageSearch").value.trim().toLowerCase();
       // Only show accepted friends — not every account that ever DM'd you.
-      // Sort online friends to the top so they're the first thing you see.
+      // Sort priority:
+      //   1. anyone with unread incoming messages (newest first)
+      //   2. online friends
+      //   3. alphabetical
       const friends = (social.friends || [])
         .filter(name => !query || name.toLowerCase().includes(query))
         .slice()
         .sort((a, b) => {
+          const ua = unreadFromFriend(social, a);
+          const ub = unreadFromFriend(social, b);
+          if(ua > 0 && ub === 0) return -1;
+          if(ub > 0 && ua === 0) return 1;
+          if(ua > 0 && ub > 0){
+            // tie-break by newest unread message
+            return lastIncomingAt(social, b) - lastIncomingAt(social, a);
+          }
           const ao = onlineUsers.has(a.toLowerCase()) ? 0 : 1;
           const bo = onlineUsers.has(b.toLowerCase()) ? 0 : 1;
           if(ao !== bo) return ao - bo;
           return a.localeCompare(b);
         });
       document.getElementById("friendList").innerHTML = friends.length
-        ? friends.map(name => `<div class="user-row" data-friend="${escapeHtml(name)}">${presenceDot(name)}<strong>${leaderboardNameHtml(name)}</strong></div>`).join("")
+        ? friends.map(name => {
+            const unread = unreadFromFriend(social, name);
+            const badge = unread > 0
+              ? `<span class="dm-unread-dot" title="${unread} new">${unread > 9 ? "9+" : unread}</span>`
+              : "";
+            const hasUnread = unread > 0 ? " has-unread" : "";
+            return `<div class="user-row dm-row${hasUnread}" data-friend="${escapeHtml(name)}">${presenceDot(name)}<strong>${leaderboardNameHtml(name)}</strong>${badge}</div>`;
+          }).join("")
         : "<p>Add some friends first — they'll show up here.</p>";
     }
     function renderThread(){
@@ -4446,7 +4502,23 @@
       const row = e.target.closest(".user-row");
       if(!row) return;
       selectedMessageFriend = row.dataset.friend;
+      // Locally clear the unread badges for this thread so the red dot vanishes
+      // immediately. The server gets caught up on the next refresh.
+      const social = currentSocial();
+      const thread = (social.messages || {})[selectedMessageFriend] || [];
+      const nowIso = new Date().toISOString();
+      thread.forEach(m => { if(m && !m.mine && !m.read_at) m.read_at = nowIso; });
+      saveSocial(social);
+      // Tell the server (if available) so unread state syncs across devices.
+      if(supabaseClient && currentSessionToken){
+        supabaseClient.rpc("mark_messages_read", {
+          p_token: currentSessionToken,
+          p_other_username: selectedMessageFriend,
+        }).catch(() => {});
+      }
       renderThread();
+      renderFriends();
+      updateSocialBadges();
     });
     document.getElementById("sendMessageBtn").addEventListener("click", async () => {
       const text = document.getElementById("messageText").value.trim();
