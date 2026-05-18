@@ -527,15 +527,22 @@
     .admin-data-table td.json-cell { font-size:9.5px; color:rgba(255,255,255,.7); cursor:help; }
     .friends-panel, .messages-panel {
       position:fixed; top:auto; bottom:calc(var(--status-h) + 10px); right:12px;
-      width:min(340px, calc(100vw - 24px)); max-height:min(520px, calc(100vh - var(--status-h) - 24px));
+      width:min(380px, calc(100vw - 24px));
+      height:min(620px, calc(100vh - var(--status-h) - 24px));
       z-index:10030; background:var(--surface2); color:var(--fg); border:1.5px solid var(--border);
       border-radius:16px; box-shadow:0 18px 54px rgba(0,0,0,.22); padding:12px;
       transform:translateY(14px) scale(.98); opacity:0; pointer-events:none;
-      transition:transform .22s cubic-bezier(.4,0,.2,1), opacity .22s; overflow:auto;
+      transition:transform .22s cubic-bezier(.4,0,.2,1), opacity .22s;
+      /* No outer scroll — each section scrolls independently below. */
+      display:flex; flex-direction:column; overflow:hidden;
     }
     .panel-head {
-      position:static; z-index:2; margin:-4px -4px 10px; padding:8px 4px 10px;
-      display:flex; align-items:center; gap:8px; background:var(--surface2); border-bottom:1px solid var(--border);
+      flex-shrink:0;
+      position:sticky; top:0; z-index:3;
+      margin:-12px -12px 10px; padding:10px 12px;
+      display:flex; align-items:center; gap:8px;
+      background:var(--surface2); border-bottom:1px solid var(--border);
+      border-top-left-radius:16px; border-top-right-radius:16px;
     }
     .panel-back {
       border:1.5px solid var(--border); border-radius:999px; background:var(--surface);
@@ -543,8 +550,37 @@
     }
     .panel-head h3 { margin:0; }
     .friends-panel.show, .messages-panel.show { transform:translateY(0) scale(1); opacity:1; pointer-events:auto; }
-    .messages-panel { width:min(540px, calc(100vw - 24px)); }
-    .messages-layout { display:grid; grid-template-columns:150px 1fr; gap:10px; min-height:0; }
+    /* Wider messages panel + a fuller chat layout */
+    .messages-panel {
+      width:min(760px, calc(100vw - 24px));
+      height:min(720px, calc(100vh - var(--status-h) - 24px));
+    }
+    .messages-layout {
+      flex:1; min-height:0;
+      display:grid; grid-template-columns:200px 1fr; gap:12px;
+      overflow:hidden;
+    }
+    /* Left column (friend list) — only its list area scrolls */
+    .messages-layout > div:first-child {
+      display:flex; flex-direction:column; min-height:0; overflow:hidden;
+    }
+    .messages-layout > div:first-child .messages-list-head { flex-shrink:0; }
+    .messages-layout > div:first-child #friendList {
+      flex:1; overflow-y:auto; min-height:0;
+      padding-right:4px; margin-right:-4px;
+    }
+    /* Right column (thread) — thread scrolls, textarea + buttons pinned */
+    .messages-layout > div:last-child {
+      display:flex; flex-direction:column; min-height:0; overflow:hidden;
+    }
+    .messages-layout > div:last-child #messageThread {
+      flex:1; min-height:0; overflow-y:auto;
+    }
+    .messages-layout > div:last-child #messageText { flex-shrink:0; margin-top:8px; }
+    .messages-layout > div:last-child .admin-actions { flex-shrink:0; margin-top:6px; }
+    /* Friends panel: same sticky-head treatment, internal user-list scrolls */
+    .friends-panel > * { flex-shrink:0; }
+    .friends-panel > #userList { flex:1; overflow-y:auto; min-height:0; padding-right:4px; margin-right:-4px; }
     .user-list { display:grid; gap:6px; margin-top:10px; }
     .user-row { border:1px solid var(--border); border-radius:10px; padding:8px; background:var(--surface); cursor:pointer; display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
     .user-row strong { font-size:13px; flex:1; min-width:0; }
