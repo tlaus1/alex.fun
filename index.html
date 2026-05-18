@@ -1769,6 +1769,7 @@
     <div class="admin-actions">
       <button class="btn" id="adminGivePointsBtn" type="button">💰 Give Points</button>
       <button class="btn" id="adminTakePointsBtn" type="button">💸 Take Points</button>
+      <button class="btn" id="adminGiveMultiplierBtn" type="button">✖️ Give Multiplier</button>
     </div>
     <div style="margin-top:10px;font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Reset Password (target user)</div>
     <div class="admin-grid">
@@ -4238,6 +4239,33 @@
     }
     document.getElementById("adminGivePointsBtn").addEventListener("click", () => runAdminAdjustPoints("give"));
     document.getElementById("adminTakePointsBtn").addEventListener("click", () => runAdminAdjustPoints("take"));
+
+    async function runAdminGiveMultiplier(){
+      if(!isAlexAccount()) return;
+      const target = normalizeUsername(document.getElementById("adminTargetUser").value);
+      const mult   = Number(document.getElementById("adminMultiplierAmount").value);
+      if(!target){ alert("Enter a target username first."); return; }
+      if(!Number.isFinite(mult) || mult < 1){ alert("Multiplier must be ≥ 1."); return; }
+      if(!supabaseClient || !currentSessionToken){
+        alert("This action requires Supabase to be connected.");
+        return;
+      }
+      const { error } = await supabaseClient.rpc("admin_set_user_multiplier", {
+        p_token: currentSessionToken,
+        p_target_username: target,
+        p_multiplier: Math.floor(mult),
+      });
+      if(error){
+        if(/schema cache|admin_set_user_multiplier/i.test(error.message || "")){
+          alert("Multiplier RPC not installed in Supabase yet — run the latest migration.");
+        } else {
+          alert(error.message || "Could not set multiplier.");
+        }
+        return;
+      }
+      showNotice(`${target} now has ${Math.floor(mult)}× multiplier.`);
+    }
+    document.getElementById("adminGiveMultiplierBtn").addEventListener("click", runAdminGiveMultiplier);
 
     document.getElementById("adminAnnounceBtn").addEventListener("click", async () => {
       if(!isAlexAccount()) return;
