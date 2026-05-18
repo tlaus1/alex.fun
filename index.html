@@ -4610,9 +4610,16 @@
         return;
       }
       const social = currentSocial();
-      const thread = selectedMessageFriend ? (social.messages[selectedMessageFriend] || []) : [];
+      const fullThread = selectedMessageFriend ? (social.messages[selectedMessageFriend] || []) : [];
+      // Cap to the most recent ~200 messages so giant threads don't stall the
+      // main thread for hundreds of ms on every click.
+      const RENDER_CAP = 200;
+      const thread = fullThread.length > RENDER_CAP ? fullThread.slice(-RENDER_CAP) : fullThread;
+      const truncatedNote = fullThread.length > RENDER_CAP
+        ? `<p style="text-align:center;font-size:11px;color:var(--muted);margin:6px 0;">Showing last ${RENDER_CAP} of ${fullThread.length} messages</p>`
+        : "";
       box.innerHTML = selectedMessageFriend
-        ? `<strong>${leaderboardNameHtml(selectedMessageFriend)}</strong>` + (thread.length ? thread.map(msg => {
+        ? `<strong>${leaderboardNameHtml(selectedMessageFriend)}</strong>` + truncatedNote + (thread.length ? thread.map(msg => {
             const text = typeof msg === "string" ? msg : msg.body;
             const mine = msg && msg.mine;
             const sender = mine ? (activeUser || "You") : ((msg && msg.from) || selectedMessageFriend);
@@ -4765,21 +4772,23 @@
       if(row.dataset.group){
         selectedMessageGroup  = row.dataset.group;
         selectedMessageFriend = "";
-        // Render the (cached or empty) thread synchronously so the UI swap is
-        // instant; fetch the latest messages in the background.
+        // Clear the row's unread badge instantly so the click feels responsive.
+        row.classList.remove("has-unread");
+        const groupDot = row.querySelector(".dm-unread-dot");
+        if(groupDot) groupDot.remove();
         renderThread();
         loadGroupThread(selectedMessageGroup);
         const g = myGroups.find(x => x.id === selectedMessageGroup);
         if(g) g.unread_count = 0;
-        // Defer the heavy stuff (full friend re-render + server mark-read RPC)
-        // to the next frame so the click feels snappy.
-        requestAnimationFrame(() => {
+        const groupId = selectedMessageGroup;
+        const defer = window.requestIdleCallback || (cb => setTimeout(cb, 0));
+        defer(() => {
           renderFriends();
           updateSocialBadges();
           if(supabaseClient && currentSessionToken){
             supabaseClient.rpc("mark_group_read", {
               p_token: currentSessionToken,
-              p_group_id: selectedMessageGroup,
+              p_group_id: groupId,
             }).catch(() => {});
           }
         });
@@ -4789,19 +4798,27 @@
       selectedMessageGroup  = "";
       // Render the thread synchronously — that's all the user cares about.
       renderThread();
-      // Defer the localStorage write + RPC + friend re-render so the click
-      // returns in ~1ms instead of stalling on disk IO and DOM rebuilds.
-      requestAnimationFrame(() => {
+      // Optimistically zero the unread badge on this row IMMEDIATELY so the
+      // perceived response is instant, without a full friendList re-render.
+      row.classList.remove("has-unread");
+      const dot = row.querySelector(".dm-unread-dot");
+      if(dot) dot.remove();
+      // Everything else — the localStorage write, the RPC, the full friend
+      // list re-render — happens asynchronously. We use setTimeout(0) so the
+      // browser actually paints the new thread before we run more JS.
+      const friendName = selectedMessageFriend;
+      const defer = window.requestIdleCallback || (cb => setTimeout(cb, 0));
+      defer(() => {
         const social = currentSocial();
-        const thread = (social.messages || {})[selectedMessageFriend] || [];
+        const thread = (social.messages || {})[friendName] || [];
         const nowIso = new Date().toISOString();
         let touched = false;
-        thread.forEach(m => { if(m && !m.mine && !m.read_at){ m.read_at = nowIso; touched = true; } });
+        for(const m of thread){ if(m && !m.mine && !m.read_at){ m.read_at = nowIso; touched = true; } }
         if(touched) saveSocial(social);
         if(supabaseClient && currentSessionToken){
           supabaseClient.rpc("mark_messages_read", {
             p_token: currentSessionToken,
-            p_other_username: selectedMessageFriend,
+            p_other_username: friendName,
           }).catch(() => {});
         }
         renderFriends();
@@ -4831,8 +4848,14 @@
           last_message_at: row.last_message_at,
           unread_count: Number(row.unread_count) || 0,
         }));
-      } catch(_) {
-        // RPC missing or transient — keep last cache to avoid losing UI state.
+        // Re-render in case this fetch resolved after the initial renderFriends.
+        if(document.getElementById("messagesPanel").classList.contains("show")){
+          renderFriends();
+        }
+      } catch(err) {
+        // Surface the error so user can see why groups don't show — most
+        // common cause is the migration SQL not being run yet.
+        console.warn("[groups] list_my_groups failed:", err && err.message ? err.message : err);
       }
     }
     async function loadGroupThread(groupId){
@@ -4945,13 +4968,26 @@
     });
 
     // Per-second income tick. Runs at 100ms for smooth point readouts, but
-    // only repaints UI when the 67 Clicker is actually on-screen — otherwise
-    // 100 DOM operations every 100ms (~1000/sec) tank the rest of the site.
+    // only repaints UI when the 67 Clicker is actually on-screen AND no
+    // overlay panel is on top of it — otherwise 100 DOM operations every
+    // 100ms (~1000/sec) tank the rest of the site.
+    function shouldRender67Tick(){
+      if (game67El.classList.contains("hidden")) return false;
+      // Skip when any overlay panel is open over the game.
+      if (typeof isSocialPanelOpen === "function" && isSocialPanelOpen()) return false;
+      const lb = document.getElementById("leaderboardModal");
+      if (lb && lb.classList.contains("show")) return false;
+      const sm = document.getElementById("settingsModal");
+      if (sm && sm.classList.contains("show")) return false;
+      // Bail if the document is hidden (tab in background).
+      if (document.hidden) return false;
+      return true;
+    }
     setInterval(() => {
       if (perSec > 0) {
         points += effectivePerSec()/10;
         markSaveDirty();
-        if (!game67El.classList.contains("hidden")) updateUI();
+        if (shouldRender67Tick()) updateUI();
       }
     }, 100);
 
