@@ -19,7 +19,8 @@ create or replace function public.admin_reset_password(
 returns void
 language plpgsql
 security definer
-set search_path = public
+-- pgcrypto's crypt()/gen_salt() live in `extensions` on Supabase.
+set search_path = public, extensions
 as $$
 declare
   v_caller text;

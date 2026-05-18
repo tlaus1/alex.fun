@@ -14,7 +14,9 @@ create or replace function public.change_username(
 returns text
 language plpgsql
 security definer
-set search_path = public
+-- pgcrypto's crypt()/gen_salt() live in the `extensions` schema on Supabase
+-- (not `public`), so we need to include it in search_path.
+set search_path = public, extensions
 as $$
 declare
   v_player_id uuid;

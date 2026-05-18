@@ -374,7 +374,28 @@
       background:rgba(0,0,0,.55); backdrop-filter:blur(6px);
     }
     .leaderboard-modal.show { display:grid; }
-    .leaderboard-card { width:min(440px,100%); border-radius:22px; padding:20px; background:var(--surface2); border:1.5px solid var(--border); color:var(--fg); box-shadow:0 24px 80px rgba(0,0,0,.32); }
+    .leaderboard-card {
+      width:min(440px,100%);
+      max-height:min(82vh, 720px);
+      display:flex; flex-direction:column;
+      border-radius:22px; padding:20px;
+      background:var(--surface2); border:1.5px solid var(--border);
+      color:var(--fg); box-shadow:0 24px 80px rgba(0,0,0,.32);
+    }
+    .leaderboard-card #leaderboardRows {
+      flex:1 1 auto;
+      overflow-y:auto;
+      min-height:0;
+      padding-right:6px;
+      margin-right:-6px; /* compensate so scrollbar doesn't bite the content */
+      mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 12px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 12px), transparent 100%);
+    }
+    .leaderboard-card #leaderboardRows::-webkit-scrollbar { width:8px; }
+    .leaderboard-card #leaderboardRows::-webkit-scrollbar-thumb {
+      background:rgba(255,255,255,.14); border-radius:999px;
+    }
+    .leaderboard-card #leaderboardRows::-webkit-scrollbar-thumb:hover { background:rgba(255,107,61,.5); }
     .leaderboard-card h2 { font-size:24px; font-weight:900; margin-bottom:10px; }
     /* Segmented control: All time / Today */
     .lb-period-tabs {
