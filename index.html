@@ -338,15 +338,15 @@
       50%     { background-position: 100% 50%; }
     }
 
-    /* Mason flyers — chaotic background swarm during 2× Frenzy.
-       Z-index keeps them BEHIND the clicker (which is z-index:3+ in playArea).
-       Each flyer is placed at centre via top/left:50% then translated to a
-       random offset by the keyframe so individual paths look chaotic. */
+    /* Mason / Sahur flyers — chaotic background swarm during 2× Frenzy.
+       `position: fixed` so they fly across the whole viewport, not just
+       inside the 67 play area. Each flyer starts centred on the screen
+       (top/left:50%) then translates to a random offset via keyframes. */
     .mason-flyer {
-      position: absolute;
+      position: fixed;
       top: 50%; left: 50%;
       pointer-events: none;
-      z-index: 1;
+      z-index: 8500;  /* above the dashboard, below the music pill (10030) */
       filter: drop-shadow(0 4px 16px rgba(255, 107, 0, .65));
       animation: masonFly var(--dur, 2s) linear var(--delay, 0s) infinite;
       will-change: transform, opacity;
@@ -3497,32 +3497,34 @@
     let masonFlyers = [];
     function spawnMasonFlyers(){
       stopMasonFlyers();
-      if (!playArea) return;
-      const COUNT = 22;
+      const COUNT = 28;
       // Pool of mascots to randomly draw from each spawn. Adding more entries
       // here mixes them into the swarm proportionally.
       const FLYER_SPRITES = ["./mason67.png", "./brown-plush.jpg"];
+      // Scale the travel distance to the viewport so flyers always sweep
+      // edge-to-edge regardless of screen size.
+      const VIEW_W = window.innerWidth;
+      const VIEW_H = window.innerHeight;
+      const REACH  = Math.max(VIEW_W, VIEW_H) * 1.2;
       for (let i = 0; i < COUNT; i++) {
         const flyer = document.createElement("img");
         flyer.src = FLYER_SPRITES[Math.floor(Math.random() * FLYER_SPRITES.length)];
         flyer.className = "mason-flyer";
         flyer.alt = "";
         // Random size, direction, spin, opacity, timing
-        const size      = 50 + Math.random() * 110;          // 50–160px
-        const duration  = 1.2 + Math.random() * 2.4;         // 1.2–3.6s
-        const delay     = Math.random() * 1.8;               // 0–1.8s stagger
-        const opacity   = 0.45 + Math.random() * 0.45;       // 0.45–0.9
+        const size      = 60 + Math.random() * 120;          // 60–180px
+        const duration  = 1.6 + Math.random() * 2.6;         // 1.6–4.2s
+        const delay     = Math.random() * 1.8;
+        const opacity   = 0.5  + Math.random() * 0.45;
         const spin      = (Math.random() < .5 ? -1 : 1) * (360 + Math.random() * 720);
-        // Random vector across the screen
         const angle     = Math.random() * Math.PI * 2;
-        const dist      = 1100 + Math.random() * 500;
-        const startX    = Math.cos(angle) * -dist;
-        const startY    = Math.sin(angle) * -dist;
-        const endX      = Math.cos(angle) *  dist;
-        const endY      = Math.sin(angle) *  dist;
+        const startX    = Math.cos(angle) * -REACH;
+        const startY    = Math.sin(angle) * -REACH;
+        const endX      = Math.cos(angle) *  REACH;
+        const endY      = Math.sin(angle) *  REACH;
         flyer.style.width = `${size}px`;
         flyer.style.height = "auto";
-        flyer.style.marginLeft = `${-size/2}px`;             // centre on its own box
+        flyer.style.marginLeft = `${-size/2}px`;
         flyer.style.marginTop  = `${-size/2}px`;
         flyer.style.setProperty("--start-x", `${startX}px`);
         flyer.style.setProperty("--start-y", `${startY}px`);
@@ -3532,7 +3534,9 @@
         flyer.style.setProperty("--delay",   `${delay}s`);
         flyer.style.setProperty("--spin",    `${spin}deg`);
         flyer.style.setProperty("--peak-opacity", String(opacity));
-        playArea.appendChild(flyer);
+        // Append to body so the swarm covers the entire screen instead of
+        // being clipped to the play-area's bounds.
+        document.body.appendChild(flyer);
         masonFlyers.push(flyer);
       }
     }
