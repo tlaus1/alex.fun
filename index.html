@@ -376,6 +376,36 @@
     .leaderboard-modal.show { display:grid; }
     .leaderboard-card { width:min(440px,100%); border-radius:22px; padding:20px; background:var(--surface2); border:1.5px solid var(--border); color:var(--fg); box-shadow:0 24px 80px rgba(0,0,0,.32); }
     .leaderboard-card h2 { font-size:24px; font-weight:900; margin-bottom:10px; }
+    /* Segmented control: All time / Today */
+    .lb-period-tabs {
+      position:relative;
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:0; padding:3px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:999px;
+      margin-bottom:12px;
+      overflow:hidden;
+    }
+    .lb-tab {
+      position:relative; z-index:1;
+      appearance:none; border:0; background:transparent;
+      padding:8px 10px; font:inherit; font-size:12px; font-weight:900;
+      letter-spacing:.4px; text-transform:uppercase;
+      color:var(--muted); cursor:pointer;
+      transition:color .25s ease;
+    }
+    .lb-tab.active { color:#fff; }
+    .lb-tab-slider {
+      position:absolute; top:3px; bottom:3px; left:3px;
+      width:calc(50% - 3px);
+      border-radius:999px;
+      background:linear-gradient(135deg, #ff6b3d, #ff9a3d);
+      box-shadow:0 4px 14px rgba(255,107,61,.35);
+      transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+      z-index:0;
+    }
+    .lb-period-tabs[data-period="daily"] .lb-tab-slider { transform:translateX(100%); }
     .leader-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; font-weight:900; }
     .leader-row:last-child { border-bottom:0; }
     .leader-row .leader-score { color:#e67e00; font-variant-numeric: tabular-nums; }
@@ -1729,6 +1759,11 @@
   <div id="leaderboardModal" class="leaderboard-modal" aria-hidden="true">
     <div class="leaderboard-card">
       <h2>67 Clicker Leaderboard</h2>
+      <div class="lb-period-tabs" role="tablist" aria-label="Leaderboard period">
+        <button class="lb-tab active" data-period="lifetime" role="tab" aria-selected="true"  type="button">All time</button>
+        <button class="lb-tab"        data-period="daily"    role="tab" aria-selected="false" type="button">Today</button>
+        <span class="lb-tab-slider" aria-hidden="true"></span>
+      </div>
       <div id="leaderboardRows"></div>
       <button class="btn" id="closeLeaderboard" type="button" style="margin-top:14px;width:100%;">Close</button>
     </div>
@@ -2841,6 +2876,19 @@
     let adminMultiplier = 1;
     let lastSpaceClickTimes = [];
     let lastSavedAt = Date.now();
+    // Daily leaderboard tracking — `dailyPeak` is the highest `points` value
+    // reached on `dailyDate` (UTC). Resets when the date rolls over.
+    let dailyPeak  = 0;
+    let dailyDate  = "";
+    function todayUtcStr(){ return new Date().toISOString().slice(0, 10); }
+    function bumpDailyPeak(){
+      const today = todayUtcStr();
+      if(dailyDate !== today){
+        dailyDate = today;
+        dailyPeak = 0;
+      }
+      if(points > dailyPeak) dailyPeak = Math.floor(points);
+    }
 
     function achievementMultiplier(){ return Date.now() < achievementBuffUntil ? 1.25 : 1; }
     function rebirthMultiplier(){ return 1 + rebirths * 0.5; }
@@ -2912,6 +2960,7 @@
           cost: state[cfg.key].cost
         };
       });
+      bumpDailyPeak();
       return {
         updateId: CLICKER_UPDATE_ID,
         updateNoticeSeenId: CLICKER_UPDATE_ID,
@@ -2923,6 +2972,8 @@
         unlockedAchievements67,
         adminMultiplier,
         lastSavedAt: Date.now(),
+        dailyPeak,
+        dailyDate,
         upgrades
       };
     }
@@ -2944,6 +2995,15 @@
       if (Number.isFinite(saved.maxPoints)) maxPoints = saved.maxPoints;
       if (Array.isArray(saved.unlockedAchievements67)) unlockedAchievements67 = saved.unlockedAchievements67;
       if (Number.isFinite(saved.adminMultiplier)) adminMultiplier = Math.max(1, saved.adminMultiplier);
+      // Daily peak rolls over at UTC midnight.
+      const todayStr = todayUtcStr();
+      if (saved.dailyDate === todayStr && Number.isFinite(saved.dailyPeak)) {
+        dailyDate = saved.dailyDate;
+        dailyPeak = saved.dailyPeak;
+      } else {
+        dailyDate = todayStr;
+        dailyPeak = 0;
+      }
       if (Number.isFinite(saved.lastSavedAt) && perSec > 0) {
         const elapsed = Math.min(21600, Math.max(0, (Date.now() - saved.lastSavedAt) / 1000));
         if (elapsed > 5) points += effectivePerSec() * elapsed;
@@ -3365,10 +3425,25 @@
       rows.sort((a, b) => (b.rebirths || 0) - (a.rebirths || 0) || (b.max - a.max));
       localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(rows.slice(0, 20)));
     }
-    async function fetchCloudLeaderboard(){
+    async function fetchCloudLeaderboard(period){
       if(!supabaseClient) return null;
-      // Prefer v2 (returns rebirths). Fall back to v1 if the migration
-      // hasn't been deployed yet.
+      // Daily: brand-new RPC. Quiet fallback if the migration isn't deployed.
+      if(period === "daily"){
+        try {
+          const { data, error } = await supabaseClient.rpc("get_clicker_leaderboard_daily");
+          if(error) throw error;
+          return (data || []).map(row => ({
+            name: row.username || "guest",
+            max: Number(row.today_points) || 0,
+            rebirths: Number(row.rebirths) || 0,
+            when: row.updated_at ? Date.parse(row.updated_at) : Date.now()
+          })).filter(row => row.max > 0);
+        } catch(e) {
+          console.log("Daily leaderboard fetch failed:", e);
+          return null;
+        }
+      }
+      // Lifetime — prefer v2 (returns rebirths), fall back to v1.
       try{
         const v2 = await supabaseClient.rpc("get_clicker_leaderboard_v2");
         if(!v2.error){
@@ -3403,11 +3478,15 @@
         return (b.max || 0) - (a.max || 0);
       });
     }
-    async function showLeaderboard(){
-      const cloudRows = await fetchCloudLeaderboard();
-      const localRows = loadLeaderboard().slice(0, 20).map(r => ({...r, rebirths: r.rebirths || 0}));
-      const rows = sortLeaderboardRows(cloudRows && cloudRows.length ? cloudRows : localRows).slice(0, 20);
-      const html = rows.length ? rows.map((r,i) => {
+    let leaderboardPeriod = "lifetime";  // "lifetime" | "daily"
+
+    function buildLeaderboardHtml(rows, period){
+      if(!rows.length){
+        return period === "daily"
+          ? "<p>No scores today yet — be the first.</p>"
+          : "<p>No scores yet.</p>";
+      }
+      return rows.map((r,i) => {
         const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i+1}`;
         const reb = r.rebirths > 0
           ? `<span class="reb-badge" title="${r.rebirths} rebirths">↻ ${r.rebirths}</span>`
@@ -3416,12 +3495,57 @@
              + `<span class="leader-name">${medal} ${leaderboardNameHtml(r.name)} ${reb}</span>`
              + `<span class="leader-score">${formatNum(r.max)}</span>`
              + `</div>`;
-      }).join("") : "<p>No scores yet.</p>";
-      document.getElementById("leaderboardRows").innerHTML = html;
+      }).join("");
+    }
+
+    async function renderLeaderboardForPeriod(period){
+      const rowsEl = document.getElementById("leaderboardRows");
+      rowsEl.innerHTML = '<p style="text-align:center;opacity:.6;">Loading…</p>';
+      const cloudRows = await fetchCloudLeaderboard(period);
+      let rows;
+      if(period === "daily"){
+        // Daily is cloud-only — local leaderboard doesn't track per-day peaks
+        // for other players. If the RPC fails, fall back to a one-row preview
+        // of the active user's own day.
+        if(cloudRows && cloudRows.length){
+          rows = cloudRows.slice(0, 20);
+        } else if(dailyPeak > 0 && dailyDate === todayUtcStr()){
+          rows = [{
+            name: activeUser || "guest",
+            max: dailyPeak,
+            rebirths: Math.floor(rebirths || 0),
+          }];
+        } else {
+          rows = [];
+        }
+      } else {
+        const localRows = loadLeaderboard().slice(0, 20).map(r => ({...r, rebirths: r.rebirths || 0}));
+        rows = sortLeaderboardRows(cloudRows && cloudRows.length ? cloudRows : localRows).slice(0, 20);
+      }
+      rowsEl.innerHTML = buildLeaderboardHtml(rows, period);
+    }
+
+    function setLeaderboardPeriod(period){
+      leaderboardPeriod = period === "daily" ? "daily" : "lifetime";
+      const tabs = document.querySelector(".lb-period-tabs");
+      if(tabs) tabs.dataset.period = leaderboardPeriod;
+      document.querySelectorAll(".lb-tab").forEach(btn => {
+        const isActive = btn.dataset.period === leaderboardPeriod;
+        btn.classList.toggle("active", isActive);
+        btn.setAttribute("aria-selected", String(isActive));
+      });
+      renderLeaderboardForPeriod(leaderboardPeriod);
+    }
+
+    async function showLeaderboard(){
       document.getElementById("leaderboardModal").classList.add("show");
+      setLeaderboardPeriod(leaderboardPeriod);   // re-renders current tab
     }
     document.getElementById("leaderboardBtn").addEventListener("click", showLeaderboard);
     document.getElementById("closeLeaderboard").addEventListener("click", () => document.getElementById("leaderboardModal").classList.remove("show"));
+    document.querySelectorAll(".lb-tab").forEach(btn => {
+      btn.addEventListener("click", () => setLeaderboardPeriod(btn.dataset.period));
+    });
 
     function escapeHtml(value){
       return String(value || "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
@@ -3788,13 +3912,13 @@
     document.getElementById("adminSetPointsBtn").addEventListener("click", () => {
       if(!isAlexAccount()) return;
       points = readAdminNumber("adminPointAmount", points);
-      maxPoints = Math.max(maxPoints, points);
+      maxPoints = Math.max(maxPoints, points); bumpDailyPeak();
       updateUI(); markSaveDirty(); saveGame();
     });
     document.getElementById("adminAddPointsBtn").addEventListener("click", () => {
       if(!isAlexAccount()) return;
       points += readAdminNumber("adminPointAmount", 0);
-      maxPoints = Math.max(maxPoints, points);
+      maxPoints = Math.max(maxPoints, points); bumpDailyPeak();
       updateUI(); markSaveDirty(); saveGame();
     });
     document.getElementById("adminSetMultiplierBtn").addEventListener("click", () => {
@@ -3861,7 +3985,7 @@
     document.getElementById("adminUnlockAllBtn").addEventListener("click", () => {
       if(!isAlexAccount()) return;
       points = Math.max(points, 1_000_000_000_000_000);
-      maxPoints = Math.max(maxPoints, points);
+      maxPoints = Math.max(maxPoints, points); bumpDailyPeak();
       clickPower = Math.max(clickPower, 1_000_000_000);
       perSec = Math.max(perSec, 10_000_000_000);
       rebirths = Math.max(rebirths, 10);
