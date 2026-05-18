@@ -461,8 +461,20 @@
     .messages-panel { width:min(540px, calc(100vw - 24px)); }
     .messages-layout { display:grid; grid-template-columns:150px 1fr; gap:10px; min-height:0; }
     .user-list { display:grid; gap:6px; margin-top:10px; }
-    .user-row { border:1px solid var(--border); border-radius:10px; padding:8px; background:var(--surface); cursor:pointer; }
-    .user-row strong { display:block; font-size:13px; }
+    .user-row { border:1px solid var(--border); border-radius:10px; padding:8px; background:var(--surface); cursor:pointer; display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+    .user-row strong { font-size:13px; flex:1; min-width:0; }
+    .user-row .user-actions { width:100%; }
+    .presence-dot {
+      display:inline-block; width:9px; height:9px; border-radius:999px;
+      flex-shrink:0;
+      box-shadow: 0 0 0 2px var(--surface);
+      transition: background .2s ease, box-shadow .2s ease;
+    }
+    .presence-dot.online {
+      background: #22c55e;
+      box-shadow: 0 0 0 2px var(--surface), 0 0 6px rgba(34,197,94,.7);
+    }
+    .presence-dot.offline { background: #6b7280; opacity:.6; }
     .message-thread { border:1px solid var(--border); border-radius:10px; padding:10px; background:var(--surface); min-height:190px; max-height:280px; overflow:auto; }
     .message-bubble { margin:5px 0; padding:7px 9px; border-radius:10px; background:var(--surface2); font-size:12px; font-weight:800; }
     .message-sender { display:block; margin-bottom:3px; font-size:10px; font-weight:900; letter-spacing:.4px; text-transform:uppercase; color:var(--muted); }
@@ -3873,20 +3885,40 @@
       catch { return { friends:[], blocked:[], messages:{}, incomingRequests:[], outgoingRequests:[], notifications:[] }; }
     }
     function saveSocial(social){ localStorage.setItem(getSocialKey(), JSON.stringify(social)); }
+    function isBroadcastMessage(msg){
+      if(!msg) return false;
+      if(msg.kind === "broadcast" || msg.is_broadcast === true) return true;
+      const body = typeof msg === "string" ? msg : (msg.body || "");
+      // Final fallback: messages prefixed with the megaphone emoji are
+      // broadcasts even if the kind column is missing.
+      return /^\s*📢/.test(body);
+    }
     function normalizeSocialState(raw){
       const fallback = loadSocial();
       const state = raw || fallback;
       const messagesByFriend = {};
       if(Array.isArray(state.messages)){
         state.messages.forEach(msg => {
+          // Drop broadcasts on the floor — they live in the notification
+          // tray; cluttering DM threads with 50 copies of "📢 hi everyone"
+          // is exactly what we don't want.
+          if(isBroadcastMessage(msg)) return;
           const other = msg.mine ? msg.to : msg.from;
           if(!other) return;
           messagesByFriend[other] = messagesByFriend[other] || [];
           messagesByFriend[other].push(msg);
         });
       }else{
-        Object.assign(messagesByFriend, state.messages || {});
+        // When the server already returned a per-friend map, strip any
+        // broadcasts that snuck through.
+        Object.entries(state.messages || {}).forEach(([friend, msgs]) => {
+          messagesByFriend[friend] = (msgs || []).filter(m => !isBroadcastMessage(m));
+        });
       }
+      // Drop any thread that became empty after filtering broadcasts.
+      Object.keys(messagesByFriend).forEach(k => {
+        if(!messagesByFriend[k].length) delete messagesByFriend[k];
+      });
       return {
         users: Array.isArray(state.users) ? state.users : [],
         friends: Array.isArray(state.friends) ? state.friends : (fallback.friends || []),
@@ -3920,10 +3952,30 @@
       friendsBadge.classList.toggle("show", requestCount > 0);
       messagesBadge.classList.toggle("show", unreadMessages > 0);
     }
+    // ── Online presence ──────────────────────────────────────────────
+    // Maintained alongside refreshSocial so the friends list dot is always
+    // current. Stored as a lowercased Set for O(1) lookup in render fns.
+    let onlineUsers = new Set();
+    async function fetchOnlineUsers(){
+      if(!supabaseClient) return onlineUsers;
+      try {
+        const { data, error } = await supabaseClient.rpc("list_online_usernames");
+        if(error) throw error;
+        onlineUsers = new Set((data || []).map(name =>
+          typeof name === "string" ? name.toLowerCase() : (name && name.list_online_usernames || "")
+        ).filter(Boolean));
+      } catch(e) {
+        // RPC missing or transient — keep whatever we had last time.
+      }
+      return onlineUsers;
+    }
     async function refreshSocial(options = {}){
       if(supabaseClient && currentSessionToken){
         try{
-          const { data, error } = await supabaseClient.rpc("list_social_state", { p_token: currentSessionToken });
+          const [{ data, error }] = await Promise.all([
+            supabaseClient.rpc("list_social_state", { p_token: currentSessionToken }),
+            fetchOnlineUsers(),
+          ]);
           if(!error && data){
             socialState = normalizeSocialState(data);
             saveSocial(socialState);
@@ -4006,7 +4058,7 @@
         </div>`).join("") : "";
       list.innerHTML = users.length ? users.map(name => `
         <div class="user-row" data-user="${escapeHtml(name)}">
-          <strong>${leaderboardNameHtml(name)}</strong>
+          ${presenceDot(name)}<strong>${leaderboardNameHtml(name)}</strong>
           <div class="user-actions">
             <button class="btn add-user" type="button">${social.friends.includes(name) ? "Friends" : social.outgoingRequests.includes(name) ? "Requested" : "Add"}</button>
             <button class="btn msg-user" type="button">Message</button>
@@ -4042,13 +4094,28 @@
       renderFriends();
       renderThread();
     }
+    function presenceDot(name){
+      const isOnline = onlineUsers.has((name || "").toLowerCase());
+      const cls   = isOnline ? "presence-dot online" : "presence-dot offline";
+      const label = isOnline ? "Online" : "Offline";
+      return `<span class="${cls}" title="${label}" aria-label="${label}"></span>`;
+    }
     function renderFriends(){
       const social = currentSocial();
       const query = document.getElementById("messageSearch").value.trim().toLowerCase();
       // Only show accepted friends — not every account that ever DM'd you.
-      const friends = (social.friends || []).filter(name => !query || name.toLowerCase().includes(query));
+      // Sort online friends to the top so they're the first thing you see.
+      const friends = (social.friends || [])
+        .filter(name => !query || name.toLowerCase().includes(query))
+        .slice()
+        .sort((a, b) => {
+          const ao = onlineUsers.has(a.toLowerCase()) ? 0 : 1;
+          const bo = onlineUsers.has(b.toLowerCase()) ? 0 : 1;
+          if(ao !== bo) return ao - bo;
+          return a.localeCompare(b);
+        });
       document.getElementById("friendList").innerHTML = friends.length
-        ? friends.map(name => `<div class="user-row" data-friend="${escapeHtml(name)}"><strong>${leaderboardNameHtml(name)}</strong></div>`).join("")
+        ? friends.map(name => `<div class="user-row" data-friend="${escapeHtml(name)}">${presenceDot(name)}<strong>${leaderboardNameHtml(name)}</strong></div>`).join("")
         : "<p>Add some friends first — they'll show up here.</p>";
     }
     function renderThread(){
