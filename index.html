@@ -166,6 +166,9 @@
     .card-superhot { background: #1a0000; }
     .card-superhot img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
     .card-superhot.card::after { background:linear-gradient(to top,rgba(0,0,0,.78) 0%,rgba(255,30,30,.10) 48%,transparent 72%); }
+    .card-slope { background: #001a05; }
+    .card-slope img { width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;z-index:0; }
+    .card-slope.card::after { background:linear-gradient(to top,rgba(0,15,5,.78) 0%,rgba(60,255,90,.10) 48%,transparent 72%); }
 
     /* ── Alex-only: per-game 3-dot permission menu ── */
     .card-menu-btn {
@@ -1735,6 +1738,11 @@
       <a class="card card-superhot hidden" data-game-id="super-hot" data-game-name="SUPERHOT" data-alex-only="true" id="openSuperHot" href="./super-hot.html" style="cursor:pointer">
         <img src="./super-hot-card.avif" alt="SUPERHOT preview">
         <h3 class="card-title">🔴 SUPERHOT</h3>
+      </a>
+
+      <a class="card card-slope" data-game-id="slope" data-game-name="Slope" href="./slope.html" style="cursor:pointer">
+        <img src="./slope-card.jpg" alt="Slope preview">
+        <h3 class="card-title">🟢 Slope</h3>
       </a>
 
     </main>
