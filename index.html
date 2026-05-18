@@ -3446,9 +3446,12 @@
       stopMasonFlyers();
       if (!playArea) return;
       const COUNT = 22;
+      // Pool of mascots to randomly draw from each spawn. Adding more entries
+      // here mixes them into the swarm proportionally.
+      const FLYER_SPRITES = ["./mason67.png", "./brown-plush.jpg"];
       for (let i = 0; i < COUNT; i++) {
         const flyer = document.createElement("img");
-        flyer.src = "./mason67.png";
+        flyer.src = FLYER_SPRITES[Math.floor(Math.random() * FLYER_SPRITES.length)];
         flyer.className = "mason-flyer";
         flyer.alt = "";
         // Random size, direction, spin, opacity, timing
