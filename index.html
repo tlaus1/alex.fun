@@ -4720,12 +4720,57 @@
              + `</div>`;
       }).join("");
     }
+    async function promptAddGroupMembers(){
+      const groupId = selectedMessageGroup;
+      if(!groupId) return;
+      if(!supabaseClient || !currentSessionToken){
+        alert("Adding members requires Supabase to be connected.");
+        return;
+      }
+      const social = currentSocial();
+      const existing = new Set(((myGroups.find(g => g.id === groupId) || {}).members || []).map(normalizeUsername));
+      const candidates = Array.from(new Set((social.friends || [])
+        .map(normalizeUsername)
+        .filter(Boolean)
+        .filter(n => !existing.has(n)))).sort();
+      if(!candidates.length){
+        alert("All your friends are already in this group.");
+        return;
+      }
+      const input = prompt(
+        `Add to this group? Type usernames separated by commas.\nFriends not yet in: ${candidates.join(", ")}`,
+        ""
+      );
+      if(input === null) return;
+      const names = input.split(",").map(s => normalizeUsername(s)).filter(Boolean);
+      if(!names.length) return;
+      const { data, error } = await supabaseClient.rpc("add_group_members", {
+        p_token: currentSessionToken,
+        p_group_id: groupId,
+        p_member_usernames: names,
+      });
+      if(error){
+        if(/schema cache|add_group_members/i.test(error.message || "")){
+          alert("Add-members RPC not installed yet — run the latest migration.");
+        } else {
+          alert(error.message || "Could not add members.");
+        }
+        return;
+      }
+      showNotice(`Added ${data || 0} member${data === 1 ? "" : "s"}.`);
+      await fetchMyGroups();
+      renderThread();
+      renderFriends();
+    }
+
     function renderThread(){
       const box = document.getElementById("messageThread");
       if(selectedMessageGroup){
         const group = (myGroups || []).find(g => g.id === selectedMessageGroup);
+        const addBtn = `<button class="btn" id="addGroupMembersBtn" type="button" style="float:right;font-size:10px;padding:3px 9px;">+ Add</button>`;
         const header = group
-          ? `<strong>👥 ${escapeHtml(group.name)}</strong><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">${escapeHtml((group.members || []).join(", "))}</div>`
+          ? `<div style="display:flex;align-items:center;gap:8px;"><strong style="flex:1;">👥 ${escapeHtml(group.name)}</strong>${addBtn}</div>`
+            + `<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">${escapeHtml((group.members || []).join(", "))}</div>`
           : `<strong>Group</strong>`;
         const msgs = groupThreadCache.groupId === selectedMessageGroup ? groupThreadCache.messages : [];
         const bubbles = msgs.length
@@ -4736,6 +4781,8 @@
           : "<p>No messages yet.</p>";
         box.innerHTML = header + bubbles;
         box.scrollTop = box.scrollHeight;
+        const addBtnEl = document.getElementById("addGroupMembersBtn");
+        if(addBtnEl) addBtnEl.addEventListener("click", promptAddGroupMembers);
         return;
       }
       const social = currentSocial();
@@ -4791,26 +4838,8 @@
       panel.setAttribute("aria-hidden", "true");
     });
 
-    // ── Hash routing for the social-bar on game pages ────────────────
-    // Game pages link back here as `index.html#friends` or `#messages` —
-    // honour the hash by clicking the matching button after the dashboard
-    // has settled.
-    function handleSocialHash(){
-      const h = (window.location.hash || "").replace(/^#/, "").toLowerCase();
-      if(h === "friends" || h === "messages"){
-        const btn = document.getElementById(h === "friends" ? "friendsBtn" : "messagesBtn");
-        if(btn){
-          // Defer one frame so any sign-in or boot flow finishes first.
-          requestAnimationFrame(() => {
-            btn.click();
-            // Clear the hash so a refresh doesn't keep re-opening the panel.
-            history.replaceState(null, "", location.pathname + location.search);
-          });
-        }
-      }
-    }
-    window.addEventListener("hashchange", handleSocialHash);
-    handleSocialHash();
+    // Legacy hash routing removed — social-bar now opens panels in-place on
+    // game pages, so there's no #friends / #messages redirect to honour.
     document.getElementById("userSearch").addEventListener("input", renderUsers);
     document.getElementById("messageSearch").addEventListener("input", renderFriends);
 
