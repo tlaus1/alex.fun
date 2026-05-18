@@ -561,6 +561,39 @@
     }
     .presence-dot.offline { background: #6b7280; opacity:.6; }
 
+    /* Messages list head — search + "new group" button on one row */
+    .messages-list-head {
+      display:flex; gap:6px; align-items:center; margin-bottom:8px;
+    }
+    .messages-list-head input { flex:1; min-width:0; }
+    .new-group-btn {
+      appearance:none; flex-shrink:0;
+      width:32px; height:32px;
+      border:1px solid rgba(255,255,255,.18); border-radius:999px;
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#fff; font-size:18px; font-weight:900; line-height:1;
+      cursor:pointer;
+      box-shadow:0 4px 14px rgba(255,107,61,.35);
+      transition: transform .15s var(--ease-spring), filter .15s;
+    }
+    .new-group-btn:hover { transform: translateY(-1px) scale(1.05); filter: brightness(1.1); }
+
+    /* Group chat rows in the friends list */
+    .dm-row.is-group {
+      background: linear-gradient(90deg, rgba(124,58,237,.12), transparent 70%);
+      border-color: rgba(124,58,237,.32);
+    }
+    .group-icon {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:18px; height:18px; flex-shrink:0;
+      font-size:13px;
+    }
+    .dm-row .dm-row-sub {
+      width:100%;
+      font-size:10.5px; font-weight:700; color:var(--muted);
+      margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+
     /* Unread-message indicator on friend rows (messages panel) */
     .dm-row.has-unread {
       background: linear-gradient(90deg, rgba(239,68,68,.10), rgba(239,68,68,0) 70%);
@@ -1872,7 +1905,10 @@
     </div>
     <div class="messages-layout">
       <div>
-        <input id="messageSearch" type="text" placeholder="Search friends">
+        <div class="messages-list-head">
+          <input id="messageSearch" type="text" placeholder="Search">
+          <button id="newGroupBtn" class="new-group-btn" type="button" title="New group chat" aria-label="New group chat">+</button>
+        </div>
         <div id="friendList" class="user-list"></div>
       </div>
       <div>
@@ -1885,6 +1921,23 @@
       </div>
     </div>
   </aside>
+
+  <!-- ══ New group-chat modal ═══════════════════════════════════════ -->
+  <div id="newGroupModal" class="perm-overlay" aria-hidden="true">
+    <div class="perm-modal" role="dialog" aria-labelledby="newGroupTitle" style="max-width:420px;">
+      <h3 id="newGroupTitle">New group chat</h3>
+      <div class="perm-sub">Pick a name and select the friends to invite.</div>
+      <label class="lbl" for="newGroupName">Group name</label>
+      <input id="newGroupName" type="text" maxlength="40" placeholder="e.g. Lunch crew" style="width:100%;padding:10px 12px;background:#060a14;color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:10px;font:inherit;font-size:13px;margin-bottom:10px;">
+      <label class="lbl">Members</label>
+      <div class="perm-chips" id="newGroupChips"></div>
+      <div id="newGroupError" class="perm-sub" style="color:#ff6b6b;display:none;margin-top:6px;"></div>
+      <div class="perm-actions">
+        <button class="perm-btn cancel" id="newGroupCancel" type="button">Cancel</button>
+        <button class="perm-btn save"   id="newGroupCreate" type="button">Create</button>
+      </div>
+    </div>
+  </div>
   <!-- ══ Settings modal ════════════════════════════════════════ -->
   <div id="settingsModal" class="settings-modal" aria-hidden="true">
     <div class="settings-card">
@@ -4167,8 +4220,13 @@
 
     const SOCIAL_KEY_BASE = "alexFunSocialV1";
     let selectedMessageFriend = "";
+    let selectedMessageGroup  = "";   // group id when a group thread is open
     let socialState = null;
     let socialPollTimer = null;
+    // Cached groups: [{ id, name, members:[username], last_message_at, unread_count }]
+    let myGroups = [];
+    // Cached group thread for the selected group.
+    let groupThreadCache = { groupId: "", messages: [] };
     function getSocialKey(){ return profileKey(SOCIAL_KEY_BASE); }
     function loadSocial(){
       try { return JSON.parse(localStorage.getItem(getSocialKey()) || '{"friends":[],"blocked":[],"messages":{},"incomingRequests":[],"outgoingRequests":[],"notifications":[]}'); }
@@ -4265,6 +4323,7 @@
           const [{ data, error }] = await Promise.all([
             supabaseClient.rpc("list_social_state", { p_token: currentSessionToken }),
             fetchOnlineUsers(),
+            fetchMyGroups(),
           ]);
           if(!error && data){
             socialState = normalizeSocialState(data);
@@ -4431,54 +4490,110 @@
       }
       return newest;
     }
+    function lastActivityForFriend(social, name){
+      const thread = (social.messages || {})[name] || [];
+      let newest = 0;
+      for(const m of thread){
+        const t = Date.parse(m && m.created_at) || 0;
+        if(t > newest) newest = t;
+      }
+      return newest;
+    }
     function renderFriends(){
       const social = currentSocial();
       const query = document.getElementById("messageSearch").value.trim().toLowerCase();
-      // Only show accepted friends — not every account that ever DM'd you.
-      // Sort priority:
-      //   1. anyone with unread incoming messages (newest first)
-      //   2. online friends
-      //   3. alphabetical
-      const friends = (social.friends || [])
-        .filter(name => !query || name.toLowerCase().includes(query))
-        .slice()
-        .sort((a, b) => {
-          const ua = unreadFromFriend(social, a);
-          const ub = unreadFromFriend(social, b);
-          if(ua > 0 && ub === 0) return -1;
-          if(ub > 0 && ua === 0) return 1;
-          if(ua > 0 && ub > 0){
-            // tie-break by newest unread message
-            return lastIncomingAt(social, b) - lastIncomingAt(social, a);
-          }
-          const ao = onlineUsers.has(a.toLowerCase()) ? 0 : 1;
-          const bo = onlineUsers.has(b.toLowerCase()) ? 0 : 1;
-          if(ao !== bo) return ao - bo;
-          return a.localeCompare(b);
+
+      // Build a single list of entries (friends + groups) so we can sort
+      // them together by "most recent activity". Each entry has:
+      //   { kind: "friend" | "group", id, label, unread, lastAt, online }
+      const entries = [];
+
+      (social.friends || []).forEach(name => {
+        if(query && !name.toLowerCase().includes(query)) return;
+        entries.push({
+          kind: "friend",
+          id: name,
+          label: name,
+          unread: unreadFromFriend(social, name),
+          lastAt: lastActivityForFriend(social, name),
+          online: onlineUsers.has(name.toLowerCase()),
+          members: null,
         });
-      document.getElementById("friendList").innerHTML = friends.length
-        ? friends.map(name => {
-            const unread = unreadFromFriend(social, name);
-            const badge = unread > 0
-              ? `<span class="dm-unread-dot" title="${unread} new">${unread > 9 ? "9+" : unread}</span>`
-              : "";
-            const hasUnread = unread > 0 ? " has-unread" : "";
-            return `<div class="user-row dm-row${hasUnread}" data-friend="${escapeHtml(name)}">${presenceDot(name)}<strong>${leaderboardNameHtml(name)}</strong>${badge}</div>`;
-          }).join("")
-        : "<p>Add some friends first — they'll show up here.</p>";
+      });
+
+      (myGroups || []).forEach(g => {
+        const hay = (g.name + " " + (g.members || []).join(" ")).toLowerCase();
+        if(query && !hay.includes(query)) return;
+        entries.push({
+          kind: "group",
+          id: g.id,
+          label: g.name,
+          unread: g.unread_count || 0,
+          lastAt: g.last_message_at ? Date.parse(g.last_message_at) : 0,
+          online: false,
+          members: g.members || [],
+        });
+      });
+
+      // Sort: unread first (newest), then by most recent activity, then online,
+      // then by label. No alphabetical fallback for messages — recency wins.
+      entries.sort((a, b) => {
+        if((a.unread > 0) !== (b.unread > 0)) return a.unread > 0 ? -1 : 1;
+        if(b.lastAt !== a.lastAt) return b.lastAt - a.lastAt;
+        if(a.online !== b.online) return a.online ? -1 : 1;
+        return a.label.localeCompare(b.label);
+      });
+
+      const listEl = document.getElementById("friendList");
+      if(!entries.length){
+        listEl.innerHTML = "<p>Add friends or create a group chat to get started.</p>";
+        return;
+      }
+      listEl.innerHTML = entries.map(e => {
+        const badge = e.unread > 0
+          ? `<span class="dm-unread-dot" title="${e.unread} new">${e.unread > 9 ? "9+" : e.unread}</span>`
+          : "";
+        const unreadCls = e.unread > 0 ? " has-unread" : "";
+        if(e.kind === "group"){
+          const memberPreview = (e.members || []).slice(0, 4).join(", ") + (e.members.length > 4 ? "…" : "");
+          return `<div class="user-row dm-row is-group${unreadCls}" data-group="${escapeHtml(e.id)}">`
+               + `<span class="group-icon">👥</span><strong>${escapeHtml(e.label)}</strong>${badge}`
+               + `<div class="dm-row-sub">${escapeHtml(memberPreview)}</div>`
+               + `</div>`;
+        }
+        return `<div class="user-row dm-row${unreadCls}" data-friend="${escapeHtml(e.label)}">`
+             + `${presenceDot(e.label)}<strong>${leaderboardNameHtml(e.label)}</strong>${badge}`
+             + `</div>`;
+      }).join("");
     }
     function renderThread(){
+      const box = document.getElementById("messageThread");
+      if(selectedMessageGroup){
+        const group = (myGroups || []).find(g => g.id === selectedMessageGroup);
+        const header = group
+          ? `<strong>👥 ${escapeHtml(group.name)}</strong><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">${escapeHtml((group.members || []).join(", "))}</div>`
+          : `<strong>Group</strong>`;
+        const msgs = groupThreadCache.groupId === selectedMessageGroup ? groupThreadCache.messages : [];
+        const bubbles = msgs.length
+          ? msgs.map(m => {
+              const mine = (m.sender || "").toLowerCase() === (activeUser || "").toLowerCase();
+              return `<div class="message-bubble ${mine ? "mine" : "theirs"}"><span class="message-sender">${escapeHtml(mine ? "You" : m.sender)}</span>${escapeHtml(m.body || "")}</div>`;
+            }).join("")
+          : "<p>No messages yet.</p>";
+        box.innerHTML = header + bubbles;
+        box.scrollTop = box.scrollHeight;
+        return;
+      }
       const social = currentSocial();
       const thread = selectedMessageFriend ? (social.messages[selectedMessageFriend] || []) : [];
-      document.getElementById("messageThread").innerHTML = selectedMessageFriend
+      box.innerHTML = selectedMessageFriend
         ? `<strong>${leaderboardNameHtml(selectedMessageFriend)}</strong>` + (thread.length ? thread.map(msg => {
             const text = typeof msg === "string" ? msg : msg.body;
             const mine = msg && msg.mine;
             const sender = mine ? (activeUser || "You") : ((msg && msg.from) || selectedMessageFriend);
             return `<div class="message-bubble ${mine ? "mine" : "theirs"}"><span class="message-sender">${escapeHtml(sender)}</span>${escapeHtml(text || "")}</div>`;
           }).join("") : "<p>No messages yet.</p>")
-        : "Choose a friend to start messaging.";
-      const box = document.getElementById("messageThread");
+        : "Choose a friend or group to start messaging.";
       box.scrollTop = box.scrollHeight;
     }
     document.getElementById("friendsBtn").addEventListener("click", async () => {
@@ -4514,6 +4629,86 @@
     });
     document.getElementById("userSearch").addEventListener("input", renderUsers);
     document.getElementById("messageSearch").addEventListener("input", renderFriends);
+
+    // ── New group-chat modal ───────────────────────────────────────────
+    const newGroupModal = document.getElementById("newGroupModal");
+    const newGroupNameInput = document.getElementById("newGroupName");
+    const newGroupChips = document.getElementById("newGroupChips");
+    const newGroupError = document.getElementById("newGroupError");
+    function showNewGroupError(msg){
+      newGroupError.textContent = msg || "";
+      newGroupError.style.display = msg ? "block" : "none";
+    }
+    function openNewGroupModal(){
+      if(!supabaseClient || !currentSessionToken){
+        alert("Group chats require Supabase to be connected.");
+        return;
+      }
+      newGroupNameInput.value = "";
+      showNewGroupError("");
+      // Build friend-chip picker.
+      const social = currentSocial();
+      const friends = Array.from(new Set((social.friends || []).map(normalizeUsername).filter(Boolean))).sort();
+      newGroupChips.innerHTML = "";
+      if(!friends.length){
+        newGroupChips.innerHTML = '<div class="perm-chips-empty">Add some friends first.</div>';
+      } else {
+        friends.forEach(name => {
+          const chip = document.createElement("button");
+          chip.type = "button";
+          chip.className = "perm-chip";
+          chip.textContent = name;
+          chip.addEventListener("click", () => chip.classList.toggle("active"));
+          newGroupChips.appendChild(chip);
+        });
+      }
+      newGroupModal.classList.add("show");
+      newGroupModal.setAttribute("aria-hidden", "false");
+      setTimeout(() => newGroupNameInput.focus(), 50);
+    }
+    function closeNewGroupModal(){
+      newGroupModal.classList.remove("show");
+      newGroupModal.setAttribute("aria-hidden", "true");
+    }
+    async function submitNewGroup(){
+      const name = newGroupNameInput.value.trim();
+      showNewGroupError("");
+      if(!name){ showNewGroupError("Pick a group name."); return; }
+      const selected = Array.from(newGroupChips.querySelectorAll(".perm-chip.active")).map(c => c.textContent.trim());
+      if(!selected.length){ showNewGroupError("Select at least one friend."); return; }
+      const btn = document.getElementById("newGroupCreate");
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = "Creating…";
+      try {
+        const { data, error } = await supabaseClient.rpc("create_group_chat", {
+          p_token: currentSessionToken,
+          p_name: name,
+          p_member_usernames: selected,
+        });
+        if(error){
+          if(/schema cache|create_group_chat/i.test(error.message || "")){
+            showNewGroupError("Migration not installed yet — run the SQL in Supabase.");
+          } else {
+            showNewGroupError(error.message || "Could not create group.");
+          }
+          return;
+        }
+        closeNewGroupModal();
+        await fetchMyGroups();
+        if(data){
+          selectedMessageGroup = data;
+          selectedMessageFriend = "";
+          await loadGroupThread(data);
+        }
+        renderFriends();
+        renderThread();
+      } finally {
+        btn.disabled = false; btn.textContent = orig;
+      }
+    }
+    document.getElementById("newGroupBtn").addEventListener("click", openNewGroupModal);
+    document.getElementById("newGroupCancel").addEventListener("click", closeNewGroupModal);
+    document.getElementById("newGroupCreate").addEventListener("click", submitNewGroup);
+    newGroupModal.addEventListener("click", e => { if(e.target === newGroupModal) closeNewGroupModal(); });
     document.getElementById("friendRequestsList").addEventListener("click", async e => {
       const row = e.target.closest(".request-row");
       if(!row || !supabaseClient || !currentSessionToken) return;
@@ -4539,7 +4734,27 @@
     document.getElementById("friendList").addEventListener("click", e => {
       const row = e.target.closest(".user-row");
       if(!row) return;
+      // Group rows have data-group; friend rows have data-friend.
+      if(row.dataset.group){
+        selectedMessageGroup  = row.dataset.group;
+        selectedMessageFriend = "";
+        loadGroupThread(selectedMessageGroup);
+        // Optimistic: zero the local unread count for this group.
+        const g = myGroups.find(x => x.id === selectedMessageGroup);
+        if(g) g.unread_count = 0;
+        if(supabaseClient && currentSessionToken){
+          supabaseClient.rpc("mark_group_read", {
+            p_token: currentSessionToken,
+            p_group_id: selectedMessageGroup,
+          }).catch(() => {});
+        }
+        renderThread();
+        renderFriends();
+        updateSocialBadges();
+        return;
+      }
       selectedMessageFriend = row.dataset.friend;
+      selectedMessageGroup  = "";
       // Locally clear the unread badges for this thread so the red dot vanishes
       // immediately. The server gets caught up on the next refresh.
       const social = currentSocial();
@@ -4547,7 +4762,6 @@
       const nowIso = new Date().toISOString();
       thread.forEach(m => { if(m && !m.mine && !m.read_at) m.read_at = nowIso; });
       saveSocial(social);
-      // Tell the server (if available) so unread state syncs across devices.
       if(supabaseClient && currentSessionToken){
         supabaseClient.rpc("mark_messages_read", {
           p_token: currentSessionToken,
@@ -4558,9 +4772,72 @@
       renderFriends();
       updateSocialBadges();
     });
+
+    // ── Groups: fetch and thread loading ─────────────────────────────────
+    async function fetchMyGroups(){
+      if(!supabaseClient || !currentSessionToken){ myGroups = []; return; }
+      try {
+        const { data, error } = await supabaseClient.rpc("list_my_groups", { p_token: currentSessionToken });
+        if(error) throw error;
+        myGroups = (data || []).map(row => ({
+          id: row.group_id,
+          name: row.name || "Group",
+          members: Array.isArray(row.members) ? row.members : [],
+          last_message_at: row.last_message_at,
+          unread_count: Number(row.unread_count) || 0,
+        }));
+      } catch(_) {
+        // RPC missing or transient — keep last cache to avoid losing UI state.
+      }
+    }
+    async function loadGroupThread(groupId){
+      if(!supabaseClient || !currentSessionToken){ groupThreadCache = { groupId, messages: [] }; return; }
+      try {
+        const { data, error } = await supabaseClient.rpc("list_group_messages", {
+          p_token: currentSessionToken,
+          p_group_id: groupId,
+        });
+        if(error) throw error;
+        groupThreadCache = {
+          groupId,
+          messages: (data || []).map(m => ({
+            id: m.id, sender: m.sender, body: m.body, created_at: m.created_at,
+          })),
+        };
+      } catch(_) {
+        groupThreadCache = { groupId, messages: [] };
+      }
+      renderThread();
+    }
     document.getElementById("sendMessageBtn").addEventListener("click", async () => {
       const text = document.getElementById("messageText").value.trim();
-      if(!selectedMessageFriend || !text) return;
+      if(!text) return;
+      // Group thread send path
+      if(selectedMessageGroup){
+        if(!supabaseClient || !currentSessionToken){
+          alert("Group chats require Supabase to be connected.");
+          return;
+        }
+        const { error } = await supabaseClient.rpc("send_group_message", {
+          p_token: currentSessionToken,
+          p_group_id: selectedMessageGroup,
+          p_body: text,
+        });
+        if(error){
+          if(/schema cache|send_group_message/i.test(error.message || "")){
+            alert("Group-chat migration isn't installed in Supabase yet.");
+          } else {
+            alert(error.message || "Message failed.");
+          }
+          return;
+        }
+        document.getElementById("messageText").value = "";
+        await loadGroupThread(selectedMessageGroup);
+        await fetchMyGroups();
+        renderFriends();
+        return;
+      }
+      if(!selectedMessageFriend) return;
       if(supabaseClient && currentSessionToken){
         const { error } = await supabaseClient.rpc("send_direct_message", {
           p_token: currentSessionToken,
