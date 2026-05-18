@@ -105,13 +105,15 @@ $$;
 -- ── list_my_groups ───────────────────────────────────────────────────────
 -- Returns the groups the caller is a member of, plus the member usernames
 -- and the latest message timestamp + unread count for sorting.
+-- Note: function output columns named `group_id`/`name` collide with column
+-- references inside the body, so every CTE column is aliased to gid/gname.
 create or replace function public.list_my_groups(p_token text)
 returns table (
-  group_id       uuid,
-  name           text,
-  members        text[],
+  group_id        uuid,
+  name            text,
+  members         text[],
   last_message_at timestamptz,
-  unread_count   int
+  unread_count    int
 )
 language plpgsql
 stable
@@ -125,37 +127,44 @@ begin
 
   return query
   with my_groups as (
-    select g.id, g.name
+    select g.id as gid, g.name as gname
       from public.group_chats g
       join public.group_members gm on gm.group_id = g.id
      where gm.player_id = v_me
   ),
-  members as (
-    select gm.group_id, array_agg(p.username order by p.username) as usernames
+  members_agg as (
+    select gm.group_id as gid,
+           array_agg(p.username order by p.username) as usernames
       from public.group_members gm
       join public.players p on p.id = gm.player_id
      group by gm.group_id
   ),
   latest as (
-    select group_id, max(created_at) as last_at from public.group_messages group by group_id
+    select gm3.group_id as gid, max(gm3.created_at) as last_at
+      from public.group_messages gm3
+     group by gm3.group_id
   ),
   reads as (
-    select group_id, read_at from public.group_message_reads where player_id = v_me
+    select gmr.group_id as gid, gmr.read_at as read_at
+      from public.group_message_reads gmr
+     where gmr.player_id = v_me
   )
-  select mg.id, mg.name, coalesce(m.usernames, '{}'),
+  select mg.gid,
+         mg.gname,
+         coalesce(m.usernames, '{}'::text[]),
          l.last_at,
          (
            select count(*)::int
              from public.group_messages gm2
-            where gm2.group_id = mg.id
+            where gm2.group_id   = mg.gid
               and gm2.sender_id <> v_me
               and gm2.created_at > coalesce(r.read_at, 'epoch'::timestamptz)
          )
-  from my_groups mg
-  left join members m on m.group_id = mg.id
-  left join latest  l on l.group_id = mg.id
-  left join reads   r on r.group_id = mg.id
-  order by coalesce(l.last_at, now()) desc;
+    from my_groups mg
+    left join members_agg m on m.gid = mg.gid
+    left join latest      l on l.gid = mg.gid
+    left join reads       r on r.gid = mg.gid
+   order by coalesce(l.last_at, now()) desc;
 end;
 $$;
 

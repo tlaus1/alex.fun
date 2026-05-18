@@ -28,6 +28,11 @@ create policy "game_perms read"
   for select
   using (true);
 
+-- RLS lets the row through, but Postgres also requires a table-level SELECT
+-- grant for the role to read the table at all. Without this, every anon
+-- query returns 401 "permission denied" before RLS even runs.
+grant select on public.game_perms to anon, authenticated;
+
 -- No INSERT/UPDATE/DELETE policy — all writes must go through the RPC.
 
 -- 3. Read RPC — convenient single-call fetch. (Direct table select works
