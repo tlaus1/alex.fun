@@ -403,11 +403,12 @@
       position:relative;
       display:grid; grid-template-columns:1fr 1fr;
       gap:0; padding:3px;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.1);
       border-radius:999px;
-      margin-bottom:12px;
+      margin-bottom:8px;
       overflow:hidden;
+      flex-shrink:0;
     }
     .lb-tab {
       position:relative; z-index:1;
@@ -428,23 +429,31 @@
       z-index:0;
     }
     .lb-period-tabs[data-period="daily"] .lb-tab-slider { transform:translateX(100%); }
-    /* Sort segmented control — same skeleton, different palette */
+    /* Sort row — small label + segmented pill */
+    .lb-sort-row {
+      display:flex; align-items:center; gap:8px;
+      margin-bottom:10px; flex-shrink:0;
+    }
+    .lb-sort-label {
+      font-size:10px; font-weight:900; letter-spacing:1.5px;
+      text-transform:uppercase; color:var(--muted); flex-shrink:0;
+    }
     .lb-sort-tabs {
-      position:relative;
+      position:relative; flex:1;
       display:grid; grid-template-columns:1fr 1fr;
       padding:3px;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.1);
       border-radius:999px;
-      margin-bottom:10px;
     }
     .lb-sort {
       position:relative; z-index:1;
       appearance:none; border:0; background:transparent;
-      padding:7px 8px; font:inherit; font-size:11px; font-weight:900;
+      padding:6px 8px; font:inherit; font-size:11px; font-weight:900;
       letter-spacing:.3px; text-transform:uppercase;
-      color:var(--muted); cursor:pointer;
+      color:rgba(255,255,255,.55); cursor:pointer;
       transition:color .25s ease;
+      white-space:nowrap;
     }
     .lb-sort.active { color:#fff; }
     .lb-sort-tabs .lb-tab-slider {
@@ -1810,13 +1819,16 @@
         <button class="lb-tab"        data-period="daily"    role="tab" aria-selected="false" type="button">Today</button>
         <span class="lb-tab-slider" aria-hidden="true"></span>
       </div>
-      <div class="lb-sort-tabs" role="tablist" aria-label="Sort by">
-        <button class="lb-sort active" data-sort="rebirths" role="tab" aria-selected="true"  type="button">↻ Rebirths</button>
-        <button class="lb-sort"        data-sort="points"   role="tab" aria-selected="false" type="button">💰 Points</button>
-        <span class="lb-tab-slider" aria-hidden="true"></span>
+      <div class="lb-sort-row">
+        <span class="lb-sort-label">Sort</span>
+        <div class="lb-sort-tabs" role="tablist" aria-label="Sort by">
+          <button class="lb-sort active" data-sort="rebirths" role="tab" aria-selected="true"  type="button">↻ Rebirths</button>
+          <button class="lb-sort"        data-sort="points"   role="tab" aria-selected="false" type="button">💰 Points</button>
+          <span class="lb-tab-slider" aria-hidden="true"></span>
+        </div>
       </div>
       <div id="leaderboardRows"></div>
-      <button class="btn" id="closeLeaderboard" type="button" style="margin-top:14px;width:100%;">Close</button>
+      <button class="btn" id="closeLeaderboard" type="button" style="margin-top:12px;width:100%;flex-shrink:0;">Close</button>
     </div>
   </div>
 
