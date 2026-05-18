@@ -4375,10 +4375,31 @@
         });
       if(newest > lastSeen) localStorage.setItem(seenKey, String(newest));
     }
+    function isSocialPanelOpen(){
+      const fp = document.getElementById("friendsPanel");
+      const mp = document.getElementById("messagesPanel");
+      return (fp && fp.classList.contains("show")) || (mp && mp.classList.contains("show"));
+    }
     function startSocialPolling(){
       clearInterval(socialPollTimer);
       refreshSocial({ notify:true });
-      socialPollTimer = setInterval(()=>refreshSocial({ notify:true }), 10000);
+      // Adaptive cadence: poll fast (5s) when a panel is open, slow (30s)
+      // when not — full social state + groups + presence is a 3-call burst.
+      function tick(){
+        refreshSocial({ notify:true });
+      }
+      let lastCadence = null;
+      function reschedule(){
+        const cadence = isSocialPanelOpen() ? 5000 : 30000;
+        if(cadence === lastCadence) return;
+        lastCadence = cadence;
+        clearInterval(socialPollTimer);
+        socialPollTimer = setInterval(tick, cadence);
+      }
+      reschedule();
+      // Re-evaluate cadence whenever a panel opens/closes.
+      document.addEventListener("transitionend", reschedule, { passive:true });
+      window.__alexFunReschedule = reschedule;
       startHeartbeat();
     }
 
@@ -4604,6 +4625,7 @@
       const panel = document.getElementById("friendsPanel");
       panel.classList.toggle("show");
       panel.setAttribute("aria-hidden", panel.classList.contains("show") ? "false" : "true");
+      if(typeof window.__alexFunReschedule === "function") window.__alexFunReschedule();
       if(panel.classList.contains("show")) {
         panel.scrollTop = 0;
         await refreshSocial();
@@ -4614,6 +4636,7 @@
       const panel = document.getElementById("messagesPanel");
       panel.classList.toggle("show");
       panel.setAttribute("aria-hidden", panel.classList.contains("show") ? "false" : "true");
+      if(typeof window.__alexFunReschedule === "function") window.__alexFunReschedule();
       if(panel.classList.contains("show")) panel.scrollTop = 0;
       await refreshSocial();
       renderFriends(); renderThread();
@@ -4742,39 +4765,57 @@
       if(row.dataset.group){
         selectedMessageGroup  = row.dataset.group;
         selectedMessageFriend = "";
+        // Render the (cached or empty) thread synchronously so the UI swap is
+        // instant; fetch the latest messages in the background.
+        renderThread();
         loadGroupThread(selectedMessageGroup);
-        // Optimistic: zero the local unread count for this group.
         const g = myGroups.find(x => x.id === selectedMessageGroup);
         if(g) g.unread_count = 0;
-        if(supabaseClient && currentSessionToken){
-          supabaseClient.rpc("mark_group_read", {
-            p_token: currentSessionToken,
-            p_group_id: selectedMessageGroup,
-          }).catch(() => {});
-        }
-        renderThread();
-        renderFriends();
-        updateSocialBadges();
+        // Defer the heavy stuff (full friend re-render + server mark-read RPC)
+        // to the next frame so the click feels snappy.
+        requestAnimationFrame(() => {
+          renderFriends();
+          updateSocialBadges();
+          if(supabaseClient && currentSessionToken){
+            supabaseClient.rpc("mark_group_read", {
+              p_token: currentSessionToken,
+              p_group_id: selectedMessageGroup,
+            }).catch(() => {});
+          }
+        });
         return;
       }
       selectedMessageFriend = row.dataset.friend;
       selectedMessageGroup  = "";
-      // Locally clear the unread badges for this thread so the red dot vanishes
-      // immediately. The server gets caught up on the next refresh.
-      const social = currentSocial();
-      const thread = (social.messages || {})[selectedMessageFriend] || [];
-      const nowIso = new Date().toISOString();
-      thread.forEach(m => { if(m && !m.mine && !m.read_at) m.read_at = nowIso; });
-      saveSocial(social);
-      if(supabaseClient && currentSessionToken){
-        supabaseClient.rpc("mark_messages_read", {
-          p_token: currentSessionToken,
-          p_other_username: selectedMessageFriend,
-        }).catch(() => {});
-      }
+      // Render the thread synchronously — that's all the user cares about.
       renderThread();
-      renderFriends();
-      updateSocialBadges();
+      // Defer the localStorage write + RPC + friend re-render so the click
+      // returns in ~1ms instead of stalling on disk IO and DOM rebuilds.
+      requestAnimationFrame(() => {
+        const social = currentSocial();
+        const thread = (social.messages || {})[selectedMessageFriend] || [];
+        const nowIso = new Date().toISOString();
+        let touched = false;
+        thread.forEach(m => { if(m && !m.mine && !m.read_at){ m.read_at = nowIso; touched = true; } });
+        if(touched) saveSocial(social);
+        if(supabaseClient && currentSessionToken){
+          supabaseClient.rpc("mark_messages_read", {
+            p_token: currentSessionToken,
+            p_other_username: selectedMessageFriend,
+          }).catch(() => {});
+        }
+        renderFriends();
+        updateSocialBadges();
+      });
+    });
+
+    // Enter on the message textarea sends the message; Shift+Enter inserts
+    // a newline. (Plain Enter only — modifiers pass through.)
+    document.getElementById("messageText").addEventListener("keydown", e => {
+      if(e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey){
+        e.preventDefault();
+        document.getElementById("sendMessageBtn").click();
+      }
     });
 
     // ── Groups: fetch and thread loading ─────────────────────────────────
@@ -4903,11 +4944,14 @@
       } catch(e) { console.log("Fullscreen blocked:", e); }
     });
 
+    // Per-second income tick. Runs at 100ms for smooth point readouts, but
+    // only repaints UI when the 67 Clicker is actually on-screen — otherwise
+    // 100 DOM operations every 100ms (~1000/sec) tank the rest of the site.
     setInterval(() => {
       if (perSec > 0) {
         points += effectivePerSec()/10;
-        updateUI();
         markSaveDirty();
+        if (!game67El.classList.contains("hidden")) updateUI();
       }
     }, 100);
 
