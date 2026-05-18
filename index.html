@@ -375,27 +375,28 @@
     }
     .leaderboard-modal.show { display:grid; }
     .leaderboard-card {
-      width:min(440px,100%);
-      max-height:min(82vh, 720px);
+      width:min(420px,100%);
+      max-height:min(70vh, 560px);
       display:flex; flex-direction:column;
-      border-radius:22px; padding:20px;
+      border-radius:18px; padding:16px;
       background:var(--surface2); border:1.5px solid var(--border);
       color:var(--fg); box-shadow:0 24px 80px rgba(0,0,0,.32);
     }
+    .leaderboard-card h2 { font-size:18px; margin-bottom:8px; }
     .leaderboard-card #leaderboardRows {
       flex:1 1 auto;
       overflow-y:auto;
+      overflow-x:hidden;
       min-height:0;
       padding-right:6px;
-      margin-right:-6px; /* compensate so scrollbar doesn't bite the content */
-      mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 12px), transparent 100%);
-      -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 12px), transparent 100%);
+      margin-right:-6px;
     }
     .leaderboard-card #leaderboardRows::-webkit-scrollbar { width:8px; }
     .leaderboard-card #leaderboardRows::-webkit-scrollbar-thumb {
       background:rgba(255,255,255,.14); border-radius:999px;
     }
     .leaderboard-card #leaderboardRows::-webkit-scrollbar-thumb:hover { background:rgba(255,107,61,.5); }
+    .leaderboard-card .leader-row { padding:7px 0; font-size:12.5px; }
     .leaderboard-card h2 { font-size:24px; font-weight:900; margin-bottom:10px; }
     /* Segmented control: All time / Today */
     .lb-period-tabs {
@@ -427,6 +428,30 @@
       z-index:0;
     }
     .lb-period-tabs[data-period="daily"] .lb-tab-slider { transform:translateX(100%); }
+    /* Sort segmented control — same skeleton, different palette */
+    .lb-sort-tabs {
+      position:relative;
+      display:grid; grid-template-columns:1fr 1fr;
+      padding:3px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:999px;
+      margin-bottom:10px;
+    }
+    .lb-sort {
+      position:relative; z-index:1;
+      appearance:none; border:0; background:transparent;
+      padding:7px 8px; font:inherit; font-size:11px; font-weight:900;
+      letter-spacing:.3px; text-transform:uppercase;
+      color:var(--muted); cursor:pointer;
+      transition:color .25s ease;
+    }
+    .lb-sort.active { color:#fff; }
+    .lb-sort-tabs .lb-tab-slider {
+      background:linear-gradient(135deg, #7c3aed, #ec4899);
+      box-shadow:0 4px 12px rgba(124,58,237,.35);
+    }
+    .lb-sort-tabs[data-sort="points"] .lb-tab-slider { transform:translateX(100%); }
     .leader-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; font-weight:900; }
     .leader-row:last-child { border-bottom:0; }
     .leader-row .leader-score { color:#e67e00; font-variant-numeric: tabular-nums; }
@@ -1783,6 +1808,11 @@
       <div class="lb-period-tabs" role="tablist" aria-label="Leaderboard period">
         <button class="lb-tab active" data-period="lifetime" role="tab" aria-selected="true"  type="button">All time</button>
         <button class="lb-tab"        data-period="daily"    role="tab" aria-selected="false" type="button">Today</button>
+        <span class="lb-tab-slider" aria-hidden="true"></span>
+      </div>
+      <div class="lb-sort-tabs" role="tablist" aria-label="Sort by">
+        <button class="lb-sort active" data-sort="rebirths" role="tab" aria-selected="true"  type="button">↻ Rebirths</button>
+        <button class="lb-sort"        data-sort="points"   role="tab" aria-selected="false" type="button">💰 Points</button>
         <span class="lb-tab-slider" aria-hidden="true"></span>
       </div>
       <div id="leaderboardRows"></div>
@@ -3490,16 +3520,23 @@
         return null;
       }
     }
-    function sortLeaderboardRows(rows){
-      // Rebirths trump points heavily — that's the whole point of the system.
-      // Within the same rebirth tier, sort by max points.
+    function sortLeaderboardRows(rows, mode){
+      // mode:
+      //   "rebirths" (default) → rebirths desc, then points desc as tiebreak
+      //   "points"             → points desc, then rebirths desc as tiebreak
       return [...rows].sort((a, b) => {
         const ar = a.rebirths || 0, br = b.rebirths || 0;
+        const ap = a.max      || 0, bp = b.max      || 0;
+        if (mode === "points") {
+          if (ap !== bp) return bp - ap;
+          return br - ar;
+        }
         if (ar !== br) return br - ar;
-        return (b.max || 0) - (a.max || 0);
+        return bp - ap;
       });
     }
     let leaderboardPeriod = "lifetime";  // "lifetime" | "daily"
+    let leaderboardSort   = "rebirths";  // "rebirths" | "points"
 
     function buildLeaderboardHtml(rows, period){
       if(!rows.length){
@@ -3519,17 +3556,24 @@
       }).join("");
     }
 
+    // Cache the most recent fetch so a sort flip is instant, no re-fetch.
+    let lastLeaderboardRaw = [];
+    let lastLeaderboardPeriod = null;
+
+    function renderLeaderboardFromCache(){
+      const rowsEl = document.getElementById("leaderboardRows");
+      const sorted = sortLeaderboardRows(lastLeaderboardRaw, leaderboardSort).slice(0, 50);
+      rowsEl.innerHTML = buildLeaderboardHtml(sorted, leaderboardPeriod);
+    }
+
     async function renderLeaderboardForPeriod(period){
       const rowsEl = document.getElementById("leaderboardRows");
       rowsEl.innerHTML = '<p style="text-align:center;opacity:.6;">Loading…</p>';
       const cloudRows = await fetchCloudLeaderboard(period);
       let rows;
       if(period === "daily"){
-        // Daily is cloud-only — local leaderboard doesn't track per-day peaks
-        // for other players. If the RPC fails, fall back to a one-row preview
-        // of the active user's own day.
         if(cloudRows && cloudRows.length){
-          rows = cloudRows.slice(0, 20);
+          rows = cloudRows;
         } else if(dailyPeak > 0 && dailyDate === todayUtcStr()){
           rows = [{
             name: activeUser || "guest",
@@ -3540,10 +3584,12 @@
           rows = [];
         }
       } else {
-        const localRows = loadLeaderboard().slice(0, 20).map(r => ({...r, rebirths: r.rebirths || 0}));
-        rows = sortLeaderboardRows(cloudRows && cloudRows.length ? cloudRows : localRows).slice(0, 20);
+        const localRows = loadLeaderboard().slice(0, 50).map(r => ({...r, rebirths: r.rebirths || 0}));
+        rows = cloudRows && cloudRows.length ? cloudRows : localRows;
       }
-      rowsEl.innerHTML = buildLeaderboardHtml(rows, period);
+      lastLeaderboardRaw = rows;
+      lastLeaderboardPeriod = period;
+      renderLeaderboardFromCache();
     }
 
     function setLeaderboardPeriod(period){
@@ -3558,14 +3604,30 @@
       renderLeaderboardForPeriod(leaderboardPeriod);
     }
 
+    function setLeaderboardSort(sort){
+      leaderboardSort = sort === "points" ? "points" : "rebirths";
+      const tabs = document.querySelector(".lb-sort-tabs");
+      if(tabs) tabs.dataset.sort = leaderboardSort;
+      document.querySelectorAll(".lb-sort").forEach(btn => {
+        const isActive = btn.dataset.sort === leaderboardSort;
+        btn.classList.toggle("active", isActive);
+        btn.setAttribute("aria-selected", String(isActive));
+      });
+      // Instant re-render from the cached data (no refetch).
+      if(lastLeaderboardRaw.length) renderLeaderboardFromCache();
+    }
+
     async function showLeaderboard(){
       document.getElementById("leaderboardModal").classList.add("show");
-      setLeaderboardPeriod(leaderboardPeriod);   // re-renders current tab
+      setLeaderboardPeriod(leaderboardPeriod);
     }
     document.getElementById("leaderboardBtn").addEventListener("click", showLeaderboard);
     document.getElementById("closeLeaderboard").addEventListener("click", () => document.getElementById("leaderboardModal").classList.remove("show"));
     document.querySelectorAll(".lb-tab").forEach(btn => {
       btn.addEventListener("click", () => setLeaderboardPeriod(btn.dataset.period));
+    });
+    document.querySelectorAll(".lb-sort").forEach(btn => {
+      btn.addEventListener("click", () => setLeaderboardSort(btn.dataset.sort));
     });
 
     function escapeHtml(value){
