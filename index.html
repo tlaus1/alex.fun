@@ -2925,6 +2925,12 @@
       setGameStatusVisible(true);
       scheduleMasonBonus();
       if (window.__alexFunSetPillPosition) window.__alexFunSetPillPosition("bottom");
+      // Touch the save so dailyDate / dailyPeak land in the cloud even if the
+      // player just opens the clicker and walks away. Without this, idle
+      // players with perSec=0 might never trigger an autosave today, and the
+      // daily leaderboard would miss them.
+      markSaveDirty();
+      saveGame();
     });
 
     document.getElementById("backToDash").addEventListener("click", () => {
