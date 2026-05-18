@@ -3333,7 +3333,10 @@
     function scheduleMasonBonus(){
       clearTimeout(masonBonusTimer);
       masonBonusTimer = setTimeout(() => {
-        if(game67El.classList.contains("hidden") || !masonBonus) {
+        // Don't spawn the bonus while the game isn't visible OR while a
+        // frenzy is already running — stacking frenzies trivialises the
+        // mechanic. Reschedule and try again later.
+        if(game67El.classList.contains("hidden") || !masonBonus || Date.now() < masonFrenzyUntil) {
           scheduleMasonBonus();
           return;
         }
@@ -3349,14 +3352,20 @@
     masonBonus.addEventListener("click", e => {
       e.stopPropagation();
       if(!masonBonus.classList.contains("visible")) return;
+      // Belt-and-suspenders: if a frenzy is somehow already running, ignore
+      // the click instead of overwriting the active timer.
+      if(Date.now() < masonFrenzyUntil){
+        masonBonus.classList.remove("visible");
+        return;
+      }
       masonBonus.classList.remove("visible");
       // Activate 2× multiplier for a random duration — keeps each frenzy
-      // feeling fresh. Roughly 8s to 40s, occasional jackpot length.
+      // feeling fresh. Bias toward normal-length; jackpot is rare.
       const roll = Math.random();
-      const FRENZY_DURATION_MS = roll < 0.08
-        ? 50000 + Math.floor(Math.random() * 20000)   //  8% chance: 50-70s jackpot
+      const FRENZY_DURATION_MS = roll < 0.02
+        ? 50000 + Math.floor(Math.random() * 20000)   //  2% chance: 50-70s jackpot
         : roll < 0.5
-          ? 8000  + Math.floor(Math.random() * 7000)  // 42% chance:  8-15s short
+          ? 8000  + Math.floor(Math.random() * 7000)  // 48% chance:  8-15s short
           : 16000 + Math.floor(Math.random() * 19000); // 50% chance: 16-35s normal
       masonFrenzyUntil = Date.now() + FRENZY_DURATION_MS;
       showMasonFrenzy(FRENZY_DURATION_MS);
