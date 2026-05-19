@@ -2045,10 +2045,12 @@
   <div id="newGroupModal" class="perm-overlay" aria-hidden="true">
     <div class="perm-modal" role="dialog" aria-labelledby="newGroupTitle" style="max-width:420px;">
       <h3 id="newGroupTitle">New group chat</h3>
-      <div class="perm-sub">Pick a name and select the friends to invite.</div>
-      <label class="lbl" for="newGroupName">Group name</label>
-      <input id="newGroupName" type="text" maxlength="40" placeholder="e.g. Lunch crew" style="width:100%;padding:10px 12px;background:#060a14;color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:10px;font:inherit;font-size:13px;margin-bottom:10px;">
-      <label class="lbl">Members</label>
+      <div class="perm-sub" id="newGroupSub">Pick a name and select the friends to invite.</div>
+      <div class="newgroup-name-field">
+        <label class="lbl" for="newGroupName">Group name</label>
+        <input id="newGroupName" type="text" maxlength="40" placeholder="e.g. Lunch crew" style="width:100%;padding:10px 12px;background:#060a14;color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:10px;font:inherit;font-size:13px;margin-bottom:10px;">
+      </div>
+      <label class="lbl" id="newGroupMembersLabel">Members</label>
       <div class="perm-chips" id="newGroupChips"></div>
       <div id="newGroupError" class="perm-sub" style="color:#ff6b6b;display:none;margin-top:6px;"></div>
       <div class="perm-actions">
@@ -2057,6 +2059,10 @@
       </div>
     </div>
   </div>
+  <style>
+    /* Add-members mode reuses this modal; hide the name field then. */
+    #newGroupModal[data-mode="add"] .newgroup-name-field { display: none; }
+  </style>
   <!-- ══ Settings modal ════════════════════════════════════════ -->
   <div id="settingsModal" class="settings-modal" aria-hidden="true">
     <div class="settings-card">
@@ -4784,47 +4790,15 @@
              + `</div>`;
       }).join("");
     }
-    async function promptAddGroupMembers(){
+    function promptAddGroupMembers(){
       const groupId = selectedMessageGroup;
       if(!groupId) return;
-      if(!supabaseClient || !currentSessionToken){
-        alert("Adding members requires Supabase to be connected.");
-        return;
-      }
-      const social = currentSocial();
-      const existing = new Set(((myGroups.find(g => g.id === groupId) || {}).members || []).map(normalizeUsername));
-      const candidates = Array.from(new Set((social.friends || [])
-        .map(normalizeUsername)
-        .filter(Boolean)
-        .filter(n => !existing.has(n)))).sort();
-      if(!candidates.length){
-        alert("All your friends are already in this group.");
-        return;
-      }
-      const input = prompt(
-        `Add to this group? Type usernames separated by commas.\nFriends not yet in: ${candidates.join(", ")}`,
-        ""
-      );
-      if(input === null) return;
-      const names = input.split(",").map(s => normalizeUsername(s)).filter(Boolean);
-      if(!names.length) return;
-      const { data, error } = await supabaseClient.rpc("add_group_members", {
-        p_token: currentSessionToken,
-        p_group_id: groupId,
-        p_member_usernames: names,
+      const group = (myGroups || []).find(g => g.id === groupId);
+      openNewGroupModal({
+        mode: "add",
+        groupId,
+        groupName: group ? group.name : "group",
       });
-      if(error){
-        if(/schema cache|add_group_members/i.test(error.message || "")){
-          alert("Add-members RPC not installed yet — run the latest migration.");
-        } else {
-          alert(error.message || "Could not add members.");
-        }
-        return;
-      }
-      showNotice(`Added ${data || 0} member${data === 1 ? "" : "s"}.`);
-      await fetchMyGroups();
-      renderThread();
-      renderFriends();
     }
 
     function renderThread(){
@@ -4935,21 +4909,49 @@
       newGroupError.textContent = msg || "";
       newGroupError.style.display = msg ? "block" : "none";
     }
-    function openNewGroupModal(){
+    // Both flows use this modal; opts = { mode: "create" | "add", groupId?, groupName? }
+    function openNewGroupModal(opts){
+      const o = opts || { mode: "create" };
+      const mode = o.mode === "add" ? "add" : "create";
       if(!supabaseClient || !currentSessionToken){
         alert("Group chats require Supabase to be connected.");
         return;
       }
       newGroupNameInput.value = "";
       showNewGroupError("");
-      // Build friend-chip picker.
-      const social = currentSocial();
-      const friends = Array.from(new Set((social.friends || []).map(normalizeUsername).filter(Boolean))).sort();
-      newGroupChips.innerHTML = "";
-      if(!friends.length){
-        newGroupChips.innerHTML = '<div class="perm-chips-empty">Add some friends first.</div>';
+      newGroupModal.dataset.mode = mode;
+      newGroupModal.dataset.groupId = o.groupId || "";
+
+      // Title / subtitle / button label switch per mode.
+      const title  = document.getElementById("newGroupTitle");
+      const sub    = document.getElementById("newGroupSub");
+      const submit = document.getElementById("newGroupCreate");
+      if(mode === "add"){
+        title.textContent  = `Add to ${o.groupName || "group"}`;
+        sub.textContent    = "Pick the friends to invite.";
+        submit.textContent = "Add";
       } else {
-        friends.forEach(name => {
+        title.textContent  = "New group chat";
+        sub.textContent    = "Pick a name and select the friends to invite.";
+        submit.textContent = "Create";
+      }
+
+      // Build friend-chip picker. In add mode, exclude friends already in
+      // the group.
+      const social = currentSocial();
+      let pool = Array.from(new Set((social.friends || []).map(normalizeUsername).filter(Boolean))).sort();
+      if(mode === "add" && o.groupId){
+        const existing = new Set(((myGroups.find(g => g.id === o.groupId) || {}).members || []).map(normalizeUsername));
+        pool = pool.filter(n => !existing.has(n));
+      }
+
+      newGroupChips.innerHTML = "";
+      if(!pool.length){
+        newGroupChips.innerHTML = mode === "add"
+          ? '<div class="perm-chips-empty">All your friends are already in this group.</div>'
+          : '<div class="perm-chips-empty">Add some friends first.</div>';
+      } else {
+        pool.forEach(name => {
           const chip = document.createElement("button");
           chip.type = "button";
           chip.className = "perm-chip";
@@ -4960,48 +4962,76 @@
       }
       newGroupModal.classList.add("show");
       newGroupModal.setAttribute("aria-hidden", "false");
-      setTimeout(() => newGroupNameInput.focus(), 50);
+      setTimeout(() => {
+        if(mode === "create") newGroupNameInput.focus();
+      }, 50);
     }
     function closeNewGroupModal(){
       newGroupModal.classList.remove("show");
       newGroupModal.setAttribute("aria-hidden", "true");
+      newGroupModal.dataset.mode = "";
+      newGroupModal.dataset.groupId = "";
     }
     async function submitNewGroup(){
-      const name = newGroupNameInput.value.trim();
       showNewGroupError("");
-      if(!name){ showNewGroupError("Pick a group name."); return; }
+      const mode = newGroupModal.dataset.mode || "create";
       const selected = Array.from(newGroupChips.querySelectorAll(".perm-chip.active")).map(c => c.textContent.trim());
       if(!selected.length){ showNewGroupError("Select at least one friend."); return; }
       const btn = document.getElementById("newGroupCreate");
-      btn.disabled = true; const orig = btn.textContent; btn.textContent = "Creating…";
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = mode === "add" ? "Adding…" : "Creating…";
       try {
-        const { data, error } = await supabaseClient.rpc("create_group_chat", {
-          p_token: currentSessionToken,
-          p_name: name,
-          p_member_usernames: selected,
-        });
-        if(error){
-          if(/schema cache|create_group_chat/i.test(error.message || "")){
-            showNewGroupError("Migration not installed yet — run the SQL in Supabase.");
-          } else {
-            showNewGroupError(error.message || "Could not create group.");
+        if(mode === "add"){
+          const groupId = newGroupModal.dataset.groupId;
+          if(!groupId){ showNewGroupError("Group not selected."); return; }
+          const { data, error } = await supabaseClient.rpc("add_group_members", {
+            p_token: currentSessionToken,
+            p_group_id: groupId,
+            p_member_usernames: selected,
+          });
+          if(error){
+            if(/schema cache|add_group_members/i.test(error.message || "")){
+              showNewGroupError("Add-members RPC not installed — run the latest migration.");
+            } else {
+              showNewGroupError(error.message || "Could not add members.");
+            }
+            return;
           }
-          return;
+          showNotice(`Added ${data || 0} member${data === 1 ? "" : "s"}.`);
+          closeNewGroupModal();
+          await fetchMyGroups();
+          renderThread();
+          renderFriends();
+        } else {
+          const name = newGroupNameInput.value.trim();
+          if(!name){ showNewGroupError("Pick a group name."); return; }
+          const { data, error } = await supabaseClient.rpc("create_group_chat", {
+            p_token: currentSessionToken,
+            p_name: name,
+            p_member_usernames: selected,
+          });
+          if(error){
+            if(/schema cache|create_group_chat/i.test(error.message || "")){
+              showNewGroupError("Migration not installed yet — run the SQL in Supabase.");
+            } else {
+              showNewGroupError(error.message || "Could not create group.");
+            }
+            return;
+          }
+          closeNewGroupModal();
+          await fetchMyGroups();
+          if(data){
+            selectedMessageGroup = data;
+            selectedMessageFriend = "";
+            await loadGroupThread(data);
+          }
+          renderFriends();
+          renderThread();
         }
-        closeNewGroupModal();
-        await fetchMyGroups();
-        if(data){
-          selectedMessageGroup = data;
-          selectedMessageFriend = "";
-          await loadGroupThread(data);
-        }
-        renderFriends();
-        renderThread();
       } finally {
         btn.disabled = false; btn.textContent = orig;
       }
     }
-    document.getElementById("newGroupBtn").addEventListener("click", openNewGroupModal);
+    document.getElementById("newGroupBtn").addEventListener("click", () => openNewGroupModal({ mode: "create" }));
     document.getElementById("newGroupCancel").addEventListener("click", closeNewGroupModal);
     document.getElementById("newGroupCreate").addEventListener("click", submitNewGroup);
     newGroupModal.addEventListener("click", e => { if(e.target === newGroupModal) closeNewGroupModal(); });
