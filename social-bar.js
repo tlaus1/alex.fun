@@ -7,7 +7,7 @@
    appear universally below the game.
 */
 (function () {
-  try { console.log("[alex.fun] social-bar v5 (iframe) loaded"); } catch (_) {}
+  try { console.log("[alex.fun] social-bar v7 (iframe) loaded"); } catch (_) {}
 
   const path = location.pathname.split("/").pop() || "";
   if (path === "" || path === "index.html") return;
@@ -105,8 +105,8 @@
         display: inline-flex; align-items: center; justify-content: center;
         box-shadow: 0 2px 5px rgba(239,68,68,.45);
       }
-      /* `display: inline-flex` was overriding the [hidden] attribute — force
-         badges to disappear when they have no count. */
+      /* display:inline-flex was overriding the [hidden] attribute, so force
+         the badge to fully disappear when it has no count. */
       .alexfun-sb-btn .alexfun-sb-badge[hidden] { display: none !important; }
       .alexfun-sb-fallback {
         position: fixed; bottom: 0; left: 0; right: 0;
