@@ -1460,6 +1460,62 @@
     .perm-chip.active::before { content: "✓ "; }
     .perm-chips-empty { padding: 4px 6px; font-size: 11px; color: var(--muted); font-style: italic; }
 
+    /* Scrollable user picker inside game-permission modal */
+    .perm-user-list {
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      background: rgba(0,0,0,.25);
+      padding: 4px;
+      display: grid; gap: 3px;
+      margin-bottom: 8px;
+    }
+    .perm-user-list::-webkit-scrollbar { width: 8px; }
+    .perm-user-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,.14); border-radius: 999px;
+    }
+    .perm-user-list::-webkit-scrollbar-thumb:hover { background: rgba(255,107,61,.4); }
+    .perm-user-row {
+      appearance: none; border: 0;
+      width: 100%;
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,.02);
+      color: var(--fg);
+      border-radius: 8px;
+      font: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer;
+      text-align: left;
+      transition: background .12s, transform .12s;
+    }
+    .perm-user-row:hover { background: rgba(255,107,61,.10); transform: translateX(2px); }
+    .perm-user-row.active {
+      background: linear-gradient(90deg, rgba(255,107,61,.22), rgba(255,107,61,.06));
+      border: 1px solid rgba(255,107,61,.5);
+      padding: 7px 9px;
+    }
+    .perm-user-row .check {
+      width: 18px; height: 18px; border-radius: 999px;
+      border: 1.5px solid rgba(255,255,255,.2);
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all .15s;
+    }
+    .perm-user-row.active .check {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: transparent;
+    }
+    .perm-user-row.active .check::after { content: "✓"; color: #fff; font-size: 11px; font-weight: 900; }
+    .perm-user-row .uname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .perm-user-list-empty {
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
     .perm-modal textarea {
       background: rgba(0,0,0,.25);
       border-color: rgba(255,255,255,.08);
@@ -1804,10 +1860,9 @@
         <input type="checkbox" id="gameLockToggle">
         <span>Lock this game (only Alex + people in the list below)</span>
       </label>
-      <label class="lbl">Allowed users — tap your friends to toggle</label>
-      <div class="perm-chips" id="gameAllowedChips"></div>
-      <label class="lbl" for="gameAllowedUsers" style="margin-top:6px;">Or paste extras (comma-separated)</label>
-      <textarea id="gameAllowedUsers" placeholder="e.g. mason, jordan, riley" style="min-height:54px;"></textarea>
+      <label class="lbl">Allowed users — tap to toggle</label>
+      <input id="gamePermSearch" type="search" placeholder="Search users…" style="width:100%;padding:8px 12px;background:#060a14;color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:10px;font:inherit;font-size:12px;margin-bottom:8px;">
+      <div class="perm-user-list" id="gamePermUserList"></div>
       <div class="perm-actions">
         <button class="perm-btn cancel" id="gamePermCancel" type="button">Cancel</button>
         <button class="perm-btn save"   id="gamePermSave"   type="button">Save</button>
@@ -2284,40 +2339,46 @@
         card.appendChild(btn);
       });
     }
-    function renderPermChips(currentAllowed){
-      const wrap = document.getElementById("gameAllowedChips");
-      if(!wrap) return;
-      wrap.innerHTML = "";
-      const friends = Array.from(new Set((typeof social !== "undefined" && social.friends ? social.friends : [])
-        .map(normalizeUsername).filter(Boolean))).sort();
-      const allowedSet = new Set((currentAllowed || []).map(normalizeUsername));
-      if(friends.length === 0){
-        wrap.innerHTML = '<div class="perm-chips-empty">No friends yet — add people in the Friends panel or paste usernames below.</div>';
+    // ── Game-permission user picker ──────────────────────────────────
+    // The set the user is currently toggling in this modal, kept separately
+    // so we don't lose state when re-rendering after a search filter.
+    let gamePermAllowedSet = new Set();
+    function renderPermUserList(){
+      const listEl = document.getElementById("gamePermUserList");
+      const search = (document.getElementById("gamePermSearch").value || "").trim().toLowerCase();
+      const self   = normalizeUsername(activeUser || "");
+      // Pool of every user on the site. Reuses the existing fetch helper's
+      // last cached result (already populated by refreshSocial). Excludes
+      // banned users + alex herself.
+      const social = currentSocial();
+      const rawUsers = Array.isArray(social.users) ? social.users : [];
+      const pool = Array.from(new Set(
+        rawUsers.concat(Array.from(gamePermAllowedSet))
+                .map(normalizeUsername).filter(Boolean)
+      ))
+        .filter(n => n !== self)
+        .filter(n => !bannedUsers.has(n))
+        .filter(n => !search || n.includes(search))
+        .sort();
+
+      if(!pool.length){
+        listEl.innerHTML = '<div class="perm-user-list-empty">No users yet — sign in some friends first.</div>';
         return;
       }
-      friends.forEach(name => {
-        const chip = document.createElement("button");
-        chip.type = "button";
-        chip.className = "perm-chip" + (allowedSet.has(name) ? " active" : "");
-        chip.textContent = name;
-        chip.addEventListener("click", () => {
-          chip.classList.toggle("active");
-          syncChipsToTextarea();
+      listEl.innerHTML = pool.map(name => {
+        const active = gamePermAllowedSet.has(name);
+        return `<button type="button" class="perm-user-row${active ? " active" : ""}" data-user="${escapeHtml(name)}">`
+             + `<span class="check"></span><span class="uname">${escapeHtml(name)}</span>`
+             + `</button>`;
+      }).join("");
+      listEl.querySelectorAll(".perm-user-row").forEach(row => {
+        row.addEventListener("click", () => {
+          const u = row.dataset.user;
+          if(gamePermAllowedSet.has(u)) gamePermAllowedSet.delete(u);
+          else                          gamePermAllowedSet.add(u);
+          row.classList.toggle("active");
         });
-        wrap.appendChild(chip);
       });
-    }
-    function syncChipsToTextarea(){
-      const wrap = document.getElementById("gameAllowedChips");
-      if(!wrap) return;
-      const chipNames = Array.from(wrap.querySelectorAll(".perm-chip.active")).map(c => c.textContent.trim());
-      // Merge with anything the user typed manually (preserves non-friend entries).
-      const ta = document.getElementById("gameAllowedUsers");
-      const typed = ta.value.split(",").map(s => normalizeUsername(s)).filter(Boolean);
-      const friendsAll = Array.from(wrap.querySelectorAll(".perm-chip")).map(c => c.textContent.trim());
-      const typedNonFriend = typed.filter(u => !friendsAll.includes(u));
-      const merged = Array.from(new Set([...chipNames, ...typedNonFriend]));
-      ta.value = merged.join(", ");
     }
     function openGamePermModal(gameId, gameName){
       if(!isAlexAccount()) return;
@@ -2325,8 +2386,12 @@
       const perm = getGamePerm(gameId);
       document.getElementById("gamePermTitle").textContent = `Access · ${gameName}`;
       document.getElementById("gameLockToggle").checked = !!perm.locked;
-      document.getElementById("gameAllowedUsers").value = (perm.allowed || []).join(", ");
-      renderPermChips(perm.allowed || []);
+      const search = document.getElementById("gamePermSearch");
+      if(search) search.value = "";
+      gamePermAllowedSet = new Set((perm.allowed || []).map(normalizeUsername));
+      // Make sure we have the latest user list before rendering.
+      refreshSocial().finally(renderPermUserList);
+      renderPermUserList();
       overlay.dataset.gameId = gameId;
       overlay.classList.add("show");
       overlay.setAttribute("aria-hidden", "false");
@@ -2342,8 +2407,7 @@
       const gameId = overlay.dataset.gameId;
       if(!gameId) return;
       const locked = document.getElementById("gameLockToggle").checked;
-      const allowed = document.getElementById("gameAllowedUsers").value
-        .split(",").map(s => normalizeUsername(s)).filter(Boolean);
+      const allowed = Array.from(gamePermAllowedSet).map(normalizeUsername).filter(Boolean);
       const saveBtn = document.getElementById("gamePermSave");
       if(saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "Saving…"; }
       try {
@@ -2373,6 +2437,8 @@
       if(overlay)   overlay.addEventListener("click", (e) => {
         if(e.target.id === "gamePermOverlay") closeGamePermModal();
       });
+      const searchEl = document.getElementById("gamePermSearch");
+      if(searchEl) searchEl.addEventListener("input", renderPermUserList);
       document.addEventListener("keydown", (e) => {
         if(e.key === "Escape" && overlay && overlay.classList.contains("show")) closeGamePermModal();
       });

@@ -7,7 +7,7 @@
    appear universally below the game.
 */
 (function () {
-  try { console.log("[alex.fun] social-bar v10 (Martel Sans sitewide) loaded"); } catch (_) {}
+  try { console.log("[alex.fun] social-bar v11 (Martel + uppercase chrome) loaded"); } catch (_) {}
 
   const path = location.pathname.split("/").pop() || "";
   if (path === "" || path === "index.html") return;
@@ -98,12 +98,23 @@
 
     // Force every textual element to render in Martel Sans. We :not()-exempt
     // monospace tags so any inline code blocks still look like code.
+    // Also: every game-chrome top button (Back / Fullscreen, regardless of
+    // whether the page uses .alex-btn or .btn) gets UPPERCASE styling so the
+    // entire site looks consistent.
     const override = document.createElement("style");
     override.id = "alexfun-martel-override";
     override.textContent = `
       html, body, button, input, textarea, select, optgroup,
       *:not(code):not(pre):not(kbd):not(samp):not(tt):not(var) {
         font-family: "Martel Sans", Arial, sans-serif !important;
+      }
+      .alex-btn,
+      .alex-topbar .btn, .alex-topbar button,
+      .topbar    .btn, .topbar    button,
+      .game-top  .btn, .game-top  button {
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        font-weight: 900 !important;
       }
     `;
     document.head.appendChild(override);
