@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spelling Bee 🐝 — alex.fun</title>
+  <link rel="icon" type="image/png" href="./clever1.png"/>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
+  <script src="./cover-profiles.js"></script>
+  <script defer src="./music-bridge.js"></script>
+  <script defer src="./social-bar.js?v=11"></script>
+
+  <style>
+    /* ── Theme tokens ── */
+    :root {
+      --bg:      #fef9e7;
+      --fg:      #1a1a1a;
+      --surface: #fff;
+      --border:  #e0e0e0;
+      --muted:   #888;
+      --hover:   #f5f5f5;
+      --bee:     #ffc107;
+    }
+    [data-theme="dark"] {
+      --bg:      #1a1a1a;
+      --fg:      #ececec;
+      --surface: #252525;
+      --border:  #333;
+      --muted:   #666;
+      --hover:   #2e2e2e;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: "Martel Sans", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      transition: background .25s, color .25s;
+      animation: pageIn .35s ease both;
+    }
+    @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .hidden { display: none !important; }
+
+    /* ── Buttons ── */
+    .btn {
+      font-family: inherit; font-size: 13px; font-weight: 800;
+      color: var(--fg); background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 100px; padding: 7px 16px; cursor: pointer;
+      transition: background .15s, border-color .15s, transform .12s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--hover); transform: translateY(-1px); }
+    .btn.primary { background: var(--bee); border-color: var(--bee); color: #1a0800; }
+    .btn.primary:hover { background: #e6ac00; border-color: #e6ac00; }
+    .btn.danger { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .btn.danger:hover { background: #b91c1c; border-color: #b91c1c; }
+    .btn.ghost { background: transparent; }
+
+    /* ── Top bar ── */
+    .top-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 18px; background: var(--surface);
+      border-bottom: 1.5px solid var(--border); flex-shrink: 0;
+      position: sticky; top: 0; z-index: 200;
+      transition: background .25s, border-color .25s;
+    }
+    .top-bar h1 { font-size: 18px; font-weight: 900; flex: 1; }
+    .top-bar .bee-icon { font-size: 22px; margin-right: 4px; }
+
+    /* ── Status bar ── */
+    #statusBar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 26px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px; background: var(--surface); border-top: 1px solid var(--border);
+      font-family: "Martel Sans", Arial, sans-serif;
+      font-size: 11px; font-weight: 800; color: var(--muted); z-index: 9000;
+      transition: background .25s, border-color .25s;
+    }
+    #statusBar .sb-cover { cursor: pointer; user-select: none; }
+    #statusBar .sb-cover:hover { color: var(--fg); }
+
+    /* ── Cover overlay ── */
+    #coverOverlay {
+      position: fixed; inset: 0; z-index: 10000; cursor: pointer;
+      background: center/cover no-repeat var(--alex-cover-image, url('./cleverpage.png'));
+      display: none;
+    }
+    #coverOverlay.show { display: block; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; right: 18px; bottom: 42px; z-index: 10040;
+      max-width: 320px; padding: 12px 16px; border-radius: 14px;
+      background: #111827; color: #fff;
+      box-shadow: 0 16px 44px rgba(0,0,0,.28);
+      font-size: 13px; font-weight: 800;
+      opacity: 0; transform: translateY(10px); pointer-events: none;
+      transition: opacity .25s, transform .25s;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ════════════════════════════════
+       LOBBY SCREEN
+    ════════════════════════════════ */
+    #lobbyScreen {
+      display: flex; flex-direction: column;
+      min-height: calc(100vh - 26px);
+    }
+    .lobby-body {
+      display: grid; grid-template-columns: 260px 1fr;
+      gap: 20px; padding: 20px 18px 60px; flex: 1;
+      max-width: 900px; margin: 0 auto; width: 100%;
+    }
+    @media (max-width: 620px) {
+      .lobby-body { grid-template-columns: 1fr; }
+    }
+
+    /* Friends panel */
+    .friends-panel-lobby {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 14px; height: fit-content;
+    }
+    .friends-panel-lobby h3 {
+      font-size: 12px; font-weight: 900; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+    }
+    .friend-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 10px; cursor: pointer;
+      transition: background .15s;
+    }
+    .friend-row:hover { background: var(--hover); }
+    .friend-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--bee); display: grid; place-items: center;
+      font-size: 15px; font-weight: 900; color: #1a0800; flex-shrink: 0;
+    }
+    .friend-name { font-size: 13px; font-weight: 800; flex: 1; }
+    .friend-invite-btn {
+      font-size: 11px; font-weight: 900; border: 1.5px solid var(--border);
+      border-radius: 999px; padding: 4px 10px; background: transparent;
+      color: var(--muted); cursor: pointer; font-family: inherit;
+      transition: background .15s, color .15s;
+    }
+    .friend-invite-btn:hover { background: var(--bee); border-color: var(--bee); color: #1a0800; }
+    .friend-invite-btn:disabled { opacity: .45; cursor: default; }
+    .no-friends-msg { font-size: 13px; font-weight: 700; color: var(--muted); padding: 8px 0; }
+
+    /* Lobby slots */
+    .lobby-slots-panel {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 18px;
+    }
+    .lobby-slots-panel h2 { font-size: 20px; font-weight: 900; margin-bottom: 4px; }
+    .lobby-subtitle { font-size: 13px; color: var(--muted); font-weight: 700; margin-bottom: 18px; }
+    .slots-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 12px; margin-bottom: 20px;
+    }
+    @media (max-width: 480px) { .slots-grid { grid-template-columns: 1fr; } }
+    .slot-card {
+      border: 2px dashed var(--border); border-radius: 14px;
+      padding: 18px 14px; display: flex; flex-direction: column;
+      align-items: center; gap: 8px; min-height: 120px; justify-content: center;
+      transition: border-color .2s, background .2s;
+    }
+    .slot-card.filled { border-style: solid; border-color: var(--bee); background: rgba(255,193,7,.06); }
+    .slot-card.host { border-color: #ffc107; }
+    .slot-stickman { font-size: 28px; }
+    .slot-name { font-size: 14px; font-weight: 900; }
+    .slot-tag {
+      font-size: 10px; font-weight: 900; letter-spacing: 1.5px;
+      text-transform: uppercase; padding: 3px 9px; border-radius: 999px;
+      background: var(--bee); color: #1a0800;
+    }
+    .slot-tag.bot-tag { background: #6366f1; color: #fff; }
+    .slot-empty { font-size: 12px; font-weight: 800; color: var(--muted); }
+    .slot-remove {
+      font-size: 11px; font-weight: 900; color: var(--muted);
+      border: 0; background: none; cursor: pointer; padding: 2px 6px;
+      border-radius: 6px; font-family: inherit;
+    }
+    .slot-remove:hover { background: #fee2e2; color: #dc2626; }
+
+    .lobby-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .lobby-actions .round-info { font-size: 12px; font-weight: 800; color: var(--muted); margin-left: auto; }
+
+    /* ════════════════════════════════
+       GAME SCREEN
+    ════════════════════════════════ */
+    #gameScreen {
+      display: none; flex-direction: column;
+      min-height: calc(100vh - 26px);
+    }
+    #gameScreen.active { display: flex; }
+
+    .game-info-bar {
+      display: flex; align-items: center; gap: 16px;
+      padding: 8px 18px; background: var(--surface);
+      border-bottom: 1.5px solid var(--border);
+      font-size: 13px; font-weight: 800;
+      transition: background .25s, border-color .25s;
+    }
+    .game-info-bar .round-badge {
+      background: var(--bee); color: #1a0800; border-radius: 999px;
+      padding: 3px 12px; font-size: 12px; font-weight: 900;
+    }
+    .game-info-bar .tier-badge {
+      border: 1.5px solid var(--border); border-radius: 999px;
+      padding: 3px 12px; font-size: 11px; font-weight: 900; color: var(--muted);
+    }
+    .game-info-bar .turn-label { margin-left: auto; color: var(--muted); }
+    .game-info-bar .turn-name { font-weight: 900; color: var(--fg); }
+
+    /* Canvas area */
+    .canvas-wrap {
+      flex: 1; display: flex; justify-content: center; align-items: center;
+      padding: 20px 12px 8px; overflow: hidden; position: relative;
+    }
+    #gameCanvas {
+      display: block; border-radius: 16px;
+      max-width: 100%; max-height: 100%;
+    }
+
+    /* Input panel */
+    #inputPanel {
+      padding: 14px 18px 10px; background: var(--surface);
+      border-top: 1.5px solid var(--border); display: none;
+      transition: background .25s, border-color .25s;
+    }
+    #inputPanel.active { display: block; }
+    .input-panel-label {
+      font-size: 11px; font-weight: 900; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+    }
+    .input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    #spellInput {
+      flex: 1; min-width: 160px; border: 2px solid var(--border); border-radius: 12px;
+      padding: 10px 14px; font: inherit; font-size: 17px; font-weight: 800;
+      background: var(--bg); color: var(--fg);
+      transition: border-color .2s;
+      outline: none;
+    }
+    #spellInput:focus { border-color: var(--bee); box-shadow: 0 0 0 3px rgba(255,193,7,.18); }
+    .input-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Bot thinking indicator */
+    #botThinking {
+      padding: 14px 18px 10px; background: var(--surface);
+      border-top: 1.5px solid var(--border); display: none;
+      font-size: 14px; font-weight: 800; color: var(--muted);
+      text-align: center;
+    }
+    #botThinking.active { display: block; }
+    .thinking-dots::after {
+      content: ''; animation: dots 1.4s infinite;
+    }
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+
+    /* ════════════════════════════════
+       GAME OVER SCREEN
+    ════════════════════════════════ */
+    #gameOverScreen {
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center; min-height: calc(100vh - 26px);
+      padding: 24px; text-align: center;
+    }
+    #gameOverScreen.active { display: flex; }
+    .gameover-card {
+      width: min(480px, 100%); background: var(--surface);
+      border: 1.5px solid var(--border); border-radius: 24px;
+      padding: 28px; box-shadow: 0 24px 80px rgba(0,0,0,.15);
+    }
+    .gameover-emoji { font-size: 56px; margin-bottom: 8px; line-height: 1; }
+    .gameover-title { font-size: 28px; font-weight: 900; margin-bottom: 6px; }
+    .gameover-winner {
+      font-size: 18px; font-weight: 800; color: var(--muted); margin-bottom: 20px;
+    }
+    .gameover-winner strong { color: var(--bee); }
+    .standings-title {
+      font-size: 11px; font-weight: 900; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+    }
+    .standing-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 12px; border-radius: 10px;
+      margin-bottom: 6px; background: var(--hover);
+      font-size: 14px; font-weight: 800;
+    }
+    .standing-place { width: 26px; text-align: center; font-weight: 900; }
+    .standing-name { flex: 1; }
+    .standing-lives { font-size: 12px; }
+    .standing-row.first { background: rgba(255,193,7,.15); border: 1.5px solid var(--bee); }
+    .gameover-actions { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <!-- Cover overlay (Backspace when not in input) -->
+  <div id="coverOverlay" onclick="toggleCover()"></div>
+
+  <!-- Toast notification -->
+  <div id="toast"></div>
+
+  <!-- ═══════════════════════════════
+       LOBBY SCREEN
+  ═══════════════════════════════ -->
+  <div id="lobbyScreen">
+    <!-- Top bar -->
+    <div class="top-bar">
+      <button class="btn ghost" onclick="location.href='./index.html'">← Back</button>
+      <span class="bee-icon">🐝</span>
+      <h1>Spelling Bee</h1>
+      <button class="btn" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
+    </div>
+
+    <div class="lobby-body">
+      <!-- Friends list -->
+      <aside>
+        <div class="friends-panel-lobby">
+          <h3>Friends</h3>
+          <div id="friendsList">
+            <p class="no-friends-msg" id="friendsLoading">Loading…</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Lobby slots -->
+      <div class="lobby-slots-panel">
+        <h2>Game Lobby</h2>
+        <p class="lobby-subtitle" id="lobbySubtitle">Waiting for players… (up to 4)</p>
+        <div class="slots-grid" id="slotsGrid">
+          <!-- Slots rendered by JS -->
+        </div>
+        <div class="lobby-actions">
+          <button class="btn" onclick="addBot()" id="addBotBtn">🤖 Add Bot</button>
+          <button class="btn primary" onclick="startGame()" id="startBtn">▶ Start Game</button>
+          <span class="round-info" id="lobbyPlayerCount"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       GAME SCREEN
+  ═══════════════════════════════ -->
+  <div id="gameScreen">
+    <!-- Top bar -->
+    <div class="top-bar">
+      <button class="btn ghost" onclick="returnToLobby()">← Lobby</button>
+      <span class="bee-icon">🐝</span>
+      <h1>Spelling Bee</h1>
+      <button class="btn" onclick="toggleTheme()" id="themeBtn2">🌙 Dark</button>
+    </div>
+
+    <!-- Round / tier info bar -->
+    <div class="game-info-bar">
+      <span class="round-badge" id="roundBadge">Round 1</span>
+      <span class="tier-badge" id="tierBadge">Easy</span>
+      <span class="turn-label">Active: <span class="turn-name" id="turnName">—</span></span>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <!-- Human input panel -->
+    <div id="inputPanel">
+      <div class="input-panel-label">Your turn — type the word:</div>
+      <div class="input-row">
+        <input id="spellInput" type="text" autocomplete="off" autocorrect="off"
+               spellcheck="false" placeholder="Type here…"
+               onkeydown="onInputKey(event)" oninput="onInputChange()"/>
+        <div class="input-btns">
+          <button class="btn" onclick="replayWord()" title="Replay word">🔊 Replay</button>
+          <button class="btn primary" onclick="submitAnswer()" title="Submit">✓ Submit</button>
+          <button class="btn danger" onclick="giveUp()" title="Give up">🏳 Give Up</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bot thinking indicator -->
+    <div id="botThinking">
+      <span id="botThinkingName"></span> is thinking<span class="thinking-dots"></span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       GAME OVER SCREEN
+  ═══════════════════════════════ -->
+  <div id="gameOverScreen">
+    <div class="gameover-card">
+      <div class="gameover-emoji" id="gameoverEmoji">🏆</div>
+      <div class="gameover-title">Game Over!</div>
+      <div class="gameover-winner" id="gameoverWinner"></div>
+      <div class="standings-title">Final Standings</div>
+      <div id="standingsList"></div>
+      <div class="gameover-actions">
+        <button class="btn" onclick="location.href='./index.html'">🏠 Home</button>
+        <button class="btn primary" onclick="playAgain()">🔄 Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       STATUS BAR
+  ═══════════════════════════════ -->
+  <div id="statusBar">
+    <span class="sb-cover" onclick="toggleCover()">⌫ Cover Image</span>
+    <span>v1.0.0</span>
+  </div>
+
+  <script>
+  /* ═══════════════════════════════════════════════════════════════════
+     WORD TIERS
+  ═══════════════════════════════════════════════════════════════════ */
+  const WORD_TIERS = [
+    // Tier 1: Easy (rounds 1-5)
+    ['cat','dog','sun','hat','run','fun','big','cup','red','bed','map','jam','pan','fox','zip','web','hop','fix','wet','log'],
+    // Tier 2: Medium (rounds 6-10)
+    ['apple','table','happy','cloud','bread','dream','light','river','stone','smile','brain','heart','floor','water','grade','music','dance','plant','grown','below'],
+    // Tier 3: Hard (rounds 11-15)
+    ['balloon','captain','diamond','rainbow','freedom','kitchen','journey','million','grammar','silence','believe','monster','weather','kingdom','surface','quarter','picture','forward','outside','suppose'],
+    // Tier 4: Very Hard (rounds 16-20)
+    ['adventure','chocolate','beautiful','wonderful','challenge','celebrate','discovery','furniture','knowledge','necessary','orchestra','telephone','vegetable','afternoon','recommend','encourage','dangerous','invisible','territory','ambitious'],
+    // Tier 5: Extreme (rounds 21+)
+    ['sophisticated','extraordinary','accomplishment','Mediterranean','conscientious','pharmaceutical','bureaucracy','embarrassment','exaggerate','lieutenant','mischievous','necessary','supersede','surveillance','simultaneously','psychological','responsibility','environmental','constitutional','misunderstand']
+  ];
+
+  const TIER_NAMES = ['Easy','Medium','Hard','Very Hard','Extreme'];
+  // Error chance per tier for bots
+  const BOT_ERROR_CHANCE = [0.05, 0.12, 0.22, 0.35, 0.50];
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THEME
+  ═══════════════════════════════════════════════════════════════════ */
+  function applyTheme() {
+    const dark = localStorage.getItem('theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : '');
+    document.querySelectorAll('[id^="themeBtn"]').forEach(b => {
+      b.textContent = dark ? '☀️ Light' : '🌙 Dark';
+    });
+  }
+  function toggleTheme() {
+    const dark = localStorage.getItem('theme') === 'dark';
+    localStorage.setItem('theme', dark ? 'light' : 'dark');
+    applyTheme();
+    if (G.running) drawFrame();
+  }
+  applyTheme();
+
+  /* ═══════════════════════════════════════════════════════════════════
+     COVER OVERLAY
+  ═══════════════════════════════════════════════════════════════════ */
+  function showCover() { document.getElementById('coverOverlay').classList.add('show'); }
+  function hideCover() { document.getElementById('coverOverlay').classList.remove('show'); }
+  function toggleCover() {
+    if (document.getElementById('coverOverlay').classList.contains('show')) hideCover();
+    else showCover();
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && document.activeElement.tagName !== 'INPUT') {
+      e.preventDefault();
+      toggleCover();
+    }
+    if (e.key === 'Escape') hideCover();
+  });
+
+  /* ═══════════════════════════════════════════════════════════════════
+     TOAST
+  ═══════════════════════════════════════════════════════════════════ */
+  let toastTimer = null;
+  function showToast(msg, duration = 3000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     SUPABASE + USER
+  ═══════════════════════════════════════════════════════════════════ */
+  let supabaseClient = null;
+  try {
+    supabaseClient = supabase.createClient(
+      window.ALEX_FUN_SUPABASE_URL,
+      window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY
+    );
+  } catch(e) { console.warn('Supabase init failed', e); }
+
+  function loadActiveUser() {
+    const raw = localStorage.getItem('alexFunActiveUserV1');
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch(e) {
+      return raw;
+    }
+  }
+  const activeUser   = loadActiveUser();
+  const sessionToken = localStorage.getItem('alexFunSessionTokenV1') || null;
+  const myUsername   = typeof activeUser === 'string'
+    ? activeUser
+    : (activeUser?.username || activeUser?.name || 'You');
+
+  /* ═══════════════════════════════════════════════════════════════════
+     LOBBY STATE
+  ═══════════════════════════════════════════════════════════════════ */
+  // Each player: { id, name, isBot, isMe }
+  let lobbyPlayers = [];
+  let botCount = 0;
+  let invitedFriends = new Set();
+
+  function initLobby() {
+    lobbyPlayers = [{ id: 'me', name: myUsername, isBot: false, isMe: true }];
+    botCount = 0;
+    invitedFriends = new Set();
+    renderSlots();
+    loadFriends();
+  }
+
+  function addBot() {
+    if (lobbyPlayers.length >= 4) { showToast('Lobby is full (max 4 players)'); return; }
+    botCount++;
+    lobbyPlayers.push({ id: 'bot_' + botCount, name: 'Bot ' + botCount, isBot: true, isMe: false });
+    renderSlots();
+    showToast('🤖 Bot ' + botCount + ' added!');
+  }
+
+  function removePlayer(id) {
+    lobbyPlayers = lobbyPlayers.filter(p => p.id !== id);
+    renderSlots();
+  }
+
+  function renderSlots() {
+    const grid = document.getElementById('slotsGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < 4; i++) {
+      const p = lobbyPlayers[i];
+      const card = document.createElement('div');
+      card.className = 'slot-card' + (p ? ' filled' + (p.isMe ? ' host' : '') : '');
+      if (p) {
+        card.innerHTML = `
+          <div class="slot-stickman">${p.isBot ? '🤖' : '🧑'}</div>
+          <div class="slot-name">${escHtml(p.name)}</div>
+          <div class="slot-tag ${p.isBot ? 'bot-tag' : ''}">${p.isMe ? 'HOST' : p.isBot ? 'BOT' : 'PLAYER'}</div>
+          ${!p.isMe ? `<button class="slot-remove" onclick="removePlayer('${p.id}')">✕ Remove</button>` : ''}
+        `;
+      } else {
+        card.innerHTML = `<div class="slot-stickman">➕</div><div class="slot-empty">Empty slot</div>`;
+      }
+      grid.appendChild(card);
+    }
+    document.getElementById('addBotBtn').disabled = lobbyPlayers.length >= 4;
+    document.getElementById('lobbyPlayerCount').textContent = lobbyPlayers.length + ' / 4 players';
+  }
+
+  async function loadFriends() {
+    const list = document.getElementById('friendsList');
+    if (!supabaseClient || !sessionToken) {
+      list.innerHTML = '<p class="no-friends-msg">Sign in to invite friends</p>';
+      return;
+    }
+    list.innerHTML = '<p class="no-friends-msg" id="friendsLoading">Loading friends…</p>';
+    try {
+      const { data, error } = await supabaseClient.rpc('list_social_state', { p_token: sessionToken });
+      if (error) throw error;
+      const friends = (data?.friends || []).filter(f => f.status === 'accepted' || f.accepted);
+      if (!friends.length) {
+        list.innerHTML = '<p class="no-friends-msg">No friends yet 😔</p>';
+        return;
+      }
+      list.innerHTML = '';
+      friends.forEach((f, i) => {
+        const name = f.username || f.name || f.friend_username || 'Unknown';
+        const row = document.createElement('div');
+        row.className = 'friend-row';
+        const avatar = document.createElement('div');
+        avatar.className = 'friend-avatar';
+        avatar.textContent = name[0].toUpperCase();
+        const label = document.createElement('div');
+        label.className = 'friend-name';
+        label.textContent = name;
+        const btn = document.createElement('button');
+        btn.className = 'friend-invite-btn';
+        btn.id = 'inv_' + i;
+        btn.type = 'button';
+        btn.textContent = 'Invite';
+        btn.addEventListener('click', () => inviteFriend(name, btn));
+        row.append(avatar, label, btn);
+        list.appendChild(row);
+      });
+    } catch(e) {
+      console.warn('Friends load error', e);
+      list.innerHTML = '<p class="no-friends-msg">Could not load friends</p>';
+    }
+  }
+
+  async function inviteFriend(name, clickedButton) {
+    if (!supabaseClient || !sessionToken) { showToast('Sign in to invite friends'); return; }
+    if (invitedFriends.has(name)) { showToast('Already invited ' + name); return; }
+    const btn = clickedButton || null;
+    if (btn) { btn.disabled = true; btn.textContent = 'Sent!'; }
+    invitedFriends.add(name);
+    try {
+      await supabaseClient.rpc('send_direct_message', {
+        p_token: sessionToken,
+        p_recipient_username: name,
+        p_body: "You've been invited to Spelling Bee! 🐝 Join at alex.fun/spelling-bee.html"
+      });
+      showToast('📨 Invite sent to ' + name + '!');
+    } catch(e) {
+      console.warn('Invite error', e);
+      showToast('Could not send invite to ' + name);
+      if (btn) { btn.disabled = false; btn.textContent = 'Invite'; }
+      invitedFriends.delete(name);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     GAME STATE
+  ═══════════════════════════════════════════════════════════════════ */
+  const G = {
+    players: [],        // Active game players (copy of lobby + alive flag etc.)
+    round: 1,
+    tierIdx: 0,
+    currentWord: '',
+    activeIdx: 0,       // Index into G.players for active player
+    running: false,
+    flashTimer: 0,      // ms remaining for chalkboard flash
+    flashColor: '',     // 'green' | 'red' | ''
+    usedWords: new Set(),
+    animT: 0,           // animation time accumulator
+  };
+
+  // Canvas setup
+  const canvas  = document.getElementById('gameCanvas');
+  const ctx     = canvas.getContext('2d');
+  let rafId     = null;
+  let lastTime  = 0;
+
+  function getTierIdx(round) {
+    if (round <= 5)  return 0;
+    if (round <= 10) return 1;
+    if (round <= 15) return 2;
+    if (round <= 20) return 3;
+    return 4;
+  }
+
+  function pickWord() {
+    const tier = WORD_TIERS[G.tierIdx];
+    const available = tier.filter(w => !G.usedWords.has(w));
+    const pool = available.length ? available : tier; // re-use if exhausted
+    const w = pool[Math.floor(Math.random() * pool.length)];
+    G.usedWords.add(w);
+    return w;
+  }
+
+  function activePlayers() { return G.players.filter(p => p.alive); }
+
+  function startGame() {
+    let players = [...lobbyPlayers];
+    // Auto-add 1 bot if only 1 player
+    if (players.length === 1) {
+      players.push({ id: 'bot_auto', name: 'Bot 1', isBot: true, isMe: false });
+    }
+
+    G.players = players.map((p, i) => ({
+      ...p,
+      lives: 3,
+      alive: true,
+      colorHue: [200, 320, 40, 160][i % 4],
+      elimOrder: null,
+    }));
+    G.round = 1;
+    G.tierIdx = 0;
+    G.activeIdx = 0;
+    G.running = true;
+    G.usedWords = new Set();
+    G.flashTimer = 0;
+    G.flashColor = '';
+    G.animT = 0;
+
+    document.getElementById('lobbyScreen').style.display = 'none';
+    document.getElementById('gameOverScreen').classList.remove('active');
+    document.getElementById('gameScreen').classList.add('active');
+
+    resizeCanvas();
+    startRound();
+    lastTime = performance.now();
+    rafId = requestAnimationFrame(gameLoop);
+  }
+
+  function resizeCanvas() {
+    const wrap = document.getElementById('canvasWrap');
+    const w = Math.min(wrap.clientWidth - 24, 860);
+    const h = Math.min(wrap.clientHeight - 16, 420);
+    canvas.width  = Math.max(w, 360);
+    canvas.height = Math.max(h, 260);
+  }
+
+  window.addEventListener('resize', () => { if (G.running) resizeCanvas(); });
+
+  /* ─── Round / Turn ─── */
+  function startRound() {
+    G.tierIdx = getTierIdx(G.round);
+    G.currentWord = pickWord();
+
+    document.getElementById('roundBadge').textContent = 'Round ' + G.round;
+    document.getElementById('tierBadge').textContent  = TIER_NAMES[G.tierIdx];
+
+    // Find first alive player starting from activeIdx
+    advanceToAlive();
+    beginTurn();
+  }
+
+  function advanceToAlive() {
+    // Scan from current activeIdx to find next alive player
+    let safety = 0;
+    while (!G.players[G.activeIdx].alive && safety < G.players.length) {
+      G.activeIdx = (G.activeIdx + 1) % G.players.length;
+      safety++;
+    }
+  }
+
+  function beginTurn() {
+    const p = G.players[G.activeIdx];
+    document.getElementById('turnName').textContent = p.name;
+
+    // Update typed text on chalkboard
+    updateChalkboardText('');
+
+    // Announce word via TTS
+    speakWord(G.currentWord);
+
+    if (p.isBot) {
+      showInputPanel(false);
+      showBotThinking(true, p.name);
+      scheduleBotAnswer(p);
+    } else {
+      showBotThinking(false);
+      showInputPanel(true);
+      document.getElementById('spellInput').value = '';
+      document.getElementById('spellInput').focus();
+    }
+  }
+
+  /* ─── TTS ─── */
+  function speakWord(word) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+
+    const utter = new SpeechSynthesisUtterance(word);
+    utter.rate = 0.88; utter.pitch = 1.05;
+
+    window.speechSynthesis.speak(utter);
+  }
+
+  function replayWord() { speakWord(G.currentWord); }
+
+  /* ─── Input panel ─── */
+  function showInputPanel(show) {
+    document.getElementById('inputPanel').classList.toggle('active', show);
+  }
+  function showBotThinking(show, name) {
+    const el = document.getElementById('botThinking');
+    el.classList.toggle('active', show);
+    if (show) document.getElementById('botThinkingName').textContent = name;
+  }
+
+  let typedText = '';
+  function onInputChange() {
+    typedText = document.getElementById('spellInput').value;
+    updateChalkboardText(typedText);
+  }
+
+  function onInputKey(e) {
+    if (e.key === 'Enter') { e.preventDefault(); submitAnswer(); }
+  }
+
+  function updateChalkboardText(text) {
+    // Stored so drawFrame can use it
+    G._typedText = text;
+  }
+
+  /* ─── Answer Checking ─── */
+  function submitAnswer() {
+    const input = document.getElementById('spellInput');
+    const answer = input.value.trim().toLowerCase();
+    if (!answer) { input.focus(); return; }
+    processAnswer(G.players[G.activeIdx], answer);
+  }
+
+  function giveUp() {
+    loseLife(G.players[G.activeIdx]);
+    if (G.players[G.activeIdx].alive) {
+      nextTurn();
+    }
+  }
+
+  function processAnswer(player, answer) {
+    showInputPanel(false);
+    if (answer === G.currentWord.toLowerCase()) {
+      correctAnswer(player);
+    } else {
+      wrongAnswer(player);
+    }
+  }
+
+  function correctAnswer(player) {
+    G.flashColor = 'green';
+    G.flashTimer = 1400;
+    showToast('✅ Correct! Great job, ' + player.name + '!');
+    setTimeout(() => {
+      G.flashColor = '';
+      G.round++;
+      G.tierIdx = getTierIdx(G.round);
+      G.currentWord = pickWord();
+      document.getElementById('roundBadge').textContent = 'Round ' + G.round;
+      document.getElementById('tierBadge').textContent  = TIER_NAMES[G.tierIdx];
+      nextTurn();
+    }, 1400);
+  }
+
+  function wrongAnswer(player) {
+    G.flashColor = 'red';
+    G.flashTimer = 1400;
+    loseLife(player);
+    showToast('❌ Not quite. Try again!');
+    setTimeout(() => {
+      G.flashColor = '';
+      if (!player.alive) {
+        nextTurn();
+      } else {
+        // Same player retries, re-announce word
+        beginTurn();
+      }
+    }, 1400);
+  }
+
+  function loseLife(player) {
+    player.lives--;
+    if (player.lives <= 0) {
+      player.lives = 0;
+      player.alive = false;
+      player.elimOrder = activePlayers().length; // record elimination order
+      showToast('💀 ' + player.name + ' has been eliminated!');
+      checkGameOver();
+    }
+  }
+
+  function checkGameOver() {
+    const alive = activePlayers();
+    if (alive.length <= 1) {
+      setTimeout(() => endGame(alive[0] || null), 800);
+    }
+  }
+
+  function nextTurn() {
+    if (!G.running) return;
+    const alive = activePlayers();
+    if (alive.length <= 1) { endGame(alive[0] || null); return; }
+    // Advance to next alive player
+    G.activeIdx = (G.activeIdx + 1) % G.players.length;
+    advanceToAlive();
+    beginTurn();
+  }
+
+  /* ─── Bot AI ─── */
+  function scheduleBotAnswer(player) {
+    const delay = 1500 + Math.random() * 1000;
+    setTimeout(() => {
+      if (!G.running) return;
+      const errorChance = BOT_ERROR_CHANCE[G.tierIdx];
+      let answer = G.currentWord.toLowerCase();
+      if (Math.random() < errorChance) {
+        // Introduce a random letter swap
+        const arr = answer.split('');
+        const pos = Math.floor(Math.random() * arr.length);
+        const wrongChar = String.fromCharCode(97 + Math.floor(Math.random() * 26));
+        arr[pos] = wrongChar;
+        answer = arr.join('');
+      }
+      showBotThinking(false);
+      // Show bot's "typed" answer briefly on chalkboard
+      updateChalkboardText(answer);
+      setTimeout(() => processAnswer(player, answer), 600);
+    }, delay);
+  }
+
+  /* ─── Game Over ─── */
+  function endGame(winner) {
+    G.running = false;
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    cancelAnimationFrame(rafId);
+
+    document.getElementById('gameScreen').classList.remove('active');
+    document.getElementById('gameOverScreen').classList.add('active');
+
+    document.getElementById('gameoverEmoji').textContent = winner ? '🏆' : '🤝';
+    document.getElementById('gameoverWinner').innerHTML = winner
+      ? `Winner: <strong>${escHtml(winner.name)}</strong> 🎉`
+      : 'Everyone was eliminated — it\'s a tie!';
+
+    // Build standings (alive first, then eliminated in reverse order)
+    const sorted = [...G.players].sort((a, b) => {
+      if (a.alive && !b.alive) return -1;
+      if (!a.alive && b.alive) return 1;
+      return b.lives - a.lives;
+    });
+    const sl = document.getElementById('standingsList');
+    sl.innerHTML = '';
+    sorted.forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'standing-row' + (i === 0 ? ' first' : '');
+      const medals = ['🥇','🥈','🥉','4️⃣'];
+      row.innerHTML = `
+        <div class="standing-place">${medals[i] || (i+1)}</div>
+        <div class="standing-name">${escHtml(p.name)}${p.isBot ? ' 🤖' : ''}</div>
+        <div class="standing-lives">${heartStr(p.lives)}</div>
+      `;
+      sl.appendChild(row);
+    });
+  }
+
+  function heartStr(n) {
+    return '❤️'.repeat(Math.max(0, n)) + '🖤'.repeat(Math.max(0, 3 - n));
+  }
+
+  function returnToLobby() {
+    G.running = false;
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    cancelAnimationFrame(rafId);
+    document.getElementById('gameScreen').classList.remove('active');
+    showInputPanel(false);
+    showBotThinking(false);
+    document.getElementById('lobbyScreen').style.display = '';
+    initLobby();
+  }
+
+  function playAgain() {
+    document.getElementById('gameOverScreen').classList.remove('active');
+    document.getElementById('lobbyScreen').style.display = '';
+    initLobby();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     CANVAS RENDERING
+  ═══════════════════════════════════════════════════════════════════ */
+  function gameLoop(ts) {
+    if (!G.running) return;
+    const dt = ts - lastTime;
+    lastTime = ts;
+    G.animT += dt;
+    if (G.flashTimer > 0) G.flashTimer = Math.max(0, G.flashTimer - dt);
+    drawFrame();
+    rafId = requestAnimationFrame(gameLoop);
+  }
+
+  function drawFrame() {
+    const W = canvas.width, H = canvas.height;
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    // Background
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = dark ? '#1a1a1a' : '#fef9e7';
+    ctx.fillRect(0, 0, W, H);
+
+    // Draw a subtle floor line
+    ctx.strokeStyle = dark ? '#333' : '#e0d8b0';
+    ctx.lineWidth = 2;
+    const floorY = H - 60;
+    ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(W, floorY); ctx.stroke();
+
+    const players = G.players;
+    const n = players.length;
+    const spacing = W / (n + 1);
+
+    players.forEach((p, i) => {
+      const x = spacing * (i + 1);
+      const y = floorY;
+      const isActive = (i === G.activeIdx) && p.alive;
+      drawStickman(p, x, y, isActive, dark);
+    });
+  }
+
+  /* ─── Stickman drawing ─── */
+  function drawStickman(player, cx, floorY, isActive, dark) {
+    const scale = Math.min(canvas.width / 5 / 90, 1.0);
+    const s = Math.max(0.55, Math.min(scale, 1.15)); // clamp scale
+
+    // Player hue for color
+    const hue = player.colorHue;
+    const baseColor = player.alive
+      ? `hsl(${hue},65%,${dark ? 65 : 40}%)`
+      : (dark ? '#555' : '#bbb');
+
+    // ── SPOTLIGHT (active) ──
+    if (isActive) {
+      const bounce = Math.sin(G.animT / 600) * 4;
+      const grd = ctx.createRadialGradient(cx, floorY - 60 * s + bounce, 8, cx, floorY - 40 * s + bounce, 90 * s);
+      grd.addColorStop(0, 'rgba(255,220,60,0.32)');
+      grd.addColorStop(0.6, 'rgba(255,200,30,0.10)');
+      grd.addColorStop(1, 'rgba(255,200,0,0)');
+      ctx.beginPath();
+      ctx.ellipse(cx, floorY - 40 * s + bounce, 90 * s, 100 * s, 0, 0, Math.PI * 2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+    }
+
+    // ── CHALKBOARD (active) ──
+    if (isActive) {
+      drawChalkboard(cx, floorY - 155 * s, s, dark);
+    }
+
+    // ── SHADOW ──
+    ctx.save();
+    ctx.globalAlpha = player.alive ? 0.18 : 0.08;
+    ctx.beginPath();
+    ctx.ellipse(cx, floorY + 3, 22 * s, 6 * s, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#000';
+    ctx.fill();
+    ctx.restore();
+
+    if (!player.alive) ctx.globalAlpha = 0.45;
+
+    // ── HEAD ──
+    const headY = floorY - 100 * s;
+    ctx.beginPath();
+    ctx.arc(cx, headY, 16 * s, 0, Math.PI * 2);
+    ctx.strokeStyle = baseColor;
+    ctx.lineWidth = 3 * s;
+    ctx.stroke();
+    ctx.fillStyle = dark ? '#252525' : '#fff';
+    ctx.fill();
+
+    // Face
+    if (player.alive) {
+      // Eyes (normal)
+      ctx.fillStyle = baseColor;
+      ctx.beginPath(); ctx.arc(cx - 5 * s, headY - 3 * s, 2.5 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 5 * s, headY - 3 * s, 2.5 * s, 0, Math.PI * 2); ctx.fill();
+      // Smile
+      ctx.beginPath();
+      ctx.arc(cx, headY + 1 * s, 7 * s, 0.15, Math.PI - 0.15);
+      ctx.strokeStyle = baseColor;
+      ctx.lineWidth = 2 * s;
+      ctx.stroke();
+    } else {
+      // X eyes (eliminated)
+      drawXEye(cx - 5 * s, headY - 3 * s, 4 * s);
+      drawXEye(cx + 5 * s, headY - 3 * s, 4 * s);
+      // OUT label
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = '#dc2626';
+      ctx.font = `900 ${Math.round(10 * s)}px "Martel Sans",Arial,sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('OUT', cx, headY + 7 * s);
+      ctx.restore();
+    }
+
+    // ── BODY ──
+    const bodyTop = headY + 16 * s;
+    const bodyBot = floorY - 30 * s;
+    ctx.beginPath();
+    ctx.moveTo(cx, bodyTop);
+    ctx.lineTo(cx, bodyBot);
+    ctx.strokeStyle = baseColor;
+    ctx.lineWidth = 3 * s;
+    ctx.stroke();
+
+    // ── ARMS ──
+    const midY = bodyTop + (bodyBot - bodyTop) * 0.35;
+    const armSpread = isActive ? (30 + Math.sin(G.animT / 400) * 6) * s : 26 * s;
+    ctx.beginPath();
+    ctx.moveTo(cx - armSpread, midY + 14 * s);
+    ctx.lineTo(cx, midY);
+    ctx.lineTo(cx + armSpread, midY + 14 * s);
+    ctx.strokeStyle = baseColor;
+    ctx.lineWidth = 3 * s;
+    ctx.stroke();
+
+    // ── LEGS ──
+    ctx.beginPath();
+    ctx.moveTo(cx, bodyBot);
+    ctx.lineTo(cx - 20 * s, floorY);
+    ctx.strokeStyle = baseColor;
+    ctx.lineWidth = 3 * s;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, bodyBot);
+    ctx.lineTo(cx + 20 * s, floorY);
+    ctx.strokeStyle = baseColor;
+    ctx.lineWidth = 3 * s;
+    ctx.stroke();
+
+    ctx.globalAlpha = 1;
+
+    // ── NAME TAG ──
+    ctx.save();
+    ctx.font = `900 ${Math.round(11 * s)}px "Martel Sans",Arial,sans-serif`;
+    ctx.textAlign = 'center';
+    const nameY = headY - 24 * s;
+    const nameW = ctx.measureText(player.name).width + 12 * s;
+    ctx.fillStyle = dark ? '#2e2e2e' : '#fff';
+    ctx.strokeStyle = dark ? '#444' : '#ddd';
+    ctx.lineWidth = 1;
+    roundRect(ctx, cx - nameW/2, nameY - 10 * s, nameW, 16 * s, 5 * s);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = player.alive ? (dark ? '#ececec' : '#1a1a1a') : '#888';
+    ctx.fillText(player.name, cx, nameY + 1 * s);
+    ctx.restore();
+
+    // ── LIVES ──
+    ctx.save();
+    ctx.font = `${Math.round(11 * s)}px Arial`;
+    ctx.textAlign = 'center';
+    const livesStr = heartStr(player.lives);
+    ctx.fillText(livesStr, cx, floorY + 22 * s);
+    ctx.restore();
+  }
+
+  function drawXEye(x, y, r) {
+    ctx.save();
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x-r, y-r); ctx.lineTo(x+r, y+r); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+r, y-r); ctx.lineTo(x-r, y+r); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ─── Chalkboard ─── */
+  function drawChalkboard(cx, cy, s, dark) {
+    const cbW = Math.min(160 * s, 160);
+    const cbH = 62 * s;
+    const cbX = cx - cbW / 2;
+    const cbY = cy - cbH / 2;
+
+    // Determine chalkboard color from flash state
+    let cbColor, textColor;
+    if (G.flashColor === 'green') {
+      cbColor = '#1a6b2e'; textColor = '#a8f0b8';
+    } else if (G.flashColor === 'red') {
+      cbColor = '#6b1a1a'; textColor = '#f8a0a0';
+    } else {
+      cbColor = dark ? '#1a2e1a' : '#2d4a2d'; textColor = '#c8f0d0';
+    }
+
+    // Chalkboard body
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 12;
+    roundRect(ctx, cbX, cbY, cbW, cbH, 8 * s);
+    ctx.fillStyle = cbColor;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Chalk border
+    ctx.strokeStyle = dark ? '#5a7a5a' : '#7a9a7a';
+    ctx.lineWidth = 2 * s;
+    ctx.stroke();
+
+    // Chalk connector line to active stickman head
+    ctx.strokeStyle = dark ? '#5a7a5a' : '#7a9a7a';
+    ctx.lineWidth = 1.5 * s;
+    ctx.setLineDash([4 * s, 3 * s]);
+    ctx.beginPath();
+    ctx.moveTo(cx, cbY + cbH);
+    ctx.lineTo(cx, cbY + cbH + 20 * s);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Typed text on chalkboard
+    ctx.font = `800 ${Math.round(13 * s)}px "Martel Sans",Arial,sans-serif`;
+    ctx.fillStyle = textColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const display = (G._typedText || '');
+    ctx.fillText(display || (G.flashColor ? G.currentWord : '_'), cx, cy + 4 * s, cbW - 16 * s);
+
+    // Flash indicator text
+    if (G.flashColor) {
+      ctx.font = `900 ${Math.round(10 * s)}px "Martel Sans",Arial,sans-serif`;
+      ctx.fillStyle = G.flashColor === 'green' ? '#6dffab' : '#ff8080';
+      ctx.fillText(G.flashColor === 'green' ? '✓ CORRECT' : '✗ WRONG', cx, cy - 16 * s);
+    }
+
+    ctx.restore();
+  }
+
+  /* ─── Utility: rounded rect path ─── */
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     UTILITY
+  ═══════════════════════════════════════════════════════════════════ */
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     INIT
+  ═══════════════════════════════════════════════════════════════════ */
+  initLobby();
+  </script>
+</body>
+</html>

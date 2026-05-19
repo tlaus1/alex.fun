@@ -15,13 +15,6 @@
   <script src="./supabase-config.js"></script>
   <script defer src="./music-bridge.js"></script>
   <script defer src="./social-bar.js?v=11"></script>
-  <script defer src="./game-chrome.js"
-          data-game-name="Solar Smash"
-          data-theme-accent="#ffd166"
-          data-status-bg="#030712"
-          data-status-fg="rgba(248,250,252,0.6)"
-          data-panel-bg="rgba(3,7,18,0.82)"
-          data-hover-bg="rgba(15,23,42,0.92)"></script>
   <link rel="icon" type="image/png" href="./clever1.png">
   <script>
     // Block ytgame.js from redirecting to its localhost dev server (port 8765)
@@ -49,11 +42,44 @@
   <title>Solar Smash</title>
   <link rel="stylesheet" href="TemplateData/style.css">
   <style>
-    /* alex.fun chrome is in game-chrome.js. Just reserve room for the status bar. */
-    #unity-container {
-      bottom: var(--status-h, 26px) !important;
-      height: calc(100% - var(--status-h, 26px)) !important;
+    :root { --status-h: 24px; --panel: rgba(3,7,18,.82); --fg: #f8fafc; --border: rgba(255,255,255,.18); }
+    #unity-container { bottom: var(--status-h) !important; height: calc(100% - var(--status-h)) !important; }
+    #coverOverlay {
+      position: fixed; inset: 0; z-index: 10000;
+      background: #fff; opacity: 0; pointer-events: none;
+      transition: opacity .45s cubic-bezier(.4,0,.2,1); cursor: pointer;
     }
+    #coverOverlay.show { opacity: 1; pointer-events: auto; }
+    #coverOverlay img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+    .alex-topbar {
+      position: fixed; top: 10px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      pointer-events: none; z-index: 9000;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+    .alex-actions { display: flex; gap: 8px; pointer-events: auto; }
+    .alex-title {
+      max-width: 44vw; padding: 8px 12px; border: 1px solid var(--border); border-radius: 999px;
+      background: var(--panel); backdrop-filter: blur(12px); box-shadow: 0 8px 22px rgba(0,0,0,.32);
+      font-size: 12px; font-weight: 900; color: var(--fg); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+    }
+    .alex-btn {
+      appearance: none; border: 1px solid var(--border); border-radius: 999px;
+      background: var(--panel); color: var(--fg); padding: 8px 12px;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 12px; font-weight: 900;
+      cursor: pointer; backdrop-filter: blur(12px); box-shadow: 0 8px 22px rgba(0,0,0,.32);
+    }
+    .alex-btn:hover { background: rgba(15,23,42,.92); }
+    #alexStatusBar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: var(--status-h);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 14px;
+      background: #030712; border-top: 1px solid rgba(255,255,255,.1);
+      font-family: "Martel Sans", Arial, sans-serif; font-size: 11px; font-weight: 800;
+      color: rgba(248,250,252,.6); z-index: 9100;
+    }
+    #alexStatusBar .sb-cover { cursor: pointer; user-select: none; }
+    #alexStatusBar .sb-cover:hover { color: var(--fg); }
   </style>
 </head>
 <body>
@@ -173,6 +199,54 @@
     });
   </script>
 
-  <!-- alex.fun chrome is injected by game-chrome.js -->
+  <div class="alex-topbar">
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexBackBtn" type="button">Back</button>
+    </div>
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexFullscreenBtn" type="button">Fullscreen</button>
+    </div>
+  </div>
+
+  <div id="coverOverlay" aria-hidden="true">
+    <img data-cover-image alt="Cover">
+  </div>
+
+  <div id="alexStatusBar">
+    <span>Solar Smash</span>
+    <span class="sb-cover" id="alexCoverHint">Backspace Cover Image</span>
+  </div>
+
+  <script>
+    document.getElementById('alexBackBtn').addEventListener('click', function () {
+      window.location.href = new URL('index.html', window.location.href).href;
+    });
+
+    var alexFsBtn = document.getElementById('alexFullscreenBtn');
+    alexFsBtn.addEventListener('click', function () {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(function () { alexFsBtn.textContent = 'Exit Fullscreen'; }).catch(function(){});
+      } else {
+        document.exitFullscreen().then(function () { alexFsBtn.textContent = 'Fullscreen'; }).catch(function(){});
+      }
+    });
+    document.addEventListener('fullscreenchange', function () {
+      alexFsBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+    });
+
+    var coverOverlay = document.getElementById('coverOverlay');
+    function toggleCover() {
+      var showing = coverOverlay.classList.toggle('show');
+      coverOverlay.setAttribute('aria-hidden', String(!showing));
+    }
+    coverOverlay.addEventListener('click', toggleCover);
+    document.getElementById('alexCoverHint').addEventListener('click', toggleCover);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        toggleCover();
+      }
+    });
+  </script>
 </body>
 </html>

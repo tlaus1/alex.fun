@@ -7,11 +7,6 @@
   <script src="./supabase-config.js"></script>
   <script defer src="./music-bridge.js"></script>
   <script defer src="./social-bar.js?v=11"></script>
-  <script defer src="./game-chrome.js"
-          data-game-name="Football Bros"
-          data-theme-accent="#ff9d2e"
-          data-status-bg="#0a0a0a"
-          data-status-fg="rgba(255,165,0,0.65)"></script>
   <link rel="icon" type="image/png" href="./clever1.png">
 
   <meta charset="utf-8">
@@ -173,7 +168,44 @@
       height: calc(100% - 26px); /* leave room for status bar */
     }
 
-    /* alex.fun chrome is injected by game-chrome.js */
+    /* ── alex.fun chrome ── */
+    :root { --status-h: 26px; --panel: rgba(0,0,0,.82); --fg: #fff; --border: rgba(255,128,0,.4); }
+    .alex-topbar {
+      position: fixed; top: 10px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      pointer-events: none; z-index: 9000;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+    .alex-actions { display: flex; gap: 8px; pointer-events: auto; }
+    .alex-btn {
+      appearance: none; border: 1.5px solid var(--border); border-radius: 999px;
+      background: var(--panel); color: var(--fg); padding: 8px 14px;
+      font-family: inherit; font-size: 12px; font-weight: 900;
+      cursor: pointer; backdrop-filter: blur(10px);
+      box-shadow: 0 8px 22px rgba(0,0,0,.45);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .alex-btn:hover { background: rgba(40,20,0,.95); border-color: #ff9d2e; color: #ffd700; }
+    #alexStatusBar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: var(--status-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px;
+      background: #0a0a0a; border-top: 1px solid rgba(255,128,0,.3);
+      font-family: "Martel Sans", Arial, sans-serif;
+      font-size: 11px; font-weight: 800; color: rgba(255,165,0,.65);
+      z-index: 9100;
+    }
+    #alexStatusBar .sb-cover { cursor: pointer; user-select: none; }
+    #alexStatusBar .sb-cover:hover { color: #ffa500; }
+
+    /* Cover overlay (Backspace) — sits above the music pill (z-index 10030) */
+    #coverOverlay {
+      position: fixed; inset: 0; z-index: 11000;
+      background: #fff; opacity: 0; pointer-events: none;
+      transition: opacity .45s cubic-bezier(.4,0,.2,1); cursor: pointer;
+    }
+    #coverOverlay.show { opacity: 1; pointer-events: auto; }
+    #coverOverlay img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
 
     /* Stub: the original page had Firebase + ads. We keep their initializers
        running so the in-game JS doesn't error, but hide their ad slots. */
@@ -184,6 +216,16 @@
 
 <body style="overflow:hidden;">
   <noscript>Enable JavaScript bro!</noscript>
+
+  <!-- alex.fun top bar -->
+  <div class="alex-topbar">
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexBackBtn" type="button">Back</button>
+    </div>
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexFullscreenBtn" type="button">Fullscreen</button>
+    </div>
+  </div>
 
   <div id="loading" style="position:absolute;z-index:15;top:50%;left:50%;transform:translate(-50%,-50%);background:black;text-align:center;">
     <img src="assets/loading4.png" alt=""><br>
@@ -199,6 +241,17 @@
         lime.embed("FootballBros", "openfl-content", 0, 0, { parameters: {} });
       </script>
     </div>
+  </div>
+
+  <!-- alex.fun cover overlay -->
+  <div id="coverOverlay" aria-hidden="true">
+    <img data-cover-image alt="Cover">
+  </div>
+
+  <!-- alex.fun status bar -->
+  <div id="alexStatusBar">
+    <span>Football Bros</span>
+    <span class="sb-cover" id="alexCoverHint">Backspace Cover Image</span>
   </div>
 
   <!-- Game's ad / Firebase / multiplayer-services stubs (no-ops outside the
@@ -251,6 +304,44 @@
     function SetCGInviteLink(){}
   </script>
 
-  <!-- alex.fun chrome (Back/Fullscreen/status bar/cover) is now in game-chrome.js -->
+  <!-- alex.fun chrome JS -->
+  <script>
+    document.getElementById('alexBackBtn').addEventListener('click', function () {
+      window.location.href = new URL('index.html', window.location.href).href;
+    });
+
+    var alexFsBtn = document.getElementById('alexFullscreenBtn');
+    alexFsBtn.addEventListener('click', async function () {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          alexFsBtn.textContent = 'Exit Fullscreen';
+        } else {
+          await document.exitFullscreen();
+          alexFsBtn.textContent = 'Fullscreen';
+        }
+      } catch (e) { console.log('Fullscreen failed:', e); }
+    });
+    document.addEventListener('fullscreenchange', function () {
+      alexFsBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+    });
+
+    // Cover overlay (Backspace) — toggle on/off so music-bridge can detect
+    var coverOverlay = document.getElementById('coverOverlay');
+    function toggleCover() {
+      var showing = coverOverlay.classList.toggle('show');
+      coverOverlay.setAttribute('aria-hidden', String(!showing));
+    }
+    coverOverlay.addEventListener('click', toggleCover);
+    document.getElementById('alexCoverHint').addEventListener('click', toggleCover);
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Backspace' || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Don't steal Backspace when user is typing
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      e.preventDefault();
+      toggleCover();
+    }, true);
+  </script>
 </body>
 </html>

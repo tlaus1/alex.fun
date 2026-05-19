@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spend Elon's Money — alex.fun</title>
+  <link rel="icon" type="image/png" href="./clever1.png"/>
+  <script src="./cover-profiles.js"></script>
+  <script src="./supabase-config.js"></script>
+  <script defer src="./music-bridge.js"></script>
+  <script defer src="./social-bar.js?v=11"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:"Martel Sans",Arial,sans-serif;
+      background:#0d0d0d;color:#f0f0f0;min-height:100vh;
+      display:flex;flex-direction:column;
+      padding-bottom:26px;
+      animation:pageIn .32s ease both;
+    }
+    @keyframes pageIn{from{opacity:0}to{opacity:1}}
+
+    /* ── Top bar ── */
+    .top-bar{
+      display:flex;align-items:center;gap:10px;
+      padding:10px 20px;background:#111;
+      border-bottom:1px solid #222;flex-shrink:0;
+      position:sticky;top:0;z-index:100;
+    }
+    .btn{
+      font-family:inherit;font-size:13px;font-weight:800;
+      color:#f0f0f0;background:transparent;border:1.5px solid #333;
+      border-radius:100px;padding:6px 14px;cursor:pointer;
+      transition:background .13s,border-color .13s,transform .1s;white-space:nowrap;
+    }
+    .btn:hover{background:#1e1e1e;border-color:#555;transform:translateY(-1px);}
+
+    /* ── Hero ── */
+    .hero{
+      background:linear-gradient(160deg,#0a1a0a 0%,#001a00 40%,#0a1200 100%);
+      padding:28px 24px 22px;text-align:center;position:relative;overflow:hidden;
+    }
+    .hero::before{
+      content:'';position:absolute;inset:0;
+      background:radial-gradient(ellipse at 50% 0%,rgba(0,255,80,.08) 0%,transparent 70%);
+      pointer-events:none;
+    }
+    .hero-label{font-size:11px;font-weight:900;letter-spacing:3px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:4px;}
+    .hero-name{font-size:14px;font-weight:800;color:rgba(255,255,255,.45);margin-bottom:8px;}
+    #moneyDisplay{
+      font-size:clamp(32px,7vw,68px);font-weight:900;
+      color:#2ecc71;line-height:1;letter-spacing:-1px;
+      text-shadow:0 0 40px rgba(46,204,113,.3);
+      transition:color .2s;
+    }
+    #moneyDisplay.low{color:#e74c3c;text-shadow:0 0 40px rgba(231,76,60,.3);}
+    .progress-wrap{background:#111;border-radius:100px;height:7px;margin:14px auto 0;max-width:560px;overflow:hidden;}
+    .progress-fill{height:100%;background:linear-gradient(90deg,#27ae60,#2ecc71);border-radius:100px;transition:width .4s ease;width:100%;}
+    .progress-fill.low{background:linear-gradient(90deg,#c0392b,#e74c3c);}
+    .hero-stats{display:flex;gap:20px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+    .stat{font-size:12px;font-weight:800;color:rgba(255,255,255,.4);}
+    .stat span{color:rgba(255,255,255,.75);}
+
+    /* ── Filters ── */
+    .filters{
+      display:flex;gap:8px;padding:13px 16px;overflow-x:auto;
+      background:#111;border-bottom:1px solid #1a1a1a;scrollbar-width:none;
+    }
+    .filters::-webkit-scrollbar{display:none;}
+    .filter-btn{
+      font-family:inherit;font-size:12px;font-weight:800;
+      padding:5px 13px;border-radius:100px;border:1.5px solid #2a2a2a;
+      background:#1a1a1a;color:rgba(255,255,255,.5);cursor:pointer;
+      white-space:nowrap;transition:all .15s;flex-shrink:0;
+    }
+    .filter-btn:hover{border-color:#3a3a3a;color:rgba(255,255,255,.75);}
+    .filter-btn.active{background:#2ecc71;border-color:#2ecc71;color:#000;}
+
+    /* ── Grid ── */
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+      gap:14px;padding:18px;
+    }
+
+    /* ── Item card ── */
+    .item-card{
+      background:#161616;border:1.5px solid #222;
+      border-radius:16px;overflow:hidden;
+      display:flex;flex-direction:column;
+      transition:border-color .15s,transform .15s,box-shadow .15s;
+      position:relative;cursor:default;
+    }
+    .item-card:hover{border-color:#2ecc71;transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.35);}
+    .item-card.has-items{border-color:#27ae60;background:#0f1a0f;}
+    .item-card.cant-afford{opacity:.38;pointer-events:none;}
+
+    /* ── Photo area ── */
+    .item-photo{
+      width:100%;height:140px;position:relative;overflow:hidden;
+      background:#1c1c1c;flex-shrink:0;
+    }
+    .item-photo img{
+      width:100%;height:100%;object-fit:cover;display:block;
+      transition:transform .3s ease;
+    }
+    .item-card:hover .item-photo img{transform:scale(1.06);}
+    /* Emoji fallback shown when img fails */
+    .item-photo .emoji-fb{
+      display:none;width:100%;height:100%;
+      align-items:center;justify-content:center;
+      font-size:52px;
+    }
+
+    /* ── Count badge ── */
+    .count-badge{
+      position:absolute;top:8px;right:8px;z-index:3;
+      background:#2ecc71;color:#000;
+      font-size:11px;font-weight:900;
+      border-radius:100px;padding:2px 8px;
+      display:none;box-shadow:0 2px 8px rgba(0,0,0,.4);
+    }
+    .item-card.has-items .count-badge{display:block;}
+
+    /* ── Photo overlay gradient ── */
+    .item-photo::after{
+      content:'';position:absolute;bottom:0;left:0;right:0;height:40%;
+      background:linear-gradient(to top,rgba(0,0,0,.55),transparent);
+      pointer-events:none;
+    }
+
+    /* ── Info section ── */
+    .item-info{
+      padding:11px 13px 10px;
+      display:flex;flex-direction:column;align-items:center;
+      gap:4px;flex:1;
+    }
+    .item-name{font-size:13px;font-weight:900;text-align:center;color:#e0e0e0;line-height:1.3;}
+    .item-price{font-size:13px;font-weight:900;color:#2ecc71;}
+    .item-category{font-size:10px;font-weight:800;letter-spacing:1.5px;color:rgba(255,255,255,.22);text-transform:uppercase;}
+
+    /* ── Controls ── */
+    .controls{
+      display:flex;align-items:center;
+      background:#111;border-radius:100px;border:1.5px solid #2a2a2a;
+      overflow:hidden;margin-top:6px;
+    }
+    .ctrl-btn{
+      font-family:inherit;font-size:17px;font-weight:900;
+      width:36px;height:36px;border:none;cursor:pointer;
+      background:transparent;color:#d0d0d0;
+      display:grid;place-items:center;
+      transition:background .12s,color .12s;
+    }
+    .ctrl-btn.sell:hover{background:#2a0000;color:#e74c3c;}
+    .ctrl-btn.buy:hover{background:#002a00;color:#2ecc71;}
+    .ctrl-btn:disabled{opacity:.25;cursor:not-allowed;}
+    .ctrl-count{min-width:36px;text-align:center;font-size:14px;font-weight:900;color:#fff;}
+
+    /* ── Spend ticker ── */
+    .spent-tick{
+      position:fixed;pointer-events:none;
+      font-size:15px;font-weight:900;
+      animation:tickUp .85s ease forwards;z-index:9999;
+    }
+    @keyframes tickUp{
+      0%{opacity:1;transform:translateY(0) scale(1)}
+      80%{opacity:.7}
+      100%{opacity:0;transform:translateY(-55px) scale(.8)}
+    }
+
+    /* ── Win banner ── */
+    #winBanner{
+      display:none;position:fixed;inset:0;
+      background:rgba(0,0,0,.88);z-index:200;
+      flex-direction:column;align-items:center;justify-content:center;
+      text-align:center;padding:30px;
+    }
+    #winBanner.show{display:flex;}
+    .win-emoji{font-size:68px;margin-bottom:14px;}
+    .win-title{font-size:34px;font-weight:900;color:#2ecc71;margin-bottom:8px;}
+    .win-sub{font-size:15px;color:#aaa;font-weight:700;margin-bottom:26px;max-width:420px;}
+
+    /* Mobile */
+    @media(max-width:480px){
+      .grid{grid-template-columns:repeat(2,1fr);gap:10px;padding:10px;}
+      .item-photo{height:110px;}
+    }
+
+    /* ── Status bar ── */
+    #statusBar{
+      position:fixed;bottom:0;left:0;right:0;height:26px;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 14px;background:#111;border-top:1px solid #222;
+      font-size:11px;font-weight:800;color:#555;z-index:200;
+      font-family:"Martel Sans",Arial,sans-serif;
+    }
+    #statusBar .sb-cover{cursor:pointer;}
+    #statusBar .sb-cover:hover{color:#aaa;}
+
+    /* ── Cover overlay ── */
+    #coverOverlay{
+      position:fixed;inset:0;z-index:11000;cursor:pointer;background:#fff;
+      opacity:0;pointer-events:none;transition:opacity .55s cubic-bezier(.4,0,.2,1);
+    }
+    #coverOverlay.show{opacity:1;pointer-events:auto;}
+    #coverOverlay img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="btn" onclick="location.href='./index.html'">← Back</button>
+  <span style="flex:1;font-weight:900;font-size:15px;">💸 Spend Elon's Money</span>
+  <button class="btn" id="resetBtn">Reset</button>
+</div>
+
+  <div class="hero">
+    <div class="hero-label">Elon Musk's Net Worth</div>
+  <div class="hero-name">$695,000,000,000</div>
+  <div id="moneyDisplay">$695B</div>
+  <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="hero-stats">
+    <div class="stat">Spent: <span id="spentDisplay">$0</span></div>
+    <div class="stat">Items: <span id="itemCountDisplay">0</span></div>
+  </div>
+</div>
+
+<div class="filters" id="filters">
+  <button class="filter-btn active" data-cat="All">All</button>
+  <button class="filter-btn" data-cat="Everyday">Everyday</button>
+  <button class="filter-btn" data-cat="Tech">Tech</button>
+  <button class="filter-btn" data-cat="Cars">Cars</button>
+  <button class="filter-btn" data-cat="Air & Sea">Air & Sea</button>
+  <button class="filter-btn" data-cat="Real Estate">Real Estate</button>
+  <button class="filter-btn" data-cat="Athletes">Athletes</button>
+  <button class="filter-btn" data-cat="Sports Teams">Sports Teams</button>
+  <button class="filter-btn" data-cat="Wild">Wild</button>
+</div>
+
+<div class="grid" id="itemGrid"></div>
+
+<div id="statusBar">
+  <span class="sb-cover" onclick="toggleCover()">⌫ Cover Image</span>
+  <span>v1.0.0</span>
+</div>
+
+<div id="coverOverlay" onclick="hideCover()">
+  <img src="./cleverpage.png" alt="Cover"/>
+</div>
+
+<div id="winBanner">
+  <div class="win-emoji">🎉</div>
+  <div class="win-title">Broke!</div>
+  <div class="win-sub">You spent every last cent of Elon Musk's $695 billion. Impressive shopping.</div>
+  <button class="btn" onclick="resetGame()" style="font-size:15px;padding:12px 28px;border-color:#2ecc71;color:#2ecc71;">Spend Again</button>
+</div>
+
+<script>
+const TOTAL = 695_000_000_000;
+
+// Each item has: id, emoji (fallback), name, price, cat, img (real photo URL)
+const ITEMS = [
+  // ── Everyday ──────────────────────────────────────────────────────────────
+  {
+    id:'bigmac', emoji:'🍔', name:'Big Mac', price:5, cat:'Everyday',
+    img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'coffee', emoji:'☕', name:'Starbucks Coffee', price:6, cat:'Everyday',
+    img:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'pizza', emoji:'🍕', name:'Pizza', price:20, cat:'Everyday',
+    img:'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'netflix', emoji:'📺', name:'Netflix (1 month)', price:15, cat:'Everyday',
+    img:'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'airpods', emoji:'🎧', name:'AirPods Pro', price:249, cat:'Everyday',
+    img:'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'sneakers', emoji:'👟', name:'Nike Air Jordan 1', price:300, cat:'Everyday',
+    img:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'superbowl', emoji:'🏆', name:'Super Bowl Ring', price:36_000, cat:'Everyday',
+    img:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Super_Bowl_rings_on_display.jpg'
+  },
+
+  // ── Tech ──────────────────────────────────────────────────────────────────
+  {
+    id:'switch', emoji:'🎮', name:'Nintendo Switch', price:299, cat:'Tech',
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Nintendo-Switch-Console-Docked-wJoyConRB.jpg/960px-Nintendo-Switch-Console-Docked-wJoyConRB.jpg'
+  },
+  {
+    id:'ps5', emoji:'🕹️', name:'PlayStation 5', price:499, cat:'Tech',
+    img:'https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'xbox', emoji:'🎮', name:'Xbox Series X', price:499, cat:'Tech',
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Xbox_Series_X_2.jpg/960px-Xbox_Series_X_2.jpg'
+  },
+  {
+    id:'iphone', emoji:'📱', name:'iPhone 16 Pro Max', price:1_199, cat:'Tech',
+    img:'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'visionpro', emoji:'🥽', name:'Apple Vision Pro', price:3_499, cat:'Tech',
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Apple_Vision_Pro_with_charger_%28cropped%29.jpg/960px-Apple_Vision_Pro_with_charger_%28cropped%29.jpg'
+  },
+  {
+    id:'gaming_pc', emoji:'🖥️', name:'Gaming PC (RTX 4090)', price:4_500, cat:'Tech',
+    img:'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'tesla', emoji:'⚡', name:'Tesla Model S Plaid', price:89_990, cat:'Tech',
+    img:'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+
+  // ── Cars ──────────────────────────────────────────────────────────────────
+  {
+    id:'civic', emoji:'🚗', name:'Honda Civic', price:25_000, cat:'Cars',
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b5/2022_Honda_Civic_Touring_in_Lunar_Silver_Metallic%2C_Front_Left%2C_05-10-2022.jpg'
+  },
+  {
+    id:'lambo', emoji:'🏎️', name:'Lamborghini Urus', price:250_000, cat:'Cars',
+    img:'https://commons.wikimedia.org/wiki/Special:Redirect/file/A_Lamborghini_Urus.jpg'
+  },
+  {
+    id:'ferrari', emoji:'🏎️', name:'Ferrari SF90 Stradale', price:525_000, cat:'Cars',
+    img:'https://images.unsplash.com/photo-1592198084033-aade902d1aae?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'mclaren', emoji:'🏎️', name:'McLaren P1', price:1_150_000, cat:'Cars',
+    img:'https://commons.wikimedia.org/wiki/Special:Redirect/file/McLaren_P1.jpg'
+  },
+  {
+    id:'bugatti', emoji:'🏎️', name:'Bugatti Chiron', price:3_000_000, cat:'Cars',
+    img:'https://upload.wikimedia.org/wikipedia/commons/6/6b/2017_Bugatti_Chiron.jpg'
+  },
+  {
+    id:'koenigsegg', emoji:'🏎️', name:'Koenigsegg Agera RS', price:10_000_000, cat:'Cars',
+    img:'https://upload.wikimedia.org/wikipedia/commons/6/65/Koenigsegg_Agera_RST_2.jpg'
+  },
+  {
+    id:'rolsroyce', emoji:'🚘', name:'Rolls-Royce Boat Tail', price:28_000_000, cat:'Cars',
+    img:'https://images.unsplash.com/photo-1631295868223-63265b40d9e4?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'f1car', emoji:'🏁', name:'Formula 1 Car', price:15_000_000, cat:'Cars',
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/2022_Formula_One_car_at_the_2021_British_Grand_Prix_%2851350002179%29.jpg/960px-2022_Formula_One_car_at_the_2021_British_Grand_Prix_%2851350002179%29.jpg'
+  },
+
+  // ── Air & Sea ─────────────────────────────────────────────────────────────
+  {
+    id:'helicopter', emoji:'🚁', name:'Private Helicopter', price:3_000_000, cat:'Air & Sea',
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/VH-SUF_Taking_Off.jpg/960px-VH-SUF_Taking_Off.jpg'
+  },
+  {
+    id:'submarine', emoji:'🤿', name:'Personal Submarine', price:25_000_000, cat:'Air & Sea',
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/US_Navy_040730-N-1234E-002_PCU_Virginia_%28SSN_774%29_returns_to_the_General_Dynamics_Electric_Boat_shipyard.jpg/960px-US_Navy_040730-N-1234E-002_PCU_Virginia_%28SSN_774%29_returns_to_the_General_Dynamics_Electric_Boat_shipyard.jpg'
+  },
+  {
+    id:'jet', emoji:'✈️', name:'Gulfstream G700 Jet', price:75_000_000, cat:'Air & Sea',
+    img:'https://images.unsplash.com/photo-1540962351504-03099e0a754b?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'yacht', emoji:'🛥️', name:'Superyacht (90m)', price:300_000_000, cat:'Air & Sea',
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Superyacht_Skat_at_Stenpiren_in_G%C3%B6teborg%2C_Sweden_2012%2C_1.jpg/960px-Superyacht_Skat_at_Stenpiren_in_G%C3%B6teborg%2C_Sweden_2012%2C_1.jpg'
+  },
+  {
+    id:'cruiseship', emoji:'🚢', name:'Cruise Ship', price:1_500_000_000, cat:'Air & Sea',
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Icon_of_the_Seas_Puerto_Rico_2025_%28cropped%29.jpg/960px-Icon_of_the_Seas_Puerto_Rico_2025_%28cropped%29.jpg'
+  },
+
+  // ── Real Estate ───────────────────────────────────────────────────────────
+  {
+    id:'house', emoji:'🏠', name:'Average US House', price:400_000, cat:'Real Estate',
+    img:'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'penthouse', emoji:'🏙️', name:'NYC Penthouse', price:42_000_000, cat:'Real Estate',
+    img:'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'mansion', emoji:'🏡', name:'Luxury Mansion', price:100_000_000, cat:'Real Estate',
+    img:'https://images.unsplash.com/photo-1613977257592-4871e5fcd7c4?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'island', emoji:'🏝️', name:'Private Island', price:85_000_000, cat:'Real Estate',
+    img:'https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'skyscraper', emoji:'🏢', name:'NYC Skyscraper', price:500_000_000, cat:'Real Estate',
+    img:'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'palace', emoji:'🏰', name:'Buckingham Palace (est.)', price:5_000_000_000, cat:'Real Estate',
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Buckingham_Palace%2C_London_-_April_2009.jpg'
+  },
+
+  // ── Athletes ──────────────────────────────────────────────────────────────
+  {
+    id:'messi', emoji:'⚽', name:'Lionel Messi (1 yr salary)', price:135_000_000, cat:'Athletes',
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg'
+  },
+  {
+    id:'ronaldo', emoji:'⚽', name:'Cristiano Ronaldo (1 yr)', price:200_000_000, cat:'Athletes',
+    img:'https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg'
+  },
+  {
+    id:'mbappe', emoji:'⚽', name:'Kylian Mbappé (1 yr)', price:180_000_000, cat:'Athletes',
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Kylian_Mbapp%C3%A9_%2846369981091%29.jpg/960px-Kylian_Mbapp%C3%A9_%2846369981091%29.jpg'
+  },
+  {
+    id:'lebron', emoji:'🏀', name:'LeBron James (1 yr)', price:128_000_000, cat:'Athletes',
+    img:'https://upload.wikimedia.org/wikipedia/commons/c/cf/LeBron_James_crop.jpg'
+  },
+  {
+    id:'curry', emoji:'🏀', name:'Stephen Curry (1 yr)', price:55_000_000, cat:'Athletes',
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b6/Stephen_Curry_shooting.jpg'
+  },
+  {
+    id:'taylor', emoji:'🎤', name:'Taylor Swift (1 yr tour)', price:1_000_000_000, cat:'Athletes',
+    img:'https://upload.wikimedia.org/wikipedia/commons/b/b5/191125_Taylor_Swift_at_the_2019_American_Music_Awards_%28cropped%29.png'
+  },
+
+  // ── Sports Teams ──────────────────────────────────────────────────────────
+  {
+    id:'f1team', emoji:'🏁', name:'Formula 1 Team', price:900_000_000, cat:'Sports Teams',
+    img:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'mlbteam', emoji:'⚾', name:'MLB Team (avg)', price:2_100_000_000, cat:'Sports Teams',
+    img:'https://images.unsplash.com/photo-1471295253337-3ceaaedca402?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'premclub', emoji:'⚽', name:'Premier League Club', price:2_000_000_000, cat:'Sports Teams',
+    img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Wembley_Stadium_interior.jpg/960px-Wembley_Stadium_interior.jpg'
+  },
+  {
+    id:'nbateam', emoji:'🏀', name:'NBA Team (avg)', price:3_850_000_000, cat:'Sports Teams',
+    img:'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'nflteam', emoji:'🏈', name:'NFL Team (avg)', price:4_690_000_000, cat:'Sports Teams',
+    img:'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+
+  // ── Wild ──────────────────────────────────────────────────────────────────
+  {
+    id:'spacex', emoji:'🚀', name:'SpaceX Rocket Launch', price:67_000_000, cat:'Wild',
+    img:'https://images.unsplash.com/photo-1541849546-216549ae216d?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'casino', emoji:'🎰', name:'Las Vegas Casino Resort', price:250_000_000, cat:'Wild',
+    img:'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'zoo', emoji:'🦁', name:'San Diego Zoo', price:500_000_000, cat:'Wild',
+    img:'https://upload.wikimedia.org/wikipedia/commons/c/c1/San_Diego_Zoo_11_2016-06-17.jpg'
+  },
+  {
+    id:'monalisa', emoji:'🎨', name:'Mona Lisa (est. value)', price:860_000_000, cat:'Wild',
+    img:'https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg'
+  },
+  {
+    id:'carrier', emoji:'⚓', name:'Aircraft Carrier', price:13_000_000_000, cat:'Wild',
+    img:'https://images.unsplash.com/photo-1569949381669-ecf31ae8e613?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'disneyworld', emoji:'🎢', name:'Disney World', price:60_000_000_000, cat:'Wild',
+    img:'https://images.unsplash.com/photo-1501619951397-5ba40d0f75da?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+  {
+    id:'nasa', emoji:'🌕', name:'NASA Moon Mission', price:93_000_000_000, cat:'Wild',
+    img:'https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=400&h=280&fit=crop&auto=format&q=80'
+  },
+];
+
+// ─────────────────────────────────────────────
+//  State
+// ─────────────────────────────────────────────
+const TOTAL_MONEY = TOTAL;
+let money = TOTAL;
+let counts = {};
+ITEMS.forEach(i=>{ counts[i.id]=0; });
+let activeFilter = 'All';
+
+// ─────────────────────────────────────────────
+//  Format helpers
+// ─────────────────────────────────────────────
+function fmt(n){
+  if(n<0) return '-'+fmt(-n);
+  if(n>=1e12) return '$'+(n/1e12).toFixed(2)+'T';
+  if(n>=1e9)  return '$'+(n/1e9).toFixed(2).replace(/\.00$/, '')+'B';
+  if(n>=1e6)  return '$'+(n/1e6).toFixed(2)+'M';
+  if(n>=1e3)  return '$'+(n/1e3).toFixed(1)+'K';
+  return '$'+n.toLocaleString();
+}
+function fmtShort(n){
+  if(n>=1e9)  return '$'+(n/1e9).toFixed(1)+'B';
+  if(n>=1e6)  return '$'+(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)  return '$'+(n/1e3).toFixed(0)+'K';
+  return '$'+n.toLocaleString();
+}
+
+// ─────────────────────────────────────────────
+//  Image error handler
+// ─────────────────────────────────────────────
+function imgErr(img){
+  img.style.display='none';
+  const fb = img.nextElementSibling;
+  if(fb) fb.style.display='flex';
+}
+
+// ─────────────────────────────────────────────
+//  Render grid
+// ─────────────────────────────────────────────
+function renderGrid(){
+  const grid = document.getElementById('itemGrid');
+  grid.innerHTML = '';
+  const filtered = activeFilter==='All' ? ITEMS : ITEMS.filter(i=>i.cat===activeFilter);
+
+  filtered.forEach(item=>{
+    const canAfford = money >= item.price;
+    const owned = counts[item.id] > 0;
+    const div = document.createElement('div');
+    div.className = 'item-card'+(owned?' has-items':'')+(!canAfford&&!owned?' cant-afford':'');
+    div.id = 'card-'+item.id;
+    div.innerHTML = `
+      <div class="count-badge" id="badge-${item.id}">${counts[item.id]}×</div>
+      <div class="item-photo">
+        <img src="${item.img}" alt="${item.name}" loading="lazy" onerror="imgErr(this)"/>
+        <div class="emoji-fb">${item.emoji}</div>
+      </div>
+      <div class="item-info">
+        <div class="item-name">${item.name}</div>
+        <div class="item-price">${fmtShort(item.price)}</div>
+        <div class="item-category">${item.cat}</div>
+        <div class="controls">
+          <button class="ctrl-btn sell" data-id="${item.id}" ${counts[item.id]===0?'disabled':''}>−</button>
+          <span class="ctrl-count" id="count-${item.id}">${counts[item.id]}</span>
+          <button class="ctrl-btn buy" data-id="${item.id}" ${!canAfford?'disabled':''}>+</button>
+        </div>
+      </div>`;
+    grid.appendChild(div);
+  });
+}
+
+function updateHUD(){
+  const spent = TOTAL - money;
+  const pct = Math.max(0,(money/TOTAL)*100);
+  const md = document.getElementById('moneyDisplay');
+  md.textContent = money<=0 ? '$0' : fmt(money);
+  md.className = money<=0 ? 'low' : money<TOTAL*0.15 ? 'low' : '';
+  const fill = document.getElementById('progressFill');
+  fill.style.width = pct+'%';
+  fill.className = 'progress-fill'+(money<TOTAL*0.15?' low':'');
+  document.getElementById('spentDisplay').textContent = fmt(spent);
+  document.getElementById('itemCountDisplay').textContent =
+    Object.values(counts).reduce((a,b)=>a+b,0).toLocaleString();
+}
+
+function refreshCard(id){
+  const item = ITEMS.find(i=>i.id===id);
+  if(!item) return;
+  const canAfford = money >= item.price;
+  const owned = counts[id]>0;
+  const card = document.getElementById('card-'+id);
+  if(!card) return;
+  card.className='item-card'+(owned?' has-items':'')+(!canAfford&&!owned?' cant-afford':'');
+  document.getElementById('badge-'+id).textContent = counts[id]+'×';
+  document.getElementById('count-'+id).textContent = counts[id];
+  card.querySelector('.ctrl-btn.buy').disabled = !canAfford;
+  card.querySelector('.ctrl-btn.sell').disabled = counts[id]===0;
+  // Refresh all buy buttons (money changed)
+  document.querySelectorAll('.ctrl-btn.buy').forEach(btn=>{
+    const it = ITEMS.find(i=>i.id===btn.dataset.id);
+    if(!it) return;
+    btn.disabled = money < it.price;
+    const c = btn.closest('.item-card');
+    if(c && counts[it.id]===0) c.classList.toggle('cant-afford', money<it.price);
+  });
+}
+
+// ─────────────────────────────────────────────
+//  Buy / Sell
+// ─────────────────────────────────────────────
+function buy(id, e){
+  const item = ITEMS.find(i=>i.id===id);
+  if(!item||money<item.price) return;
+  money -= item.price;
+  counts[id]++;
+  refreshCard(id);
+  updateHUD();
+  spawnTick('-'+fmtShort(item.price), e, '#e74c3c');
+  if(money<=0) setTimeout(()=>document.getElementById('winBanner').classList.add('show'),500);
+}
+function sell(id, e){
+  const item = ITEMS.find(i=>i.id===id);
+  if(!item||counts[id]===0) return;
+  money += item.price;
+  counts[id]--;
+  refreshCard(id);
+  updateHUD();
+  spawnTick('+'+fmtShort(item.price), e, '#2ecc71');
+}
+
+function spawnTick(text, e, color){
+  const el = document.createElement('div');
+  el.className = 'spent-tick';
+  el.textContent = text;
+  el.style.color = color;
+  const x = e ? Math.min(e.clientX, window.innerWidth-70) : window.innerWidth/2;
+  const y = e ? e.clientY-10 : 200;
+  el.style.left = x+'px';
+  el.style.top  = y+'px';
+  document.body.appendChild(el);
+  el.addEventListener('animationend',()=>el.remove());
+}
+
+// ─────────────────────────────────────────────
+//  Events
+// ─────────────────────────────────────────────
+document.getElementById('itemGrid').addEventListener('click', e=>{
+  const buy_btn  = e.target.closest('.ctrl-btn.buy');
+  const sell_btn = e.target.closest('.ctrl-btn.sell');
+  if(buy_btn  && !buy_btn.disabled)  buy(buy_btn.dataset.id, e);
+  if(sell_btn && !sell_btn.disabled) sell(sell_btn.dataset.id, e);
+});
+
+document.getElementById('filters').addEventListener('click', e=>{
+  const btn = e.target.closest('.filter-btn');
+  if(!btn) return;
+  activeFilter = btn.dataset.cat;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid();
+});
+
+// ─────────────────────────────────────────────
+//  Reset
+// ─────────────────────────────────────────────
+function resetGame(){
+  money = TOTAL;
+  ITEMS.forEach(i=>{ counts[i.id]=0; });
+  document.getElementById('winBanner').classList.remove('show');
+  renderGrid();
+  updateHUD();
+}
+document.getElementById('resetBtn').addEventListener('click', resetGame);
+
+// ─────────────────────────────────────────────
+//  Init
+// ─────────────────────────────────────────────
+renderGrid();
+updateHUD();
+
+// ─────────────────────────────────────────────
+//  Cover overlay
+// ─────────────────────────────────────────────
+function showCover(){
+  document.getElementById('coverOverlay').classList.add('show');
+  clearTimeout(coverTimer);
+}
+function hideCover(){
+  document.getElementById('coverOverlay').classList.remove('show');
+  armCoverTimer();
+}
+function toggleCover(){
+  if(document.getElementById('coverOverlay').classList.contains('show')) hideCover();
+  else showCover();
+}
+let coverTimer = null;
+function isTypingField(){
+  const active = document.activeElement;
+  return active && active.closest("input, textarea, select, [contenteditable='true']");
+}
+function armCoverTimer(){
+  clearTimeout(coverTimer);
+  coverTimer = setTimeout(showCover, 5000);
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) clearTimeout(coverTimer);
+});
+function handleCoverActivity(){
+  if(document.getElementById('coverOverlay').classList.contains('show')) return;
+  else armCoverTimer();
+}
+document.addEventListener('keydown',e=>{
+  if(e.key !== 'Backspace'){
+    armCoverTimer();
+    return;
+  }
+  if(isTypingField()){
+    armCoverTimer();
+    return;
+  }
+  e.preventDefault();
+  toggleCover();
+});
+["mousemove","mousedown","touchstart","click","wheel"].forEach(evt=>{
+  window.addEventListener(evt, handleCoverActivity, { passive:true });
+});
+armCoverTimer();
+</script>
+</body>
+</html>

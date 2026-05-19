@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script src="./cover-profiles.js"></script>
+  <script src="./supabase-config.js"></script>
+  <script defer src="./music-bridge.js"></script>
+  <script defer src="./social-bar.js?v=11"></script>
+  <script>
+    if (localStorage.getItem("theme") === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  </script>
+  <base href="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@latest/crossy-road/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Crossy Road — alex.fun</title>
+  <link rel="icon" type="image/png" href="./clever1.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@main/ytgame.js"></script>
+  <script>
+    (function keepCrossyRoadMuted() {
+      window.__alexFunMuted = true;
+
+      function muteExistingMedia() {
+        document.querySelectorAll("audio, video").forEach(media => {
+          media.muted = true;
+          media.volume = 0;
+        });
+        if (window.Howler) {
+          window.Howler.mute(true);
+          window.Howler.volume(0);
+        }
+      }
+
+      const originalPlay = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function(...args) {
+        this.muted = true;
+        this.volume = 0;
+        return originalPlay.apply(this, args);
+      };
+
+      function installWebAudioMute() {
+        if (!window.AudioNode || !window.AudioDestinationNode) return;
+        if (AudioNode.prototype.__alexFunMutedConnect) return;
+        const originalConnect = AudioNode.prototype.connect;
+        AudioNode.prototype.connect = function(destination, ...args) {
+          try {
+            if (destination instanceof AudioDestinationNode && this.context && this.context.createGain) {
+              const silentGain = this.context.createGain();
+              silentGain.gain.value = 0;
+              originalConnect.call(silentGain, destination);
+              return originalConnect.call(this, silentGain, ...args);
+            }
+          } catch (e) {
+            console.log("Crossy mute bypassed one audio connection:", e);
+          }
+          return originalConnect.call(this, destination, ...args);
+        };
+        AudioNode.prototype.__alexFunMutedConnect = true;
+      }
+
+      installWebAudioMute();
+      window.addEventListener("load", () => {
+        installWebAudioMute();
+        muteExistingMedia();
+      });
+      document.addEventListener("visibilitychange", muteExistingMedia);
+      setInterval(muteExistingMedia, 1000);
+    })();
+  </script>
+  <script src="scripts/three.min.js"></script>
+  <script src="scripts/game.min.js"></script>
+  <script src="scripts/extra.min.js"></script>
+  <script src="scripts/bootstrap.min.js"></script>
+  <style>
+    :root {
+      --control-fg: #12212a;
+      --control-bg: rgba(255,255,255,.9);
+      --control-bg-hover: #fff;
+      --control-border: rgba(18,33,42,.18);
+      --control-shadow: rgba(0,0,0,.14);
+      --status-h: 26px;
+    }
+    [data-theme="dark"] {
+      --control-fg: #ececec;
+      --control-bg: rgba(30,30,30,.9);
+      --control-bg-hover: #2a2a2a;
+      --control-border: rgba(255,255,255,.18);
+      --control-shadow: rgba(0,0,0,.35);
+    }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #83ffe7;
+      touch-action: none;
+      overscroll-behavior: none;
+      user-select: none;
+      animation: pageIn .32s ease both;
+    }
+    @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
+    #canvas {
+      width: 100%;
+      height: calc(100% - var(--status-h)) !important;
+      display: block;
+    }
+    #build-number {
+      display: none;
+    }
+    .game-bar {
+      position: fixed;
+      left: 14px;
+      top: 14px;
+      z-index: 100000;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .game-bar button {
+      font: 800 13px Arial, sans-serif;
+      color: var(--control-fg);
+      background: var(--control-bg);
+      border: 1px solid var(--control-border);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px var(--control-shadow);
+      transition: background .15s, border-color .15s, color .15s, transform .12s;
+    }
+    .game-bar button:hover {
+      background: var(--control-bg-hover);
+      transform: translateY(-1px);
+    }
+    #coverOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200000;
+      background: #fff;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .55s cubic-bezier(.4, 0, .2, 1);
+    }
+    #coverOverlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #coverOverlay img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; object-position: top;
+      object-position: top center;
+      display: block;
+    }
+    #statusBar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--status-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background: var(--control-bg);
+      border-top: 1px solid var(--control-border);
+      color: rgba(18,33,42,.68);
+      font: 800 11px "Martel Sans", Arial, sans-serif;
+      z-index: 100000;
+    }
+    #statusBar .sb-cover {
+      cursor: pointer;
+      user-select: none;
+    }
+    #statusBar .sb-cover:hover {
+      color: var(--control-fg);
+    }
+    [data-theme="dark"] #statusBar {
+      color: rgba(236,236,236,.68);
+    }
+    #poki-preroll {
+      background: #83ffe7;
+      position: absolute;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: calc(100% - var(--status-h));
+      z-index: 99999;
+      overflow: hidden;
+      perspective: 1000px;
+    }
+    #poki-preroll .logo {
+      position: relative;
+      perspective: 1000px;
+      z-index: 1;
+      max-height: 40%;
+      max-width: 80%;
+    }
+    #poki-preroll .icon-container {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      transform: rotate(-5deg);
+    }
+    #poki-preroll .icon-scroller {
+      perspective: 1000px;
+      position: absolute;
+      left: 0;
+      top: -10%;
+      width: 100%;
+      height: 120%;
+      transform: translateX(0);
+      animation: scroll 16.8s infinite linear;
+      background-image: url(sprites/poki-icon.png);
+      background-size: 94px 94px;
+    }
+    @keyframes scroll {
+      from { transform: translateX(-1033px); }
+      to { transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-bar">
+    <button id="backBtn" type="button">Back</button>
+    <button id="fullscreenBtn" type="button">Fullscreen</button>
+  </div>
+  <canvas id="canvas"></canvas>
+  <div id="build-number"></div>
+  <div id="coverOverlay" aria-hidden="true">
+    <img id="coverImage" alt="Cover">
+  </div>
+  <div id="statusBar">
+    <span class="sb-cover" onclick="showCover()">⌫ Cover Image</span>
+    <span>v1.0.0</span>
+  </div>
+  <script>
+    document.getElementById("coverImage").src = new URL("./cleverpage.png", window.location.href).href;
+    const backBtn = document.getElementById("backBtn");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const coverOverlay = document.getElementById("coverOverlay");
+    let coverTimer = null;
+
+    function syncTheme() {
+      if (localStorage.getItem("theme") === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+    }
+
+    function showCover() {
+      coverOverlay.classList.add("show");
+      coverOverlay.setAttribute("aria-hidden", "false");
+      clearTimeout(coverTimer);
+    }
+
+    function hideCover() {
+      coverOverlay.classList.remove("show");
+      coverOverlay.setAttribute("aria-hidden", "true");
+      armCoverTimer();
+    }
+
+    function armCoverTimer() {
+      clearTimeout(coverTimer);
+      coverTimer = setTimeout(showCover, 5000);
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) clearTimeout(coverTimer);
+    });
+
+    function handleCoverActivity() {
+      if (coverOverlay.classList.contains("show")) {
+        return;
+      } else {
+        armCoverTimer();
+      }
+    }
+
+    function isTypingField() {
+      const active = document.activeElement;
+      return active && active.closest("input, textarea, select, [contenteditable='true']");
+    }
+
+    backBtn.addEventListener("click", () => {
+      location.href = new URL("index.html", location.href).href;
+    });
+
+    fullscreenBtn.addEventListener("click", async () => {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          fullscreenBtn.textContent = "Exit Fullscreen";
+        } else {
+          await document.exitFullscreen();
+          fullscreenBtn.textContent = "Fullscreen";
+        }
+      } catch (e) {
+        console.log("Fullscreen failed:", e);
+      }
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      fullscreenBtn.textContent = document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen";
+    });
+
+    coverOverlay.addEventListener("click", () => {
+      if (coverOverlay.classList.contains("show")) hideCover();
+      else showCover();
+    });
+    window.addEventListener("storage", e => {
+      if (e.key === "theme") syncTheme();
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key !== "Backspace") {
+        armCoverTimer();
+        return;
+      }
+      if (isTypingField()) {
+        armCoverTimer();
+        return;
+      }
+      e.preventDefault();
+      if (coverOverlay.classList.contains("show")) hideCover();
+      else showCover();
+    }, true);
+    ["mousemove","mousedown","touchstart","click","wheel"].forEach(evt => {
+      window.addEventListener(evt, handleCoverActivity, { passive: true });
+    });
+    syncTheme();
+    armCoverTimer();
+  </script>
+</body>
+</html>

@@ -7,12 +7,6 @@
   <script src="./supabase-config.js"></script>
   <script defer src="./music-bridge.js"></script>
   <script defer src="./social-bar.js?v=11"></script>
-  <script defer src="./game-chrome.js"
-          data-game-name="Slope 3"
-          data-theme-accent="#2dd4ff"
-          data-status-bg="#000810"
-          data-status-fg="rgba(120,220,255,0.8)"
-          data-hover-bg="rgba(0,60,90,0.95)"></script>
   <link rel="icon" type="image/png" href="./clever1.png">
 
   <base href="https://cdn.jsdelivr.net/gh/bubbls/UGS-Assets@main/slope%203/">
@@ -22,6 +16,8 @@
   <title>Slope 3</title>
 
   <style>
+    :root { --status-h: 26px; --panel: rgba(0,30,60,.82); --fg: #e6f3ff; --border: rgba(0,200,255,.35); }
+
     html, body {
       width: 100%; height: 100%; margin: 0; padding: 0;
       overflow: hidden; background-color: #000;
@@ -31,14 +27,57 @@
       display: flex; justify-content: center; align-items: center;
       flex-direction: column;
     }
-    #gameContainer { width: 100% !important; height: 100% !important; flex-grow: 1; }
+    #gameContainer {
+      width: 100% !important; height: 100% !important;
+      flex-grow: 1;
+    }
     .footer { display: none; }
+
+    /* alex.fun chrome */
+    .alex-topbar {
+      position: fixed; top: 10px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      pointer-events: none; z-index: 9000;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+    .alex-actions { display: flex; gap: 8px; pointer-events: auto; }
+    .alex-btn {
+      appearance: none; border: 1.5px solid var(--border); border-radius: 999px;
+      background: var(--panel); color: var(--fg); padding: 8px 14px;
+      font-family: inherit; font-size: 12px; font-weight: 900;
+      cursor: pointer; backdrop-filter: blur(10px);
+      box-shadow: 0 8px 22px rgba(0,0,0,.45);
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .alex-btn:hover { background: rgba(0,60,90,.95); border-color: #2dd4ff; color: #b3ecff; }
+
+    #alexStatusBar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: var(--status-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px;
+      background: #000810; border-top: 1px solid rgba(0,200,255,.3);
+      font-family: "Martel Sans", Arial, sans-serif;
+      font-size: 11px; font-weight: 800; color: rgba(120,220,255,.8);
+      z-index: 9100;
+    }
+    #alexStatusBar .sb-cover { cursor: pointer; user-select: none; }
+    #alexStatusBar .sb-cover:hover { color: #d6f4ff; }
+
+    #coverOverlay {
+      position: fixed; inset: 0; z-index: 11000;
+      background: #fff; opacity: 0; pointer-events: none;
+      transition: opacity .45s cubic-bezier(.4,0,.2,1); cursor: pointer;
+    }
+    #coverOverlay.show { opacity: 1; pointer-events: auto; }
+    #coverOverlay img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
   </style>
 
   <!-- File merger config: this build has Slope3.data.unityweb split into 2 parts -->
   <script>
     window.fileMergerConfig = {
-      files: [ { name: 'Slope3.data.unityweb', parts: 2 } ],
+      files: [
+        { name: 'Slope3.data.unityweb', parts: 2 }
+      ],
       basePath: '',
       debug: true
     };
@@ -175,6 +214,27 @@
     <div class="footer"></div>
   </div>
 
+  <!-- alex.fun top bar -->
+  <div class="alex-topbar">
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexBackBtn" type="button">Back</button>
+    </div>
+    <div class="alex-actions">
+      <button class="alex-btn" id="alexFullscreenBtn" type="button">Fullscreen</button>
+    </div>
+  </div>
+
+  <!-- alex.fun cover overlay -->
+  <div id="coverOverlay" aria-hidden="true">
+    <img data-cover-image alt="Cover">
+  </div>
+
+  <!-- alex.fun status bar -->
+  <div id="alexStatusBar">
+    <span>Slope 3</span>
+    <span class="sb-cover" id="alexCoverHint">Backspace Cover Image</span>
+  </div>
+
   <!-- Unity game host functions (no-ops; Unity calls these from C#) -->
   <script>
     function UnityCallJs(){}
@@ -185,6 +245,44 @@
     function UnityCallBackHomeJs(){}
     function UnityCallChangeDayLeaderboardJs(){}
     function UnityCallCloseLeaderboardJs(){}
+  </script>
+
+  <!-- alex.fun chrome JS -->
+  <script>
+    document.getElementById('alexBackBtn').addEventListener('click', function () {
+      window.location.href = new URL('index.html', window.location.href).href;
+    });
+
+    var alexFsBtn = document.getElementById('alexFullscreenBtn');
+    alexFsBtn.addEventListener('click', async function () {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          alexFsBtn.textContent = 'Exit Fullscreen';
+        } else {
+          await document.exitFullscreen();
+          alexFsBtn.textContent = 'Fullscreen';
+        }
+      } catch (e) { console.log('Fullscreen failed:', e); }
+    });
+    document.addEventListener('fullscreenchange', function () {
+      alexFsBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+    });
+
+    var coverOverlay = document.getElementById('coverOverlay');
+    function toggleCover() {
+      var showing = coverOverlay.classList.toggle('show');
+      coverOverlay.setAttribute('aria-hidden', String(!showing));
+    }
+    coverOverlay.addEventListener('click', toggleCover);
+    document.getElementById('alexCoverHint').addEventListener('click', toggleCover);
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Backspace' || e.metaKey || e.ctrlKey || e.altKey) return;
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      e.preventDefault();
+      toggleCover();
+    }, true);
   </script>
 </body>
 </html>

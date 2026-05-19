@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Infinite Craft — alex.fun</title>
+  <link rel="icon" type="image/png" href="./clever1.png"/>
+  <script src="./cover-profiles.js"></script>
+  <script defer src="./music-bridge.js"></script>
+  <script defer src="./social-bar.js?v=11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Theme tokens ── */
+    :root{
+      --bg:#f0ede8;--fg:#1a1a1a;--muted:#bbb;--border:#e0ddd8;
+      --surface:#fff;--hover:#f5f3f0;--ws-dot:#c8c4be;
+    }
+    [data-theme="dark"]{
+      --bg:#1e1e1e;--fg:#ececec;--muted:#666;--border:#333;
+      --surface:#252525;--hover:#2e2e2e;--ws-dot:#444;
+    }
+
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:"Martel Sans",Arial,sans-serif;
+      background:var(--bg);color:var(--fg);
+      height:100vh;display:flex;flex-direction:column;overflow:hidden;
+      padding-bottom:26px;
+      transition:background .25s,color .25s;
+      animation:pageIn .32s ease both;
+    }
+    @keyframes pageIn{from{opacity:0}to{opacity:1}}
+
+    /* ── Top bar ── */
+    .top-bar{
+      display:flex;align-items:center;gap:10px;
+      padding:10px 16px;background:var(--surface);
+      border-bottom:1.5px solid var(--border);flex-shrink:0;
+      box-shadow:0 1px 4px rgba(0,0,0,.06);
+      transition:background .25s,border-color .25s;
+    }
+    .top-bar h1{
+      font-size:17px;font-weight:900;flex:1;
+    }
+    .top-bar h1 span{color:var(--muted);font-weight:700;font-size:13px;margin-left:6px;}
+    .btn{
+      font-family:inherit;font-size:13px;font-weight:800;
+      color:var(--fg);background:var(--surface);border:1.5px solid var(--border);
+      border-radius:100px;padding:6px 14px;cursor:pointer;
+      transition:background .13s,border-color .13s,transform .1s,color .25s;white-space:nowrap;
+    }
+    .btn:hover{background:var(--hover);border-color:var(--muted);transform:translateY(-1px);}
+    .btn:active{transform:translateY(0);}
+    .btn-danger{border-color:#ffb3b3;color:#c00;}
+    .btn-danger:hover{background:#fff5f5;border-color:#ff8080;}
+
+    /* ── Layout ── */
+    .layout{display:flex;flex:1;overflow:hidden;}
+
+    /* ── Sidebar ── */
+    .sidebar{
+      width:220px;flex-shrink:0;background:var(--surface);
+      border-right:1.5px solid var(--border);
+      display:flex;flex-direction:column;overflow:hidden;
+      transition:background .25s,border-color .25s;
+    }
+    .sb-header{
+      font-size:11px;font-weight:900;letter-spacing:2px;
+      color:var(--muted);padding:10px 14px 6px;text-transform:uppercase;flex-shrink:0;
+      border-bottom:1px solid var(--bg);
+      transition:color .25s,border-color .25s;
+    }
+    .sb-list{flex:1;overflow-y:auto;padding:8px 8px 42px;
+      scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+    .sb-list::-webkit-scrollbar{width:4px;}
+    .sb-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+    .sb-item{
+      display:flex;align-items:center;gap:7px;
+      padding:6px 10px;border-radius:10px;cursor:pointer;
+      font-size:13px;font-weight:800;
+      transition:background .12s,transform .1s;
+      border:1.5px solid transparent;user-select:none;
+    }
+    .sb-item:hover{background:var(--hover);transform:translateX(2px);}
+    .sb-item:active{transform:translateX(0) scale(.97);}
+    .sb-item.sb-new{
+      background:#fff3b8;border-color:#d6b600;color:#241b00;
+      box-shadow:0 0 0 1px rgba(214,182,0,.18) inset;
+      animation:sbPop .4s ease;
+    }
+    @keyframes sbPop{0%{transform:scale(1.08)}50%{transform:scale(.97)}100%{transform:scale(1)}}
+    .sb-emoji{font-size:18px;line-height:1;}
+    .sb-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+    /* ── Workspace ── */
+    .workspace{
+      flex:1;position:relative;overflow:hidden;
+      background:
+        radial-gradient(circle at 20% 30%,rgba(255,200,100,.07) 0%,transparent 60%),
+        radial-gradient(circle at 80% 70%,rgba(100,200,255,.06) 0%,transparent 60%),
+        var(--bg);
+      transition:background .25s;
+    }
+    [data-theme="dark"] .workspace{
+      background:
+        radial-gradient(circle at 20% 30%,rgba(100,80,0,.12) 0%,transparent 60%),
+        radial-gradient(circle at 80% 70%,rgba(0,80,100,.10) 0%,transparent 60%),
+        var(--bg);
+    }
+
+    /* Grid dots background */
+    .workspace::before{
+      content:'';position:absolute;inset:0;
+      background-image:radial-gradient(circle,var(--ws-dot) 1px,transparent 1px);
+      background-size:28px 28px;opacity:.45;pointer-events:none;
+    }
+
+    /* Hint text */
+    .ws-hint{
+      position:absolute;top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      text-align:center;color:var(--muted);font-size:14px;font-weight:800;
+      pointer-events:none;line-height:1.7;max-width:280px;
+      transition:opacity .3s;
+    }
+    .ws-hint .hint-icon{font-size:36px;display:block;margin-bottom:8px;}
+
+    /* ── Workspace tile ── */
+    .ws-tile{
+      position:absolute;
+      display:flex;align-items:center;gap:7px;
+      padding:7px 12px 7px 9px;
+      background:var(--surface);border:1.5px solid var(--border);
+      border-radius:12px;color:var(--fg);
+      font-size:13px;font-weight:800;
+      cursor:grab;user-select:none;
+      box-shadow:0 2px 8px rgba(0,0,0,.08);
+      transition:box-shadow .15s,border-color .15s,background .25s,color .25s;
+      white-space:nowrap;
+      touch-action:none;
+    }
+    .ws-tile:hover{box-shadow:0 4px 14px rgba(0,0,0,.13);border-color:var(--muted);}
+    .ws-tile.dragging{
+      cursor:grabbing;opacity:.92;
+      box-shadow:0 10px 32px rgba(0,0,0,.22);
+      border-color:#888;z-index:999;
+    }
+    .ws-tile.tile-pop{animation:tilePop .35s ease;}
+    @keyframes tilePop{
+      0%{transform:scale(.6);opacity:0}
+      70%{transform:scale(1.12)}
+      100%{transform:scale(1);opacity:1}
+    }
+    .ws-tile.tile-shake{animation:tileShake .5s ease;}
+    @keyframes tileShake{
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-6px)}
+      40%{transform:translateX(6px)}
+      60%{transform:translateX(-4px)}
+      80%{transform:translateX(4px)}
+    }
+    .ws-tile.tile-new{background:#fff3b8;border-color:#d6b600;color:#241b00;}
+    .tile-emoji{font-size:18px;line-height:1;}
+    .tile-remove{
+      font-size:10px;color:#ccc;margin-left:2px;cursor:pointer;
+      opacity:0;transition:opacity .15s;font-weight:900;
+    }
+    .ws-tile:hover .tile-remove{opacity:1;}
+    .tile-remove:hover{color:#f55;}
+
+    /* ── Combo flash (merge indicator) ── */
+    .combo-flash{
+      position:absolute;pointer-events:none;
+      font-size:22px;font-weight:900;color:#e67e00;
+      text-shadow:0 0 12px rgba(255,180,0,.6);
+      animation:floatUp 1s ease forwards;
+      z-index:1000;
+    }
+    @keyframes floatUp{
+      0%{opacity:1;transform:translateY(0) scale(1)}
+      80%{opacity:.8}
+      100%{opacity:0;transform:translateY(-50px) scale(.8)}
+    }
+
+    /* ── Toast ── */
+    #toast{
+      position:fixed;bottom:50px;left:50%;transform:translateX(-50%) translateY(20px);
+      background:#1a1a1a;color:#fff;font-size:14px;font-weight:800;
+      padding:10px 20px;border-radius:100px;
+      pointer-events:none;opacity:0;
+      transition:opacity .2s,transform .2s;z-index:9999;
+      white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.3);
+    }
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+    /* ── Status bar ── */
+    #statusBar{
+      position:fixed;bottom:0;left:0;right:0;height:26px;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 14px;background:var(--surface);border-top:1px solid var(--border);
+      font-family:"Martel Sans",Arial,sans-serif;
+      font-size:11px;font-weight:800;color:var(--muted);z-index:200;
+      transition:background .25s,border-color .25s,color .25s;
+    }
+    #statusBar .sb-cover{cursor:pointer;}
+    #statusBar .sb-cover:hover{color:var(--fg);}
+
+    /* ── Cover overlay ── */
+    #coverOverlay{
+      position:fixed;inset:0;z-index:11000;cursor:pointer;background:#fff;
+      opacity:0;pointer-events:none;transition:opacity .55s cubic-bezier(.4,0,.2,1);
+    }
+    #coverOverlay.show{opacity:1;pointer-events:auto;}
+    #coverOverlay img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
+
+    .ic-achievements{display:none;position:fixed;inset:0;z-index:9997;place-items:center;background:rgba(0,0,0,.45);padding:20px;}
+    .ic-achievements.show{display:grid;}
+    .ic-ach-card{width:min(460px,100%);background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.3);}
+    .ic-ach-card h2{font-size:22px;font-weight:900;margin-bottom:12px;}
+    .ic-ach-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px;}
+    .ic-ach{border:1.5px solid var(--border);border-radius:12px;padding:9px;font-size:12px;font-weight:900;color:var(--muted);}
+    .ic-ach.unlocked{background:#fff3b8;border-color:#d6b600;color:#241b00;}
+
+    /* Mobile */
+    @media(max-width:600px){
+      .sidebar{width:160px;}
+      .sb-name{font-size:12px;}
+    }
+    @media(max-width:420px){
+      .layout{flex-direction:column;}
+      .sidebar{width:100%;max-height:35vh;border-right:none;border-bottom:1.5px solid var(--border);}
+      .sb-list{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:6px 6px 34px;}
+      .sb-item{flex-shrink:0;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="btn" onclick="location.href='./index.html'">← Back</button>
+  <h1>Infinite Craft <span id="counter">4 discovered</span></h1>
+  <button class="btn" id="achievementsBtn">Achievements</button>
+  <button class="btn" id="clearBoardBtn">Clear Board</button>
+  <button class="btn btn-danger" id="resetBtn">Reset</button>
+  <button class="btn" id="themeToggle" title="Toggle dark mode" style="padding:6px 10px;font-size:15px;">🌙</button>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-header" id="sbHeader">4 discovered</div>
+    <div class="sb-list" id="sbList"></div>
+  </div>
+  <div class="workspace" id="workspace">
+    <div class="ws-hint" id="wsHint">
+      <span class="hint-icon">🔥💧🌍💨</span>
+      Click any element on the left to place it here.<br>
+      Then <b>drag</b> one element <b>onto another</b> to combine them!
+    </div>
+  </div>
+</div>
+
+<div id="statusBar">
+  <span class="sb-cover" onclick="toggleCover()">⌫ Cover Image</span>
+  <span>v1.0.0</span>
+</div>
+
+<div id="coverOverlay" onclick="hideCover()">
+  <img src="./cleverpage.png" alt="Cover"/>
+</div>
+
+<div id="icAchievements" class="ic-achievements">
+  <div class="ic-ach-card">
+    <h2>Infinite Craft Achievements</h2>
+    <div id="icAchievementList" class="ic-ach-list"></div>
+    <button class="btn" id="closeAchievementsBtn" style="width:100%;">Close</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+//  Dark mode
+// ─────────────────────────────────────────────
+(function(){
+  const saved = localStorage.getItem('theme') || 'light';
+  if(saved==='dark') document.documentElement.setAttribute('data-theme','dark');
+  document.addEventListener('DOMContentLoaded',function(){
+    const btn = document.getElementById('themeToggle');
+    if(!btn) return;
+    btn.textContent = document.documentElement.getAttribute('data-theme')==='dark' ? '☀️' : '🌙';
+    btn.addEventListener('click',function(){
+      const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+      if(isDark){
+        document.documentElement.removeAttribute('data-theme');
+        btn.textContent='🌙';
+        localStorage.setItem('theme','light');
+      } else {
+        document.documentElement.setAttribute('data-theme','dark');
+        btn.textContent='☀️';
+        localStorage.setItem('theme','dark');
+      }
+    });
+  });
+})();
+
+// ─────────────────────────────────────────────
+//  Cover overlay
+// ─────────────────────────────────────────────
+function showCover(){
+  document.getElementById('coverOverlay').classList.add('show');
+  clearTimeout(coverTimer);
+}
+function hideCover(){
+  document.getElementById('coverOverlay').classList.remove('show');
+  armCoverTimer();
+}
+function toggleCover(){
+  if(document.getElementById('coverOverlay').classList.contains('show')) hideCover();
+  else showCover();
+}
+let coverTimer = null;
+function isTypingField(){
+  const active = document.activeElement;
+  return active && active.closest("input, textarea, select, [contenteditable='true']");
+}
+function armCoverTimer(){
+  clearTimeout(coverTimer);
+  coverTimer = setTimeout(showCover, 5000);
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) clearTimeout(coverTimer);
+});
+function handleCoverActivity(){
+  if(document.getElementById('coverOverlay').classList.contains('show')) return;
+  else armCoverTimer();
+}
+document.addEventListener('keydown',function(e){
+  if(e.key !== 'Backspace'){
+    armCoverTimer();
+    return;
+  }
+  if(isTypingField()){
+    armCoverTimer();
+    return;
+  }
+  e.preventDefault();
+  toggleCover();
+});
+["mousemove","mousedown","touchstart","click","wheel"].forEach(evt=>{
+  window.addEventListener(evt, handleCoverActivity, { passive:true });
+});
+armCoverTimer();
+
+// ─────────────────────────────────────────────
+//  RECIPES  [a, b, emoji, name]
+// ─────────────────────────────────────────────
+const RECIPES = [
+// Verified core recipes from real Neal.fun Infinite Craft paths.
+// This list focuses on accuracy over random fake quantity.
+["Fire","Water","💨","Steam"],
+["Earth","Wind","🌫️","Dust"],
+["Earth","Water","🌱","Plant"],
+["Earth","Fire","🌋","Lava"],
+["Water","Water","🏞️","Lake"],
+["Wind","Wind","🌪️","Tornado"],
+["Fire","Fire","🌋","Volcano"],
+["Earth","Earth","⛰️","Mountain"],
+["Water","Wind","🌊","Wave"],
+["Dust","Earth","🪐","Planet"],
+["Dust","Water","💩","Mud"],
+["Dust","Fire","🌑","Ash"],
+["Dust","Dust","🏖️","Sand"],
+["Dust","Wind","🌪️","Sandstorm"],
+["Earth","Wave","🏖️","Sand"],
+["Sand","Water","🏖️","Beach"],
+["Sand","Fire","🪟","Glass"],
+["Earth","Glass","🍾","Bottle"],
+["Beach","Bottle","✉️","Message"],
+["Earth","Message","✉️","Letter"],
+["Lake","Water","🌊","Ocean"],
+["Lake","Lake","🌊","Ocean"],
+["Lake","Ocean","🌊","Sea"],
+["Earth","Ocean","🏝️","Island"],
+["Ocean","Water","🐟","Fish"],
+["Ocean","Steampunk","☠️","Steampunk Pirate"],
+["Steam","Steampunk Pirate","🚢","Steampunk Pirate Ship"],
+["Steampunk Pirate Ship","Stone","🗿","Stonehenge"],
+["Steam","Stonehenge","⏰","Time"],
+["Planet","Steam","⚙️","Steampunk"],
+["Steampunk","Wind","🎈","Airship"],
+["Airship","Lava","🐉","Dragon"],
+["Airship","Fire","💥","Crash"],
+["Lava","Water","🪨","Stone"],
+["Lava","Sea","🪨","Stone"],
+["Lava","Earth","🪨","Stone"],
+["Volcano","Lake","🏝️","Island"],
+["Island","Volcano","🌺","Hawaii"],
+["Hawaii","Plant","🍍","Pineapple"],
+["Pineapple","Tornado","🍍","Pineapple Express"],
+["Pineapple","Pineapple Express","🎬","Seth Rogen"],
+["Pineapple","Seth Rogen","🎬","This Is The End"],
+["Fire","This Is The End","🔚","The End"],
+["Plant","Wind","🌼","Dandelion"],
+["Dandelion","Dandelion","🌼","Dandelion Patch"],
+["Dandelion","Water","🍷","Wine"],
+["Dandelion","Fire","🌑","Ash"],
+["Dandelion","Wind","🌱","Seed"],
+["Dandelion","Earth","🌸","Flower"],
+["Dandelion","Flower","🌱","Seed"],
+["Dandelion","Plant","🌿","Weed"],
+["Dandelion","Tree","💫","Wish"],
+["Dandelion","Dragon","🪰","Dragonfly"],
+["Dragonfly","Dust","🧚","Fairy"],
+["Earth","Fairy","🧙","Gnome"],
+["Dust","Fish","⭐","Starfish"],
+["Starfish","Fire","☀️","Sun"],
+["Dandelion","Planet","☀️","Sun"],
+["Planet","Fire","☀️","Sun"],
+["Planet","Planet","⭐","Star"],
+["Planet","Earth","🌙","Moon"],
+["Planet","Wind","🌩️","Storm"],
+["Planet","Fog","♀️","Venus"],
+["Planet","Sandstorm","♂️","Mars"],
+["Mars","Earth","🌱","Life"],
+["Life","Dust","👤","Human"],
+["Life","Plant","🌳","Tree"],
+["Plant","Plant","🌳","Tree"],
+["Earth","Plant","🌳","Tree"],
+["Plant","Water","🐊","Swamp"],
+["Earth","Lake","🐊","Swamp"],
+["Mud","Water","🐊","Swamp"],
+["Plant","Swamp","🪰","Venus Flytrap"],
+["Island","Venus Flytrap","♀️","Venus"],
+["Venus","Mud","👨","Adam"],
+["Adam","Fire","👩","Eve"],
+["Adam","Eve","👤","Human"],
+["Swamp","Fire","🐉","Dragon"],
+["Dragon","Dust","🪰","Dragonfly"],
+["Dragon","Lake","🐉","Loch Ness Monster"],
+["Island","Loch Ness Monster","🏴","Scotland"],
+["Dragon","Phoenix","☯️","Yin Yang"],
+["Wind","Yin Yang","🏯","Feng Shui"],
+["Dust","Feng Shui","🐰","Dust Bunny"],
+["Dust Bunny","Yin Yang","🔁","Opposite"],
+["Fire","Swamp","🐉","Dragon"],
+["Ash","Fire","🐦‍🔥","Phoenix"],
+["Phoenix","Fire","🔥","Rebirth"],
+["Phoenix","Ash","🔥","Rebirth"],
+["Tree","Water","🌊","River"],
+["Earth","River","🔺","Delta"],
+["River","Tree","📄","Paper"],
+["Paper","Plant","📚","Book"],
+["Book","Delta","🔤","Alphabet"],
+["Alphabet","Book","📖","Dictionary"],
+["Book","Dictionary","📚","Thesaurus"],
+["River","Thesaurus","🔁","Synonym"],
+["Dust","Tree","🪵","Wood"],
+["Fire","Wood","🔥","Campfire"],
+["Campfire","Earth","🌑","Charcoal"],
+["Charcoal","Charcoal","⛏️","Coal"],
+["Coal","Gnome","👺","Goblin"],
+["Goblin","Wind","🧙","Hobbit"],
+["Hobbit","Plant","🚬","Pipe"],
+["Earth","Pipe","🚬","Tobacco"],
+["Earth","Tea","🫖","Teapot"],
+["Plant","Steam","🍵","Tea"],
+["Storm","Tea","🌪️","Tempest"],
+["Ocean","Tempest","🌊","Tsunami"],
+["Tea","Tempest","🌀","Typhoon"],
+["Fire","Typhoon","🌋","Volcano"],
+["Steam","Typhoon","☁️","Cloud"],
+["Cloud","Venus Flytrap","☁️","Cloud Trap"],
+["Cloud Trap","Sea","🐟","Fish"],
+["Swamp","Teapot","🧙","Witch"],
+["Dust","Witch","🧹","Broom"],
+["Broom","Dust","✨","Clean"],
+["Clean","Water","🥤","Drink"],
+["Crash","Drink","🤢","Hangover"],
+["Crash","Hangover","🎉","Party"],
+["Earth","Mountain","🏔️","Fjord"],
+["Lake","Mountain","🏔️","Fjord"],
+["Fjord","Fjord","🧊","Glacier"],
+["Earth","Fjord","🌍","Land"],
+["Earth","Land","🌎","Continent"],
+["Continent","Tea","🌏","Asia"],
+["Asia","Fire","🇨🇳","China"],
+["China","Party","☭","Communist"],
+["Communist","Cigarette","☭","Soviet Union"],
+["China","Soviet Union","👤","Mao"],
+["Farm","Time","🌾","Harvest"],
+["Earth","Family","🚜","Farm"],
+["Duck","Duckling","👪","Family"],
+["Dandelion Patch","Lake","🦆","Duck"],
+["Duck","Water","🐥","Duckling"],
+["Harvest","Tsunami","🍚","Rice"],
+["Lava","Rice","🍣","Sushi"],
+["Sushi","Venus Flytrap","🪤","Sushi Trap"],
+["Sushi Trap","Tobacco","🚬","Cigarette"],
+["Wine","Water","💧","Holy Water"],
+["Fire","Holy Water","🧛","Vampire"],
+["Vampire","Weed","🔢","Count"],
+["Count","Count","🔢","Number"],
+["Glass","Wave","🔍","Lens"],
+["Lens","Water","🔬","Microscope"],
+["Microscope","Wave","📻","Radio"],
+["Fire","Steam","🚗","Engine"],
+["Engine","Steam","🚂","Train"],
+["Engine","Engine","🚀","Rocket"],
+["Rocket","Train","🚄","Bullet Train"],
+["Rocket","Rocket","🛰️","Satellite"],
+["Bullet Train","Fire","🔫","Bullet"],
+["Bullet","Plant","💥","Gunpowder"],
+["Train","Water","🚢","Boat"],
+["Boat","Water","🚢","Ship"],
+["Ship","Fire","🚂","Steamship"],
+["Ship","Wind","⛵","Sailboat"],
+["Sun","Ocean","🏖️","Beach"],
+["Sun","Fire","☀️","Solar"],
+["Tree","Wish","💰","Money"],
+["Dandelion","Money","💰","Wealth"],
+["Lake","Wealth","🛢️","Oil"],
+["Lake","Plant","🪷","Lily"],
+["Lily","Water","🏞️","Pond"],
+["Pond","Tornado","🌀","Whirlpool"]
+];
+
+// ─────────────────────────────────────────────
+//  Build lookup map
+// ─────────────────────────────────────────────
+const COMBO_MAP = {};
+RECIPES.forEach(([a,b,emoji,name])=>{
+  const key = [a,b].sort().join('|');
+  COMBO_MAP[key]={emoji,name};
+});
+function combine(a,b){ return COMBO_MAP[[a,b].sort().join('|')]||null; }
+
+const THIRD_PARTY_CACHE_KEY = 'infiniteCraft_thirdPartyRecipeCache_v1';
+const THIRD_PARTY_INDEX_URL = 'https://infinite-craft.com/recipes/data/index.json';
+const THIRD_PARTY_FETCH_TIMEOUT_MS = 2400;
+const SHARED_RECIPE_CACHE_TIMEOUT_MS = 850;
+let thirdPartyRecipeCache = {};
+let thirdPartyIndexPromise = null;
+let thirdPartyLookup = null;
+let lastThirdPartyLookupWasBlocked = false;
+const supabaseClient = (window.supabase && window.ALEX_FUN_SUPABASE_URL && window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
+  ? window.supabase.createClient(window.ALEX_FUN_SUPABASE_URL, window.ALEX_FUN_SUPABASE_PUBLISHABLE_KEY)
+  : null;
+const ACTIVE_USER_KEY = 'alexFunActiveUserV1';
+const SESSION_TOKEN_KEY = 'alexFunSessionTokenV1';
+
+function recipeKey(a,b){
+  return [a,b].sort().join('|');
+}
+
+function loadThirdPartyRecipeCache(){
+  try{
+    thirdPartyRecipeCache = JSON.parse(localStorage.getItem(THIRD_PARTY_CACHE_KEY) || '{}');
+  }catch{
+    thirdPartyRecipeCache = {};
+  }
+}
+
+function saveThirdPartyRecipeCache(){
+  localStorage.setItem(THIRD_PARTY_CACHE_KEY, JSON.stringify(thirdPartyRecipeCache));
+}
+
+async function loadSharedRecipeCache(a,b,key){
+  if(!supabaseClient) return null;
+  try{
+    const { data, error } = await supabaseClient
+      .from('recipe_cache')
+      .select('result_emoji,result_name,missing')
+      .eq('recipe_key', key)
+      .maybeSingle();
+    if(error || !data) return null;
+    if(data.missing) return { missing:true };
+    if(data.result_name) return { emoji:data.result_emoji || '✨', name:data.result_name };
+  }catch(e){
+    console.log('Shared recipe cache read failed:', e);
+  }
+  return null;
+}
+
+async function saveSharedRecipeCache(a,b,key,result){
+  if(!supabaseClient) return;
+  try{
+    await supabaseClient.from('recipe_cache').upsert({
+      recipe_key: key,
+      input_a: a,
+      input_b: b,
+      result_emoji: result && !result.missing ? result.emoji : null,
+      result_name: result && !result.missing ? result.name : null,
+      missing: !!(result && result.missing),
+      updated_at: new Date().toISOString()
+    }, { onConflict:'recipe_key' });
+  }catch(e){
+    console.log('Shared recipe cache save failed:', e);
+  }
+}
+
+function withTimeout(promise, ms, label){
+  let timeoutId;
+  const timeout = new Promise((_, reject)=>{
+    timeoutId = setTimeout(()=>reject(new Error(label || 'Timed out')), ms);
+  });
+  return Promise.race([promise, timeout]).finally(()=>clearTimeout(timeoutId));
+}
+
+async function fetchJson(url, timeoutMs = THIRD_PARTY_FETCH_TIMEOUT_MS){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(()=>controller.abort(), timeoutMs);
+  try{
+    const response = await fetch(url, { signal: controller.signal });
+    if(!response.ok) throw new Error('HTTP '+response.status);
+    const text = await response.text();
+    return JSON.parse(text);
+  }finally{
+    clearTimeout(timeoutId);
+  }
+}
+
+function sleep(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function loadThirdPartyIndex(){
+  if(thirdPartyLookup) return thirdPartyLookup;
+  if(thirdPartyIndexPromise) return thirdPartyIndexPromise;
+
+  const urls = [
+    THIRD_PARTY_INDEX_URL,
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(THIRD_PARTY_INDEX_URL),
+    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(THIRD_PARTY_INDEX_URL)
+  ];
+
+  thirdPartyIndexPromise = (async()=>{
+    const attempts = urls.map(url => fetchJson(url).catch(e=>{
+      console.log('Third-party recipe database load failed:', e);
+      throw e;
+    }));
+    const index = await Promise.any(attempts).catch(e=>{
+      throw (e && e.errors && e.errors[0]) || e || new Error('Recipe database unavailable');
+    });
+
+    const nameToIds = new Map();
+    const pairToResult = new Map();
+
+    Object.entries(index).forEach(([id, entry])=>{
+      const [emoji, name, cost, parentA, parentB] = entry;
+      if(!name) return;
+      const normalized = name.toLowerCase();
+      if(!nameToIds.has(normalized)) nameToIds.set(normalized, []);
+      nameToIds.get(normalized).push(id);
+
+      if(parentA && parentB && name !== 'Nothing'){
+        pairToResult.set(recipeKey(parentA, parentB), { emoji, name });
+      }
+    });
+
+    thirdPartyLookup = { nameToIds, pairToResult };
+    return thirdPartyLookup;
+  })();
+
+  return thirdPartyIndexPromise;
+}
+
+async function lookupThirdPartyRecipe(a,b){
+  const key = recipeKey(a,b);
+  if(thirdPartyRecipeCache[key]) {
+    if(thirdPartyRecipeCache[key].missing) return null;
+    return thirdPartyRecipeCache[key];
+  }
+
+  const sharedResult = await withTimeout(
+    loadSharedRecipeCache(a,b,key),
+    SHARED_RECIPE_CACHE_TIMEOUT_MS,
+    'Shared recipe cache timed out'
+  ).catch(e=>{
+    console.log('Shared recipe cache skipped:', e);
+    return null;
+  });
+  if(sharedResult){
+    thirdPartyRecipeCache[key] = sharedResult;
+    saveThirdPartyRecipeCache();
+    if(sharedResult.missing) return null;
+    COMBO_MAP[key] = sharedResult;
+    return sharedResult;
+  }
+
+  lastThirdPartyLookupWasBlocked = false;
+
+  try{
+    const lookup = await loadThirdPartyIndex();
+    const idsA = lookup.nameToIds.get(a.toLowerCase()) || [];
+    const idsB = lookup.nameToIds.get(b.toLowerCase()) || [];
+
+    for(const idA of idsA){
+      for(const idB of idsB){
+        const result = lookup.pairToResult.get(recipeKey(idA, idB));
+        if(!result) continue;
+        thirdPartyRecipeCache[key] = result;
+        COMBO_MAP[key] = result;
+        saveThirdPartyRecipeCache();
+        saveSharedRecipeCache(a,b,key,result);
+        return result;
+      }
+    }
+  }catch(e){
+    lastThirdPartyLookupWasBlocked = true;
+    console.log('Third-party recipe lookup failed:', e);
+  }
+
+  thirdPartyRecipeCache[key] = { missing:true, checkedAt:Date.now() };
+  saveThirdPartyRecipeCache();
+  saveSharedRecipeCache(a,b,key,{ missing:true });
+  return null;
+}
+
+// ─────────────────────────────────────────────
+//  State
+// ─────────────────────────────────────────────
+const SAVE_KEY = 'infiniteCraft_v4_realRecipes';
+let discovered = [];
+let board = [];
+let nextId = 0;
+let dragging = null;
+
+const workspace = document.getElementById('workspace');
+
+// ─────────────────────────────────────────────
+//  Persistence
+// ─────────────────────────────────────────────
+function getStarters(){ return [{emoji:"🌍",name:"Earth"},{emoji:"🔥",name:"Fire"},{emoji:"💧",name:"Water"},{emoji:"💨",name:"Wind"}]; }
+
+function getAccountName(){
+  return localStorage.getItem(ACTIVE_USER_KEY) || 'guest';
+}
+
+function getSessionToken(){
+  return localStorage.getItem(SESSION_TOKEN_KEY) || '';
+}
+
+function getSaveKey(){
+  return `${SAVE_KEY}_${getAccountName().replace(/[^a-z0-9_-]/gi, '_')}`;
+}
+
+function normalizeDiscoveries(value){
+  const byName = new Map(getStarters().map(item => [item.name, { emoji:item.emoji, name:item.name }]));
+  if(Array.isArray(value)){
+    for(const item of value){
+      if(!item || !item.name) continue;
+      byName.set(item.name, { emoji:item.emoji || '✨', name:String(item.name) });
+    }
+  }
+  return Array.from(byName.values());
+}
+
+function cleanDiscoveries(){
+  return normalizeDiscoveries(discovered);
+}
+
+function saveLocalDiscoveries(){
+  const clean = cleanDiscoveries();
+  localStorage.setItem(getSaveKey(), JSON.stringify(clean));
+  localStorage.setItem(SAVE_KEY, JSON.stringify(clean));
+}
+
+function load(){
+  try{
+    const s = localStorage.getItem(getSaveKey()) || localStorage.getItem(SAVE_KEY);
+    discovered = s ? normalizeDiscoveries(JSON.parse(s)) : getStarters();
+  }
+  catch{ discovered=getStarters(); }
+}
+
+let cloudSaveTimer = null;
+
+async function loadAccountDiscoveries(){
+  const token = getSessionToken();
+  if(!supabaseClient || !token) return false;
+  try{
+    const { data, error } = await supabaseClient.rpc('get_infinite_craft_save', { p_token: token });
+    if(error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if(!row || !Array.isArray(row.discoveries)) return false;
+    discovered = normalizeDiscoveries(row.discoveries);
+    saveLocalDiscoveries();
+    return true;
+  }catch(e){
+    console.log('Account discovery load failed:', e);
+    return false;
+  }
+}
+
+async function syncAccountDiscoveries(){
+  const token = getSessionToken();
+  if(!supabaseClient || !token) return;
+  try{
+    await supabaseClient.rpc('save_infinite_craft', {
+      p_token: token,
+      p_discoveries: cleanDiscoveries()
+    });
+  }catch(e){
+    console.log('Account discovery save failed:', e);
+  }
+}
+
+function queueAccountSave(){
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(syncAccountDiscoveries, 450);
+}
+
+function save(){
+  saveLocalDiscoveries();
+  queueAccountSave();
+}
+
+// ─────────────────────────────────────────────
+//  Sidebar
+// ─────────────────────────────────────────────
+const icAchievements = [
+  { id:'ten', label:'10 discoveries', test:()=>discovered.length>=10 },
+  { id:'twentyfive', label:'25 discoveries', test:()=>discovered.length>=25 },
+  { id:'fifty', label:'50 discoveries', test:()=>discovered.length>=50 },
+  { id:'hundred', label:'100 discoveries', test:()=>discovered.length>=100 },
+  { id:'life', label:'Create Life', test:()=>discovered.some(d=>d.name==='Life') },
+  { id:'human', label:'Create Human', test:()=>discovered.some(d=>d.name==='Human') },
+  { id:'internet', label:'Create Internet', test:()=>discovered.some(d=>d.name==='Internet') },
+  { id:'thirdparty', label:'Third-party finder', test:()=>Object.keys(thirdPartyRecipeCache).length>0 }
+];
+function renderAchievements(){
+  const list = document.getElementById('icAchievementList');
+  if(!list) return;
+  list.innerHTML = icAchievements.map(a=>`<div class="ic-ach ${a.test()?'unlocked':''}">${a.test()?'✓':'•'} ${a.label}</div>`).join('');
+}
+
+function renderSidebar(){
+  const list = document.getElementById('sbList');
+  const header = document.getElementById('sbHeader');
+  header.textContent = discovered.length + ' discovered';
+  document.getElementById('counter').textContent = discovered.length + ' discovered';
+
+  list.innerHTML = '';
+  renderAchievements();
+  for(const el of discovered){
+    const div = document.createElement('div');
+    div.className = 'sb-item' + (el.isNew ? ' sb-new' : '');
+    div.innerHTML = `<span class="sb-emoji">${el.emoji}</span><span class="sb-name">${el.name}</span>`;
+    div.title = `Add ${el.name} to the board`;
+    div.addEventListener('click', ()=>addToBoard(el.emoji, el.name));
+    list.appendChild(div);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Board — add tile
+// ─────────────────────────────────────────────
+function addToBoard(emoji, name){
+  const rect = workspace.getBoundingClientRect();
+  const tw = 140, th = 44;
+  const x = 30 + Math.random() * Math.max(40, rect.width  - tw - 60);
+  const y = 30 + Math.random() * Math.max(40, rect.height - th - 60);
+  const id = nextId++;
+  board.push({id,emoji,name,x,y});
+  spawnTile(id);
+  const hint = document.getElementById('wsHint');
+  if(hint) hint.style.opacity='0';
+}
+
+function spawnTile(id, isNew=false){
+  const item = board.find(i=>i.id===id);
+  if(!item) return;
+
+  const div = document.createElement('div');
+  div.className = 'ws-tile' + (isNew?' tile-new':'');
+  div.id = 'tile-'+id;
+  div.dataset.id = id;
+  div.style.left = item.x+'px';
+  div.style.top  = item.y+'px';
+  div.innerHTML  = `<span class="tile-emoji">${item.emoji}</span><span>${item.name}</span><span class="tile-remove" title="Remove">✕</span>`;
+
+  div.querySelector('.tile-remove').addEventListener('click', e=>{
+    e.stopPropagation();
+    div.style.transition='opacity .2s';
+    div.style.opacity='0';
+    setTimeout(()=>{
+      div.remove();
+      board = board.filter(i=>i.id!==id);
+    },200);
+  });
+
+  if(isNew) setTimeout(()=>div.classList.remove('tile-new'), 2000);
+  workspace.appendChild(div);
+  div.classList.add('tile-pop');
+}
+
+// ─────────────────────────────────────────────
+//  Drag (pointer events)
+// ─────────────────────────────────────────────
+workspace.addEventListener('pointerdown', e=>{
+  const tile = e.target.closest('.ws-tile');
+  if(!tile || e.target.classList.contains('tile-remove')) return;
+
+  const id   = parseInt(tile.dataset.id);
+  const item = board.find(i=>i.id===id);
+  if(!item) return;
+
+  const wRect = workspace.getBoundingClientRect();
+  dragging = {
+    id, item, tile,
+    ox: e.clientX - wRect.left - item.x,
+    oy: e.clientY - wRect.top  - item.y
+  };
+  tile.classList.add('dragging');
+  tile.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+
+workspace.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  const wRect = workspace.getBoundingClientRect();
+  const nx = e.clientX - wRect.left - dragging.ox;
+  const ny = e.clientY - wRect.top  - dragging.oy;
+  dragging.item.x = Math.max(0, Math.min(wRect.width  - 140, nx));
+  dragging.item.y = Math.max(0, Math.min(wRect.height -  44, ny));
+  dragging.tile.style.left = dragging.item.x+'px';
+  dragging.tile.style.top  = dragging.item.y+'px';
+  e.preventDefault();
+},{passive:false});
+
+workspace.addEventListener('pointerup', e=>{
+  if(!dragging) return;
+  const {id, tile} = dragging;
+  tile.classList.remove('dragging');
+  dragging = null;
+
+  const otherId = findOverlap(id);
+  if(otherId !== null) tryCombine(id, otherId);
+});
+
+// ─────────────────────────────────────────────
+//  Overlap detection (centre-to-centre)
+// ─────────────────────────────────────────────
+function findOverlap(dragId){
+  const el1 = document.getElementById('tile-'+dragId);
+  if(!el1) return null;
+  const r1 = el1.getBoundingClientRect();
+  const cx1=(r1.left+r1.right)/2, cy1=(r1.top+r1.bottom)/2;
+
+  for(const item of board){
+    if(item.id===dragId) continue;
+    const el2 = document.getElementById('tile-'+item.id);
+    if(!el2) continue;
+    const r2=el2.getBoundingClientRect();
+    const cx2=(r2.left+r2.right)/2, cy2=(r2.top+r2.bottom)/2;
+    if(Math.sqrt((cx1-cx2)**2+(cy1-cy2)**2) < 80) return item.id;
+  }
+  return null;
+}
+
+// ─────────────────────────────────────────────
+//  Combine logic
+// ─────────────────────────────────────────────
+async function tryCombine(idA, idB){
+  const iA = board.find(i=>i.id===idA);
+  const iB = board.find(i=>i.id===idB);
+  if(!iA||!iB) return;
+
+  const mx = (iA.x+iB.x)/2;
+  const my = (iA.y+iB.y)/2;
+
+  // Remove both from DOM + board
+  document.getElementById('tile-'+idA)?.remove();
+  document.getElementById('tile-'+idB)?.remove();
+  board = board.filter(i=>i.id!==idA&&i.id!==idB);
+
+  let result = combine(iA.name, iB.name);
+  let checkedThirdParty = false;
+  if(!result){
+    checkedThirdParty = true;
+    showToast(`Checking third-party recipe websites: ${iA.name} + ${iB.name}...`);
+    const lookupStarted = Date.now();
+    result = await lookupThirdPartyRecipe(iA.name, iB.name);
+    const elapsed = Date.now() - lookupStarted;
+    if(elapsed < 80) await sleep(80 - elapsed);
+  }
+
+  if(result){
+    const newId = nextId++;
+    board.push({id:newId, emoji:result.emoji, name:result.name, x:mx, y:my});
+    spawnTile(newId);
+
+    // Flash combo indicator
+    const flash = document.createElement('div');
+    flash.className = 'combo-flash';
+    flash.textContent = result.emoji;
+    flash.style.left = (mx+50)+'px';
+    flash.style.top  = (my-10)+'px';
+    workspace.appendChild(flash);
+    flash.addEventListener('animationend',()=>flash.remove());
+
+    const isNew = addDiscovered(result.emoji, result.name);
+    if(isNew) showToast(`✦ New: ${result.emoji} ${result.name}!`);
+    else if(checkedThirdParty) showToast(`Found in third-party recipes: ${result.emoji} ${result.name}`);
+  } else {
+    // No combo — put both back, shake
+    const nA = nextId++, nB = nextId++;
+    board.push({id:nA, emoji:iA.emoji, name:iA.name, x:iA.x+12, y:iA.y+12});
+    board.push({id:nB, emoji:iB.emoji, name:iB.name, x:iB.x-12, y:iB.y-12});
+    spawnTile(nA); spawnTile(nB);
+    const tA=document.getElementById('tile-'+nA), tB=document.getElementById('tile-'+nB);
+    tA?.classList.add('tile-shake'); tB?.classList.add('tile-shake');
+    setTimeout(()=>{ tA?.classList.remove('tile-shake'); tB?.classList.remove('tile-shake'); }, 550);
+    showToast(lastThirdPartyLookupWasBlocked ? 'Third-party recipe websites were blocked. Try again later.' : 'Checked third-party recipe websites: no recipe found 🤷');
+  }
+}
+
+function addDiscovered(emoji, name){
+  if(discovered.find(d=>d.name===name)) return false;
+  // Clear old "isNew" flags
+  discovered.forEach(d=>d.isNew=false);
+  discovered.push({emoji, name, isNew:true});
+  save();
+  renderSidebar();
+  return true;
+}
+
+// ─────────────────────────────────────────────
+//  Toast
+// ─────────────────────────────────────────────
+let toastT=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='show';
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.className='',2600);
+}
+
+// ─────────────────────────────────────────────
+//  Controls
+// ─────────────────────────────────────────────
+document.getElementById('achievementsBtn').addEventListener('click',()=>{ renderAchievements(); document.getElementById('icAchievements').classList.add('show'); });
+document.getElementById('closeAchievementsBtn').addEventListener('click',()=>document.getElementById('icAchievements').classList.remove('show'));
+
+document.getElementById('clearBoardBtn').addEventListener('click',()=>{
+  board=[];
+  workspace.querySelectorAll('.ws-tile').forEach(t=>t.remove());
+  const hint=document.getElementById('wsHint');
+  if(hint) hint.style.opacity='1';
+});
+
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  if(!confirm('Reset ALL discoveries and start over?')) return;
+  discovered=getStarters();
+  save();
+  board=[]; nextId=0;
+  workspace.querySelectorAll('.ws-tile').forEach(t=>t.remove());
+  const hint=document.getElementById('wsHint');
+  if(hint) hint.style.opacity='1';
+  renderSidebar();
+});
+
+// ─────────────────────────────────────────────
+//  Init
+// ─────────────────────────────────────────────
+async function initGame(){
+  load();
+  loadThirdPartyRecipeCache();
+  loadThirdPartyIndex().catch(()=>{});
+  renderSidebar();
+  if(await loadAccountDiscoveries()) renderSidebar();
+}
+initGame();
+</script>
+</body>
+</html>

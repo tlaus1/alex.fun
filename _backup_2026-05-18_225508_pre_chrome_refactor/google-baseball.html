@@ -9,13 +9,6 @@
   <script src="./supabase-config.js"></script>
   <script defer src="./music-bridge.js"></script>
   <script defer src="./social-bar.js?v=11"></script>
-  <script defer src="./game-chrome.js"
-          data-game-name="Google Baseball"
-          data-theme-accent="#fbbc04"
-          data-status-bg="#122143"
-          data-status-fg="#f5e4c3"
-          data-panel-bg="rgba(18,33,67,0.85)"
-          data-hover-bg="rgba(28,47,90,0.95)"></script>
     <link rel="icon" type="image/png" href="./clever1.png">
 
     <base href="https://cdn.jsdelivr.net/gh/genizy/google-doodles@40ec0a87ee9f32365afcf40edc257ae8afacde26/baseball/">
@@ -23,15 +16,87 @@
     <meta name="viewport" content="width=device-width,maximum-scale=1.0,user-scalable=no">
     <title>Google Baseball</title>
     <style>
-        /* alex.fun chrome is injected by game-chrome.js. Just reserve room for
-           the status bar at the bottom. */
+        /* alex.fun chrome */
+        :root {
+            --status-h: 24px;
+            --panel: rgba(18, 33, 67, .85);
+            --fg: #fff8e7;
+            --muted: #f5e4c3;
+            --border: rgba(255,255,255,.22);
+        }
+
+        /* Leave room for the status bar */
         #sadoodle, #sadoodle body, #sadoodle #hplogo {
-            height: calc(100% - var(--status-h, 26px)) !important;
+            height: calc(100% - var(--status-h)) !important;
+        }
+
+        /* Cover overlay (Backspace) */
+        #coverOverlay {
+            position: fixed; inset: 0; z-index: 10000;
+            background: #fff; opacity: 0; pointer-events: none;
+            transition: opacity .45s cubic-bezier(.4,0,.2,1); cursor: pointer;
+        }
+        #coverOverlay.show { opacity: 1; pointer-events: auto; }
+        #coverOverlay img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+
+        /* Top bar */
+        .alex-topbar {
+            position: fixed; top: 10px; left: 10px; right: 10px;
+            display: flex; justify-content: space-between; align-items: center; gap: 10px;
+            pointer-events: none; z-index: 9000;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+        }
+        .alex-actions { display: flex; gap: 8px; pointer-events: auto; }
+        .alex-title {
+            pointer-events: none; max-width: 44vw; padding: 8px 12px;
+            border: 1px solid var(--border); border-radius: 999px;
+            background: var(--panel); backdrop-filter: blur(12px);
+            box-shadow: 0 8px 22px rgba(0,0,0,.32);
+            font-size: 12px; font-weight: 900; color: var(--fg);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .alex-btn {
+            appearance: none; border: 1px solid var(--border); border-radius: 999px;
+            background: var(--panel); color: var(--fg); padding: 8px 12px;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+            font-size: 12px; font-weight: 900; cursor: pointer;
+            backdrop-filter: blur(12px); box-shadow: 0 8px 22px rgba(0,0,0,.32);
+        }
+        .alex-btn:hover { background: rgba(28,47,90,.95); }
+
+        /* Status bar */
+        #alexStatusBar {
+            position: fixed; bottom: 0; left: 0; right: 0; height: var(--status-h);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 14px;
+            background: #122143;
+            border-top: 1px solid rgba(255,255,255,.14);
+            font-family: "Martel Sans", Arial, sans-serif;
+            font-size: 11px; font-weight: 800; color: var(--muted);
+            z-index: 9100;
+        }
+        #alexStatusBar .sb-cover { cursor: pointer; user-select: none; }
+        #alexStatusBar .sb-cover:hover { color: var(--fg); }
+
+        @media (max-width: 640px) {
+            .alex-topbar { top: 8px; left: 8px; right: 8px; }
+            .alex-title { display: none; }
+            .alex-btn { padding: 7px 10px; }
         }
     </style>
 </head>
 
 <body style="text-align:center">
+    <!-- alex.fun top bar -->
+    <div class="alex-topbar">
+        <div class="alex-actions">
+            <button class="alex-btn" id="alexBackBtn" type="button">Back</button>
+        </div>
+        <div class="alex-actions">
+            <button class="alex-btn" id="alexFullscreenBtn" type="button">Fullscreen</button>
+        </div>
+    </div>
+
     <script nonce="c8GdjtWM-chWSKQIQfBILA">
         window.google = {};
         window.google.doodle = {};
@@ -347,6 +412,51 @@
         }).call(this);
     </script>
 
-    <!-- alex.fun chrome injected by game-chrome.js -->
+    <!-- alex.fun cover overlay -->
+    <div id="coverOverlay" aria-hidden="true">
+        <img data-cover-image alt="Cover">
+    </div>
+
+    <!-- alex.fun status bar -->
+    <div id="alexStatusBar">
+        <span>Google Baseball</span>
+        <span class="sb-cover" id="alexCoverHint">Backspace Cover Image</span>
+    </div>
+
+    <!-- alex.fun chrome JS -->
+    <script>
+        // Back button — location.href unaffected by <base>
+        document.getElementById('alexBackBtn').addEventListener('click', function () {
+            window.location.href = new URL('index.html', window.location.href).href;
+        });
+
+        // Fullscreen
+        var alexFsBtn = document.getElementById('alexFullscreenBtn');
+        alexFsBtn.addEventListener('click', function () {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().then(function () { alexFsBtn.textContent = 'Exit Fullscreen'; }).catch(function(){});
+            } else {
+                document.exitFullscreen().then(function () { alexFsBtn.textContent = 'Fullscreen'; }).catch(function(){});
+            }
+        });
+        document.addEventListener('fullscreenchange', function () {
+            alexFsBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+        });
+
+        // Cover toggle (Backspace or click)
+        var coverOverlay = document.getElementById('coverOverlay');
+        function toggleCover() {
+            var showing = coverOverlay.classList.toggle('show');
+            coverOverlay.setAttribute('aria-hidden', String(!showing));
+        }
+        coverOverlay.addEventListener('click', toggleCover);
+        document.getElementById('alexCoverHint').addEventListener('click', toggleCover);
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                e.preventDefault();
+                toggleCover();
+            }
+        });
+    </script>
 </body>
 </html>
