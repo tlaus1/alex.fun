@@ -105,6 +105,9 @@
         display: inline-flex; align-items: center; justify-content: center;
         box-shadow: 0 2px 5px rgba(239,68,68,.45);
       }
+      /* `display: inline-flex` was overriding the [hidden] attribute — force
+         badges to disappear when they have no count. */
+      .alexfun-sb-btn .alexfun-sb-badge[hidden] { display: none !important; }
       .alexfun-sb-fallback {
         position: fixed; bottom: 0; left: 0; right: 0;
         height: 26px; padding: 0 14px;
