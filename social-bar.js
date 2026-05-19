@@ -53,9 +53,12 @@
   }
 
   function init() {
+    // Always inject Martel Sans so the page's own status-bar text matches the
+    // dashboard, even when no user is logged in (the rest of the social bar
+    // only runs once a user is active).
+    injectFont();
     if (!getActiveUser()) return;
 
-    injectFont();
     injectStyles();
     const buttons = injectButtons();
     if (!buttons) return;
