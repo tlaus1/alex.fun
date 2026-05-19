@@ -7,7 +7,7 @@
    appear universally below the game.
 */
 (function () {
-  try { console.log("[alex.fun] social-bar v11 (Martel + uppercase chrome) loaded"); } catch (_) {}
+  try { console.log("[alex.fun] social-bar v12 (waits for chrome host) loaded"); } catch (_) {}
 
   const path = location.pathname.split("/").pop() || "";
   if (path === "" || path === "index.html") return;
@@ -215,17 +215,31 @@
       </button>
     `;
 
-    // Land the buttons inside the existing status bar where one exists.
-    let host = document.getElementById("alexStatusBar") || document.getElementById("statusBar");
-    if (host) {
+    function attach() {
+      // Already placed? bail.
+      if (buttons.parentElement) return true;
+      const host = document.getElementById("alexStatusBar") || document.getElementById("statusBar");
+      if (!host) return false;
       const coverHint = host.querySelector(".sb-cover, [id$='CoverHint'], [id='coverHint']");
       if (coverHint) host.insertBefore(buttons, coverHint);
       else host.appendChild(buttons);
-    } else {
-      const fallback = document.createElement("div");
-      fallback.className = "alexfun-sb-fallback";
-      fallback.appendChild(buttons);
-      document.body.appendChild(fallback);
+      return true;
+    }
+
+    if (!attach()) {
+      // Game-chrome.js may build the status bar in a later deferred script.
+      // Watch the DOM and place the buttons the moment it appears.
+      const obs = new MutationObserver(() => { if (attach()) obs.disconnect(); });
+      obs.observe(document.body, { childList: true, subtree: true });
+      // Fallback: if nothing claims the host within 1.5s, drop a floating bar.
+      setTimeout(() => {
+        if (buttons.parentElement) return;
+        obs.disconnect();
+        const fallback = document.createElement("div");
+        fallback.className = "alexfun-sb-fallback";
+        fallback.appendChild(buttons);
+        document.body.appendChild(fallback);
+      }, 1500);
     }
 
     buttons.querySelectorAll(".alexfun-sb-btn").forEach(btn => {
