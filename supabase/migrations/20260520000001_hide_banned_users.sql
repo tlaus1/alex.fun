@@ -7,6 +7,10 @@
 --
 -- "Currently banned" = banned_at is set AND (ban_expires_at is null OR in the future).
 
+-- The existing list_public_players(text) had a different return shape, so
+-- CREATE OR REPLACE errors out. Drop first, then recreate.
+drop function if exists public.list_public_players(text);
+
 create or replace function public.list_public_players(p_token text)
 returns table (username text)
 language sql
