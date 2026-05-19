@@ -4484,6 +4484,19 @@
     // Maintained alongside refreshSocial so the friends list dot is always
     // current. Stored as a lowercased Set for O(1) lookup in render fns.
     let onlineUsers = new Set();
+    // Lowercased usernames currently under ban — hidden from user lists.
+    let bannedUsers = new Set();
+    async function fetchBannedUsers(){
+      if(!supabaseClient) return bannedUsers;
+      try {
+        const { data, error } = await supabaseClient.rpc("list_banned_usernames");
+        if(error) throw error;
+        bannedUsers = new Set((data || []).map(name =>
+          typeof name === "string" ? name.toLowerCase() : (name && name.list_banned_usernames || "")
+        ).filter(Boolean));
+      } catch(_) { /* RPC may not be deployed yet — keep last cache */ }
+      return bannedUsers;
+    }
     async function fetchOnlineUsers(){
       if(!supabaseClient) return onlineUsers;
       try {
@@ -4504,6 +4517,7 @@
             supabaseClient.rpc("list_social_state", { p_token: currentSessionToken }),
             fetchOnlineUsers(),
             fetchMyGroups(),
+            fetchBannedUsers(),
           ]);
           if(!error && data){
             socialState = normalizeSocialState(data);
@@ -4622,6 +4636,9 @@
       const social = currentSocial();
       const users = (await fetchUsersForSocial())
         .filter(name => normalizeUsername(name) !== safeUserKey())
+        // Hide banned accounts unless the viewer is Alex (so admin can still
+        // see them via the admin panel's data viewer).
+        .filter(name => isAlexAccount() || !bannedUsers.has(name.toLowerCase()))
         .filter(name => !query || name.toLowerCase().includes(query))
         .sort((a,b)=>a.localeCompare(b));
       requests.innerHTML = social.incomingRequests.length ? `<h3>Requests</h3>` + social.incomingRequests.map(req => `
