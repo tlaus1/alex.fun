@@ -1268,38 +1268,43 @@
     }
     ::selection { background: var(--accent); color: #fff; }
 
-    /* — Cards: smoother lift, refined shadow, animated halo — */
+    /* — Cards: unified pop animation across every tile (anchor + article) — */
+    a.card, article.card { display: block; }
     .card {
       border-width: 1px;
+      transform: translateY(0) scale(1);
       transition:
         transform .4s var(--ease-spring),
         box-shadow .4s var(--ease-soft),
         border-color .25s var(--ease-soft);
       will-change: transform;
     }
+    /* The "pop" — same numbers on every card. translate + scale together,
+       in the same spring easing, so it's a noticeable jump out of the grid
+       rather than a tiny image zoom. */
     .card:hover {
-      transform: translateY(-8px) scale(1.02);
+      transform: translateY(-10px) scale(1.04);
+      z-index: 5;
       box-shadow:
-        0 22px 50px rgba(0,0,0,.45),
+        0 28px 60px rgba(0,0,0,.55),
         0 0 0 1px rgba(255,255,255,.10);
       border-color: rgba(255,255,255,.22);
     }
     [data-theme="dark"] .card:hover {
       box-shadow:
-        0 22px 50px rgba(0,0,0,.65),
+        0 28px 60px rgba(0,0,0,.7),
         0 0 0 1px rgba(255,255,255,.10);
       border-color: rgba(255,255,255,.18);
     }
     .card::after { transition: opacity .3s var(--ease-soft); }
     .card:hover::after { opacity: .85; }
-    /* Image: stronger, smoother zoom on hover so every card matches the
-       SUPERHOT / Football-Bros feel even when the source art is less dramatic. */
+    /* Image zoom — subtler so the card lift is the dominant motion. */
     .card > img {
       transition: transform .55s var(--ease-soft), filter .35s var(--ease-soft);
     }
     .card:hover > img {
-      transform: scale(1.08);
-      filter: saturate(1.12) brightness(1.04);
+      transform: scale(1.06);
+      filter: saturate(1.1) brightness(1.03);
     }
     .card-title {
       font-feature-settings: "ss01";
@@ -1655,23 +1660,9 @@
     }
     body.alexfun-embed .panel-back { display: none !important; }
 
-    /* ── Card hover sheen — adds a glossy diagonal sweep on every card so
-       the "alive" feel matches between cards with animated covers (GIF/AVIF)
-       and cards with static covers. */
-    .card { isolation: isolate; }
-    .card::before {
-      content: "";
-      position: absolute; inset: 0; z-index: 2;
-      pointer-events: none;
-      background: linear-gradient(120deg,
-        transparent 30%,
-        rgba(255,255,255,.18) 50%,
-        transparent 70%);
-      transform: translateX(-110%);
-      transition: transform .9s cubic-bezier(.4,0,.2,1);
-      mix-blend-mode: screen;
-    }
-    .card:hover::before { transform: translateX(110%); }
+    /* Sheen experiment removed — looked harsh against dark covers due to
+       screen-blend with the existing gradient scrim. The pop animation
+       below is what every card actually shares. */
 
     /* — Focus ring (accessibility + polish) —
        Default: thin offset ring for buttons/links (keyboard nav cue).

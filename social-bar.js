@@ -1,10 +1,10 @@
-/* social-bar.js — bottom-bar Friends / Messages on every game page.
+/* social-bar.js v3 — iframe edition.
    - Injects compact pill buttons into the page's existing bottom status bar.
    - Clicking either button opens an iframe pointing at index.html?embed=…
      so the panel inside the iframe is the EXACT same UI the dashboard uses.
-     No slim copy / re-render — it's literally the dashboard panel.
 */
 (function () {
+  try { console.log("[alex.fun] social-bar v3 (iframe) loaded"); } catch (_) {}
   const path = location.pathname.split("/").pop() || "";
   if (path === "" || path === "index.html") return;
 
