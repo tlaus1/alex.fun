@@ -1701,7 +1701,7 @@
     body.alexfun-embed #snakeGame,
     body.alexfun-embed #miniBrowser,
     body.alexfun-embed #leaderboardModal,
-    body.alexfun-embed .perm-overlay:not(#renameModal):not(#newGroupModal),
+    body.alexfun-embed .perm-overlay:not(#renameModal):not(#newGroupModal):not(#passwordModal),
     body.alexfun-embed .notice-toast,
     body.alexfun-embed .auth-overlay,
     body.alexfun-embed .settings-modal { display: none !important; }
@@ -2148,6 +2148,10 @@
         <span class="settings-label">Account<small id="settingsAccountLabel">Change your username</small></span>
         <button class="btn" id="settingsChangeUsernameBtn" type="button" style="padding:6px 14px;">✏️ Rename</button>
       </div>
+      <div class="settings-row">
+        <span class="settings-label">Password<small>Update the password used to sign in</small></span>
+        <button class="btn" id="settingsChangePasswordBtn" type="button" style="padding:6px 14px;">🔒 Change</button>
+      </div>
       <div class="settings-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;justify-content:center;flex-direction:column;align-items:center;text-align:center;gap:4px;">
         <span style="font-size:13px;font-weight:800;">alex.fun</span>
         <span style="font-size:11px;font-weight:600;color:var(--muted);">v1.0.0</span>
@@ -2169,6 +2173,25 @@
       <div class="perm-actions">
         <button class="perm-btn cancel" id="renameCancel" type="button">Cancel</button>
         <button class="perm-btn save"   id="renameConfirm" type="button">Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Change-password modal ════════════════════════════════════ -->
+  <div id="passwordModal" class="perm-overlay" aria-hidden="true">
+    <div class="perm-modal" role="dialog" aria-labelledby="passwordTitle" style="max-width:380px;">
+      <h3 id="passwordTitle">Change password</h3>
+      <div class="perm-sub">Pick a new password — at least 4 characters. Other devices will be signed out.</div>
+      <label class="lbl" for="passwordCurrent">Current password</label>
+      <input id="passwordCurrent" type="password" autocomplete="current-password" placeholder="your current password" style="width:100%;padding:10px 12px;background:#060a14;color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:10px;font:inherit;font-size:13px;margin-bottom:10px;">
+      <label class="lbl" for="passwordNew">New password</label>
+      <input id="passwordNew" type="password" autocomplete="new-password" placeholder="new password (min 4 chars)" style="width:100%;padding:10px 12px;background:#060a14;color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:10px;font:inherit;font-size:13px;margin-bottom:10px;">
+      <label class="lbl" for="passwordConfirm">Confirm new password</label>
+      <input id="passwordConfirm" type="password" autocomplete="new-password" placeholder="type it again" style="width:100%;padding:10px 12px;background:#060a14;color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:10px;font:inherit;font-size:13px;">
+      <div id="passwordError" class="perm-sub" style="color:#ff6b6b;display:none;margin-top:8px;"></div>
+      <div class="perm-actions">
+        <button class="perm-btn cancel" id="passwordCancel"  type="button">Cancel</button>
+        <button class="perm-btn save"   id="passwordConfirmBtn" type="button">Update</button>
       </div>
     </div>
   </div>
@@ -2799,6 +2822,87 @@
     document.addEventListener("keydown", e => {
       if(e.key === "Escape" && renameModal.classList.contains("show")) closeRenameModal();
       if(e.key === "Enter" && renameModal.classList.contains("show")) submitRename();
+    });
+
+    // ── Change password ───────────────────────────────────────────────
+    const passwordModal     = document.getElementById("passwordModal");
+    const passwordCurInput  = document.getElementById("passwordCurrent");
+    const passwordNewInput  = document.getElementById("passwordNew");
+    const passwordConfInput = document.getElementById("passwordConfirm");
+    const passwordErrorEl   = document.getElementById("passwordError");
+    function showPasswordError(msg){
+      passwordErrorEl.textContent = msg || "";
+      passwordErrorEl.style.display = msg ? "block" : "none";
+    }
+    function openPasswordModal(){
+      if(!localStorage.getItem(ACTIVE_USER_KEY)){
+        showNotice("Sign in first to change your password.");
+        return;
+      }
+      passwordCurInput.value  = "";
+      passwordNewInput.value  = "";
+      passwordConfInput.value = "";
+      showPasswordError("");
+      passwordModal.classList.add("show");
+      passwordModal.setAttribute("aria-hidden", "false");
+      setTimeout(() => passwordCurInput.focus(), 50);
+    }
+    function closePasswordModal(){
+      passwordModal.classList.remove("show");
+      passwordModal.setAttribute("aria-hidden", "true");
+    }
+    async function submitPasswordChange(){
+      const cur  = passwordCurInput.value;
+      const next = passwordNewInput.value;
+      const conf = passwordConfInput.value;
+      showPasswordError("");
+      if(!cur)              { showPasswordError("Enter your current password."); return; }
+      if(!next || next.length < 4){ showPasswordError("New password must be at least 4 characters."); return; }
+      if(next !== conf)     { showPasswordError("Passwords don't match."); return; }
+      if(next === cur)      { showPasswordError("New password is the same as the current one."); return; }
+      if(!supabaseClient || !currentSessionToken){
+        showPasswordError("Not connected to Supabase.");
+        return;
+      }
+      const btn = document.getElementById("passwordConfirmBtn");
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = "Updating…";
+      try {
+        const { error } = await supabaseClient.rpc("change_password", {
+          p_token: currentSessionToken,
+          p_current_password: cur,
+          p_new_password: next,
+        });
+        if(error){
+          const msg = (error.message || "").toLowerCase();
+          if(/schema cache|change_password/.test(msg)){
+            showPasswordError("Password change not installed in Supabase yet — run the latest migration.");
+          } else if(/incorrect current/.test(msg)){
+            showPasswordError("Current password is incorrect.");
+          } else if(/at least 4/.test(msg)){
+            showPasswordError("Password must be at least 4 characters.");
+          } else {
+            showPasswordError(error.message || "Could not update password.");
+          }
+          return;
+        }
+        showNotice("Password updated. Other devices have been signed out.");
+        closePasswordModal();
+      } catch(e) {
+        showPasswordError(String(e?.message || e));
+      } finally {
+        btn.disabled = false; btn.textContent = orig;
+      }
+    }
+    document.getElementById("settingsChangePasswordBtn").addEventListener("click", () => {
+      closeSettings();
+      openPasswordModal();
+    });
+    document.getElementById("passwordCancel").addEventListener("click", closePasswordModal);
+    document.getElementById("passwordConfirmBtn").addEventListener("click", submitPasswordChange);
+    passwordModal.addEventListener("click", e => { if(e.target === passwordModal) closePasswordModal(); });
+    document.addEventListener("keydown", e => {
+      if(e.key === "Escape" && passwordModal.classList.contains("show")) closePasswordModal();
+      if(e.key === "Enter"  && passwordModal.classList.contains("show")) submitPasswordChange();
     });
 
     // ── Music player ──────────────────────────────────────────
