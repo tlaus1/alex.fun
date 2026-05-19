@@ -7,7 +7,7 @@
    appear universally below the game.
 */
 (function () {
-  try { console.log("[alex.fun] social-bar v7 (iframe) loaded"); } catch (_) {}
+  try { console.log("[alex.fun] social-bar v8 (iframe, cache-bust) loaded"); } catch (_) {}
 
   const path = location.pathname.split("/").pop() || "";
   if (path === "" || path === "index.html") return;
@@ -216,7 +216,10 @@
     const frame = shellEl.querySelector("iframe");
     const url = new URL("index.html", location.href);
     url.searchParams.set("embed", target === "friends" ? "friends" : "messages");
-    // Always set src — even if same — so the dashboard re-renders fresh state.
+    // Cache-bust the iframe URL so updates to index.html (especially its
+    // embed-mode CSS) actually reach this nested document. Date.now() also
+    // forces a fresh load each open so panel state never leaks between opens.
+    url.searchParams.set("_t", String(Date.now()));
     frame.src = url.href;
     shellEl.classList.add("show");
     backdropEl.classList.add("show");
