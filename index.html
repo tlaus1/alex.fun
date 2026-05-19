@@ -1649,8 +1649,14 @@
     body.alexfun-embed .notice-toast,
     body.alexfun-embed .auth-overlay,
     body.alexfun-embed .settings-modal { display: none !important; }
+    /* Hide both panels by default in embed mode; only the one with `.show`
+       gets full-bleed visibility. Otherwise the click handler toggling
+       .show on friendsPanel leaves messagesPanel visible too. */
     body.alexfun-embed .friends-panel,
-    body.alexfun-embed .messages-panel {
+    body.alexfun-embed .messages-panel { display: none !important; }
+    body.alexfun-embed .friends-panel.show,
+    body.alexfun-embed .messages-panel.show {
+      display: flex !important;
       position: fixed !important;
       top: 0 !important; left: 0 !important;
       right: 0 !important; bottom: 0 !important;
