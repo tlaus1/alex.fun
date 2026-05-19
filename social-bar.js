@@ -1,8 +1,13 @@
-/* social-bar.js v4 — navigates back to the dashboard with the right panel
-   already open. No iframe, no slim copy — the user lands on index.html and
-   the real Friends/Messages panel is open immediately. */
+/* social-bar.js v5 — iframe edition.
+   Opens the actual dashboard Friends/Messages panel above the bottom bar
+   (loaded via iframe with ?embed= parameter). No redirect, no copy: the
+   panel rendered inside is the literal dashboard panel JS+HTML.
+
+   Bottom-bar buttons live INSIDE the page's existing status bar, so they
+   appear universally below the game.
+*/
 (function () {
-  try { console.log("[alex.fun] social-bar v4 (navigate) loaded"); } catch (_) {}
+  try { console.log("[alex.fun] social-bar v5 (iframe) loaded"); } catch (_) {}
 
   const path = location.pathname.split("/").pop() || "";
   if (path === "" || path === "index.html") return;
@@ -49,9 +54,11 @@
 
   function init() {
     if (!getActiveUser()) return;
+
     injectStyles();
     const buttons = injectButtons();
     if (!buttons) return;
+    injectIframeShell();
 
     function updateBadges() {
       const fc = friendRequestCount();
@@ -108,6 +115,40 @@
         font-family: Inter, ui-sans-serif, system-ui, sans-serif;
         color: #fff;
       }
+
+      /* iframe shell anchored above the status bar */
+      #alexfunSocialFrame {
+        position: fixed;
+        left: 12px;
+        bottom: calc(var(--status-h, 26px) + 10px);
+        width: min(780px, calc(100vw - 24px));
+        height: min(720px, calc(100vh - var(--status-h, 26px) - 24px));
+        z-index: 10030;
+        border-radius: 18px; overflow: hidden;
+        background: #14181f;
+        border: 1.5px solid rgba(255,255,255,.12);
+        box-shadow: 0 24px 60px rgba(0,0,0,.6);
+        transform: translateY(14px) scale(.98); opacity: 0; pointer-events: none;
+        transition: transform .22s cubic-bezier(.4,0,.2,1), opacity .22s;
+        display: flex; flex-direction: column;
+      }
+      #alexfunSocialFrame.show { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+      #alexfunSocialFrame iframe { flex: 1; width: 100%; border: 0; background: transparent; }
+      #alexfunSocialFrame .alexfun-sb-close {
+        position: absolute; top: 10px; right: 12px; z-index: 2;
+        appearance: none; border: 1px solid rgba(255,255,255,.2);
+        background: rgba(20,24,31,.9); color: #ececec;
+        width: 30px; height: 30px; padding: 0; border-radius: 999px;
+        font: inherit; font-size: 15px; font-weight: 900; cursor: pointer;
+        backdrop-filter: blur(6px);
+      }
+      .alexfun-sb-backdrop {
+        position: fixed; inset: 0; z-index: 10029;
+        background: rgba(0,0,0,.4); backdrop-filter: blur(2px);
+        opacity: 0; pointer-events: none;
+        transition: opacity .2s;
+      }
+      .alexfun-sb-backdrop.show { opacity: 1; pointer-events: auto; }
     `;
     const style = document.createElement("style");
     style.textContent = css;
@@ -126,6 +167,7 @@
       </button>
     `;
 
+    // Land the buttons inside the existing status bar where one exists.
     let host = document.getElementById("alexStatusBar") || document.getElementById("statusBar");
     if (host) {
       const coverHint = host.querySelector(".sb-cover, [id$='CoverHint'], [id='coverHint']");
@@ -139,14 +181,49 @@
     }
 
     buttons.querySelectorAll(".alexfun-sb-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const target = btn.dataset.target;
-        const url = new URL("index.html", location.href);
-        url.hash = "#" + target;
-        location.href = url.href;
-      });
+      btn.addEventListener("click", () => openSocialFrame(btn.dataset.target));
     });
     return buttons;
+  }
+
+  let shellEl = null;
+  let backdropEl = null;
+
+  function injectIframeShell() {
+    backdropEl = document.createElement("div");
+    backdropEl.className = "alexfun-sb-backdrop";
+    backdropEl.addEventListener("click", closeSocialFrame);
+    document.body.appendChild(backdropEl);
+
+    shellEl = document.createElement("div");
+    shellEl.id = "alexfunSocialFrame";
+    shellEl.innerHTML = `
+      <button type="button" class="alexfun-sb-close" aria-label="Close">×</button>
+      <iframe title="alex.fun social" allow="clipboard-read; clipboard-write"></iframe>
+    `;
+    shellEl.querySelector(".alexfun-sb-close").addEventListener("click", closeSocialFrame);
+    document.body.appendChild(shellEl);
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && shellEl.classList.contains("show")) closeSocialFrame();
+    });
+  }
+
+  function openSocialFrame(target) {
+    const frame = shellEl.querySelector("iframe");
+    const url = new URL("index.html", location.href);
+    url.searchParams.set("embed", target === "friends" ? "friends" : "messages");
+    // Always set src — even if same — so the dashboard re-renders fresh state.
+    frame.src = url.href;
+    shellEl.classList.add("show");
+    backdropEl.classList.add("show");
+  }
+  function closeSocialFrame() {
+    shellEl.classList.remove("show");
+    backdropEl.classList.remove("show");
+    // Detach the iframe src so it isn't running in the background.
+    const frame = shellEl.querySelector("iframe");
+    setTimeout(() => { if (!shellEl.classList.contains("show")) frame.src = "about:blank"; }, 250);
   }
 
   ready(init);

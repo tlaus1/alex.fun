@@ -1630,8 +1630,38 @@
       border-radius: var(--radius-md);
     }
 
-    /* (Embed/iframe mode removed — social bar now navigates back to the
-       dashboard with a #friends / #messages hash to open the real panel.) */
+    /* ── Embed mode — when the dashboard is loaded inside an iframe from a
+       game-page social bar (index.html?embed=friends|messages), strip every
+       other surface so only the requested panel shows, full-bleed. */
+    body.alexfun-embed { background: transparent !important; }
+    body.alexfun-embed .dashboard,
+    body.alexfun-embed .signout-btn,
+    body.alexfun-embed .admin-fab,
+    body.alexfun-embed .admin-panel,
+    body.alexfun-embed .dashboard-bottom-bar,
+    body.alexfun-embed #statusBar,
+    body.alexfun-embed .ban-screen,
+    body.alexfun-embed #game67,
+    body.alexfun-embed #snakeGame,
+    body.alexfun-embed #miniBrowser,
+    body.alexfun-embed #leaderboardModal,
+    body.alexfun-embed .perm-overlay:not(#renameModal):not(#newGroupModal),
+    body.alexfun-embed .notice-toast,
+    body.alexfun-embed .auth-overlay,
+    body.alexfun-embed .settings-modal { display: none !important; }
+    body.alexfun-embed .friends-panel,
+    body.alexfun-embed .messages-panel {
+      position: fixed !important;
+      top: 0 !important; left: 0 !important;
+      right: 0 !important; bottom: 0 !important;
+      width: 100% !important; height: 100% !important;
+      max-height: none !important;
+      border-radius: 0 !important; border: 0 !important;
+      box-shadow: none !important;
+      transform: none !important; opacity: 1 !important; pointer-events: auto !important;
+      transition: none !important;
+    }
+    body.alexfun-embed .panel-back { display: none !important; }
 
     /* — Focus ring (accessibility + polish) —
        Default: thin offset ring for buttons/links (keyboard nav cue).
@@ -4849,28 +4879,27 @@
       panel.setAttribute("aria-hidden", "true");
     });
 
-    // ── Hash routing for the game-page social bar ────────────────────
-    // Game pages link back here as `index.html#friends` or `#messages`.
-    // Honor the hash by clicking the matching button after the dashboard
-    // has fully booted, then clear it so refresh doesn't keep reopening.
-    function handleSocialHash(){
-      const h = (location.hash || "").replace(/^#/, "").toLowerCase();
-      if(h !== "friends" && h !== "messages") return;
-      const btnId = h === "friends" ? "friendsBtn" : "messagesBtn";
+    // ── Embed mode hook ─────────────────────────────────────────────
+    // When loaded as `index.html?embed=friends|messages` from a game page's
+    // social-bar iframe, hide every other dashboard surface and auto-open
+    // the requested panel. The panel inside the iframe is literally the
+    // dashboard's own panel — same HTML, same JS, no copy.
+    (function handleEmbedMode(){
+      const params = new URLSearchParams(location.search);
+      const embed = (params.get("embed") || "").toLowerCase();
+      if(embed !== "friends" && embed !== "messages") return;
+      document.body.classList.add("alexfun-embed");
       const fire = () => {
+        const btnId = embed === "friends" ? "friendsBtn" : "messagesBtn";
         const btn = document.getElementById(btnId);
         if(btn) btn.click();
-        history.replaceState(null, "", location.pathname + location.search);
       };
-      // Defer one frame so any sign-in / boot flow finishes first.
       if(document.readyState === "loading"){
         document.addEventListener("DOMContentLoaded", () => requestAnimationFrame(fire), { once: true });
       } else {
         requestAnimationFrame(fire);
       }
-    }
-    window.addEventListener("hashchange", handleSocialHash);
-    handleSocialHash();
+    })();
     document.getElementById("userSearch").addEventListener("input", renderUsers);
     document.getElementById("messageSearch").addEventListener("input", renderFriends);
 
