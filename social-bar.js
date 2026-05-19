@@ -7,7 +7,7 @@
    appear universally below the game.
 */
 (function () {
-  try { console.log("[alex.fun] social-bar v8 (iframe, cache-bust) loaded"); } catch (_) {}
+  try { console.log("[alex.fun] social-bar v9 (Martel Sans) loaded"); } catch (_) {}
 
   const path = location.pathname.split("/").pop() || "";
   if (path === "" || path === "index.html") return;
@@ -55,6 +55,7 @@
   function init() {
     if (!getActiveUser()) return;
 
+    injectFont();
     injectStyles();
     const buttons = injectButtons();
     if (!buttons) return;
@@ -75,11 +76,26 @@
     window.addEventListener("storage", updateBadges);
   }
 
+  function injectFont() {
+    // Match the dashboard typography. Skip if the page already has it linked.
+    if (document.querySelector('link[href*="Martel+Sans"]')) return;
+    const pre1 = document.createElement("link");
+    pre1.rel = "preconnect"; pre1.href = "https://fonts.googleapis.com";
+    document.head.appendChild(pre1);
+    const pre2 = document.createElement("link");
+    pre2.rel = "preconnect"; pre2.href = "https://fonts.gstatic.com"; pre2.crossOrigin = "";
+    document.head.appendChild(pre2);
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap";
+    document.head.appendChild(link);
+  }
+
   function injectStyles() {
     const css = `
       .alexfun-sb-btns {
         display: inline-flex; gap: 6px; align-items: center;
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-family: "Martel Sans", Arial, sans-serif;
       }
       .alexfun-sb-btn {
         appearance: none;
@@ -115,7 +131,7 @@
         background: rgba(10,15,25,.85); backdrop-filter: blur(10px);
         border-top: 1px solid rgba(255,255,255,.08);
         z-index: 9100;
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-family: "Martel Sans", Arial, sans-serif;
         color: #fff;
       }
 
