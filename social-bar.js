@@ -7,7 +7,7 @@
    appear universally below the game.
 */
 (function () {
-  try { console.log("[alex.fun] social-bar v9 (Martel Sans) loaded"); } catch (_) {}
+  try { console.log("[alex.fun] social-bar v10 (Martel Sans sitewide) loaded"); } catch (_) {}
 
   const path = location.pathname.split("/").pop() || "";
   if (path === "" || path === "index.html") return;
@@ -80,18 +80,33 @@
   }
 
   function injectFont() {
-    // Match the dashboard typography. Skip if the page already has it linked.
-    if (document.querySelector('link[href*="Martel+Sans"]')) return;
-    const pre1 = document.createElement("link");
-    pre1.rel = "preconnect"; pre1.href = "https://fonts.googleapis.com";
-    document.head.appendChild(pre1);
-    const pre2 = document.createElement("link");
-    pre2.rel = "preconnect"; pre2.href = "https://fonts.gstatic.com"; pre2.crossOrigin = "";
-    document.head.appendChild(pre2);
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap";
-    document.head.appendChild(link);
+    // Match the dashboard typography sitewide. Skip the <link>s if a
+    // Martel-Sans stylesheet is already present, but always (re)inject the
+    // global override CSS so per-page Inter declarations get overridden.
+    if (!document.querySelector('link[href*="Martel+Sans"]')) {
+      const pre1 = document.createElement("link");
+      pre1.rel = "preconnect"; pre1.href = "https://fonts.googleapis.com";
+      document.head.appendChild(pre1);
+      const pre2 = document.createElement("link");
+      pre2.rel = "preconnect"; pre2.href = "https://fonts.gstatic.com"; pre2.crossOrigin = "";
+      document.head.appendChild(pre2);
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?family=Martel+Sans:wght@400;600;700;800;900&display=swap";
+      document.head.appendChild(link);
+    }
+
+    // Force every textual element to render in Martel Sans. We :not()-exempt
+    // monospace tags so any inline code blocks still look like code.
+    const override = document.createElement("style");
+    override.id = "alexfun-martel-override";
+    override.textContent = `
+      html, body, button, input, textarea, select, optgroup,
+      *:not(code):not(pre):not(kbd):not(samp):not(tt):not(var) {
+        font-family: "Martel Sans", Arial, sans-serif !important;
+      }
+    `;
+    document.head.appendChild(override);
   }
 
   function injectStyles() {
