@@ -1005,9 +1005,12 @@
     .card-snake.card::after { background:linear-gradient(to top,rgba(15,55,8,0.68) 0%,rgba(15,55,8,0.08) 45%,transparent 68%); }
 
     /* ── Staggered card entrance ── */
+    /* Opacity-only — animating `transform` here would pin the card's transform
+       to translateY(0) permanently (animation-fill-mode: both), which blocks
+       the `:hover` translateY+scale from ever applying. */
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(18px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
     .card:nth-child(1) { animation: fadeUp 0.40s ease 0.00s both; }
     .card:nth-child(2) { animation: fadeUp 0.35s ease 0.08s both; }
@@ -1627,42 +1630,8 @@
       border-radius: var(--radius-md);
     }
 
-    /* ── Embed mode — used when the dashboard is loaded in an iframe
-       from a game-page social bar. Hides everything except the requested
-       panel so the iframe shows just the Friends or Messages UI. */
-    body.alexfun-embed { background: transparent !important; }
-    body.alexfun-embed .dashboard,
-    body.alexfun-embed .signout-btn,
-    body.alexfun-embed .admin-fab,
-    body.alexfun-embed .admin-panel,
-    body.alexfun-embed .dashboard-bottom-bar,
-    body.alexfun-embed #statusBar,
-    body.alexfun-embed .ban-screen,
-    body.alexfun-embed #game67,
-    body.alexfun-embed #snakeGame,
-    body.alexfun-embed #miniBrowser,
-    body.alexfun-embed #leaderboardModal,
-    body.alexfun-embed .perm-overlay:not(#renameModal):not(#newGroupModal),
-    body.alexfun-embed .notice-toast,
-    body.alexfun-embed .auth-overlay,
-    body.alexfun-embed .settings-modal { display: none !important; }
-    body.alexfun-embed .friends-panel,
-    body.alexfun-embed .messages-panel {
-      position: fixed !important;
-      top: 0 !important; left: 0 !important;
-      right: 0 !important; bottom: 0 !important;
-      width: 100% !important; height: 100% !important;
-      max-height: none !important;
-      border-radius: 0 !important; border: 0 !important;
-      box-shadow: none !important;
-      transform: none !important; opacity: 1 !important; pointer-events: auto !important;
-      transition: none !important;
-    }
-    body.alexfun-embed .panel-back { display: none !important; }
-
-    /* Sheen experiment removed — looked harsh against dark covers due to
-       screen-blend with the existing gradient scrim. The pop animation
-       below is what every card actually shares. */
+    /* (Embed/iframe mode removed — social bar now navigates back to the
+       dashboard with a #friends / #messages hash to open the real panel.) */
 
     /* — Focus ring (accessibility + polish) —
        Default: thin offset ring for buttons/links (keyboard nav cue).
@@ -4880,37 +4849,28 @@
       panel.setAttribute("aria-hidden", "true");
     });
 
-    // ── Embed mode hook ─────────────────────────────────────────────
-    // When loaded as `index.html?embed=friends` or `?embed=messages` inside
-    // an iframe from a game page's social bar, strip everything except the
-    // requested panel and auto-open it. The panel is literally the same UI
-    // the dashboard uses — no slim copy.
-    (function handleEmbedMode(){
-      const params = new URLSearchParams(location.search);
-      const embed = (params.get("embed") || "").toLowerCase();
-      if(embed !== "friends" && embed !== "messages") return;
-      document.body.classList.add("alexfun-embed");
+    // ── Hash routing for the game-page social bar ────────────────────
+    // Game pages link back here as `index.html#friends` or `#messages`.
+    // Honor the hash by clicking the matching button after the dashboard
+    // has fully booted, then clear it so refresh doesn't keep reopening.
+    function handleSocialHash(){
+      const h = (location.hash || "").replace(/^#/, "").toLowerCase();
+      if(h !== "friends" && h !== "messages") return;
+      const btnId = h === "friends" ? "friendsBtn" : "messagesBtn";
       const fire = () => {
-        const btnId = embed === "friends" ? "friendsBtn" : "messagesBtn";
         const btn = document.getElementById(btnId);
         if(btn) btn.click();
+        history.replaceState(null, "", location.pathname + location.search);
       };
-      // Wait until DOM + state are ready so renderUsers/renderFriends works.
+      // Defer one frame so any sign-in / boot flow finishes first.
       if(document.readyState === "loading"){
         document.addEventListener("DOMContentLoaded", () => requestAnimationFrame(fire), { once: true });
       } else {
         requestAnimationFrame(fire);
       }
-      // The dashboard's back buttons normally close the panel — in embed
-      // mode we want the iframe parent to handle close via postMessage.
-      window.addEventListener("click", (e) => {
-        const t = e.target;
-        if(t && (t.id === "friendsBackBtn" || t.id === "messagesBackBtn")){
-          e.stopImmediatePropagation();
-          window.parent && window.parent.postMessage({ alexfun: "close-social" }, "*");
-        }
-      }, true);
-    })();
+    }
+    window.addEventListener("hashchange", handleSocialHash);
+    handleSocialHash();
     document.getElementById("userSearch").addEventListener("input", renderUsers);
     document.getElementById("messageSearch").addEventListener("input", renderFriends);
 

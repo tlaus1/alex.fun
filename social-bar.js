@@ -1,10 +1,9 @@
-/* social-bar.js v3 — iframe edition.
-   - Injects compact pill buttons into the page's existing bottom status bar.
-   - Clicking either button opens an iframe pointing at index.html?embed=…
-     so the panel inside the iframe is the EXACT same UI the dashboard uses.
-*/
+/* social-bar.js v4 — navigates back to the dashboard with the right panel
+   already open. No iframe, no slim copy — the user lands on index.html and
+   the real Friends/Messages panel is open immediately. */
 (function () {
-  try { console.log("[alex.fun] social-bar v3 (iframe) loaded"); } catch (_) {}
+  try { console.log("[alex.fun] social-bar v4 (navigate) loaded"); } catch (_) {}
+
   const path = location.pathname.split("/").pop() || "";
   if (path === "" || path === "index.html") return;
 
@@ -14,8 +13,8 @@
     } else fn();
   }
 
-  const ACTIVE_USER_KEY = "alexFunActiveUserV1";
-  const SOCIAL_KEY_BASE = "alexFunSocialV1";
+  const ACTIVE_USER_KEY  = "alexFunActiveUserV1";
+  const SOCIAL_KEY_BASE  = "alexFunSocialV1";
 
   function getActiveUser() { return localStorage.getItem(ACTIVE_USER_KEY) || ""; }
   function normalize(u) { return (u || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, ""); }
@@ -50,11 +49,9 @@
 
   function init() {
     if (!getActiveUser()) return;
-
     injectStyles();
     const buttons = injectButtons();
     if (!buttons) return;
-    injectIframeShell();
 
     function updateBadges() {
       const fc = friendRequestCount();
@@ -111,40 +108,6 @@
         font-family: Inter, ui-sans-serif, system-ui, sans-serif;
         color: #fff;
       }
-
-      /* iframe shell — anchored just above the bar at bottom-left */
-      #alexfunSocialFrame {
-        position: fixed;
-        left: 12px;
-        bottom: calc(var(--status-h, 26px) + 10px);
-        width: min(760px, calc(100vw - 24px));
-        height: min(720px, calc(100vh - var(--status-h, 26px) - 24px));
-        z-index: 10030;
-        border-radius: 18px; overflow: hidden;
-        background: #14181f;
-        border: 1.5px solid rgba(255,255,255,.12);
-        box-shadow: 0 24px 60px rgba(0,0,0,.6);
-        transform: translateY(14px) scale(.98); opacity: 0; pointer-events: none;
-        transition: transform .22s cubic-bezier(.4,0,.2,1), opacity .22s;
-        display: flex; flex-direction: column;
-      }
-      #alexfunSocialFrame.show { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
-      #alexfunSocialFrame iframe { flex: 1; width: 100%; border: 0; background: transparent; }
-      #alexfunSocialFrame .alexfun-sb-close {
-        position: absolute; top: 8px; right: 10px; z-index: 2;
-        appearance: none; border: 1px solid rgba(255,255,255,.2);
-        background: rgba(20,24,31,.85); color: #ececec;
-        width: 28px; height: 28px; padding: 0; border-radius: 999px;
-        font: inherit; font-size: 15px; font-weight: 900; cursor: pointer;
-        backdrop-filter: blur(6px);
-      }
-      .alexfun-sb-backdrop {
-        position: fixed; inset: 0; z-index: 10029;
-        background: rgba(0,0,0,.35); backdrop-filter: blur(2px);
-        opacity: 0; pointer-events: none;
-        transition: opacity .2s;
-      }
-      .alexfun-sb-backdrop.show { opacity: 1; pointer-events: auto; }
     `;
     const style = document.createElement("style");
     style.textContent = css;
@@ -176,52 +139,14 @@
     }
 
     buttons.querySelectorAll(".alexfun-sb-btn").forEach(btn => {
-      btn.addEventListener("click", () => openSocialFrame(btn.dataset.target));
+      btn.addEventListener("click", () => {
+        const target = btn.dataset.target;
+        const url = new URL("index.html", location.href);
+        url.hash = "#" + target;
+        location.href = url.href;
+      });
     });
     return buttons;
-  }
-
-  let shellEl = null;
-  let backdropEl = null;
-
-  function injectIframeShell() {
-    backdropEl = document.createElement("div");
-    backdropEl.className = "alexfun-sb-backdrop";
-    backdropEl.addEventListener("click", closeSocialFrame);
-    document.body.appendChild(backdropEl);
-
-    shellEl = document.createElement("div");
-    shellEl.id = "alexfunSocialFrame";
-    shellEl.innerHTML = `
-      <button type="button" class="alexfun-sb-close" aria-label="Close">×</button>
-      <iframe title="alex.fun social" allow="clipboard-read; clipboard-write"></iframe>
-    `;
-    shellEl.querySelector(".alexfun-sb-close").addEventListener("click", closeSocialFrame);
-    document.body.appendChild(shellEl);
-
-    // The iframe (dashboard in embed mode) posts "close-social" when its
-    // panel back button is clicked. Honour it by closing the shell.
-    window.addEventListener("message", (e) => {
-      if (e && e.data && e.data.alexfun === "close-social") closeSocialFrame();
-    });
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && shellEl.classList.contains("show")) closeSocialFrame();
-    });
-  }
-
-  function openSocialFrame(target) {
-    const frame = shellEl.querySelector("iframe");
-    const url = new URL("index.html", location.href);
-    url.searchParams.set("embed", target === "friends" ? "friends" : "messages");
-    // Only set src if changing — otherwise reuse the open iframe.
-    if (!frame.src || frame.src !== url.href) frame.src = url.href;
-    shellEl.classList.add("show");
-    backdropEl.classList.add("show");
-  }
-  function closeSocialFrame() {
-    shellEl.classList.remove("show");
-    backdropEl.classList.remove("show");
   }
 
   ready(init);
