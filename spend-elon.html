@@ -158,7 +158,25 @@
     .ctrl-btn.sell:hover{background:#2a0000;color:#e74c3c;}
     .ctrl-btn.buy:hover{background:#002a00;color:#2ecc71;}
     .ctrl-btn:disabled{opacity:.25;cursor:not-allowed;}
-    .ctrl-count{min-width:36px;text-align:center;font-size:14px;font-weight:900;color:#fff;}
+    .ctrl-count{
+      min-width:36px;text-align:center;font-size:14px;font-weight:900;color:#fff;
+      cursor:text; user-select:none; padding:2px 6px; border-radius:6px;
+      transition: background .15s, color .15s;
+    }
+    .ctrl-count:hover{ background:rgba(255,255,255,.10); color:#ffe27a; }
+    .ctrl-count-input{
+      width:64px; min-width:64px; text-align:center;
+      font-size:14px; font-weight:900; color:#fff;
+      background:rgba(0,0,0,.45); border:1px solid #2ecc71;
+      border-radius:6px; padding:2px 6px;
+      font-family:inherit; outline:none;
+      box-shadow: 0 0 0 3px rgba(46,204,113,.18);
+      -moz-appearance:textfield;
+    }
+    .ctrl-count-input::-webkit-outer-spin-button,
+    .ctrl-count-input::-webkit-inner-spin-button {
+      -webkit-appearance: none; margin: 0;
+    }
 
     /* ── Spend ticker ── */
     .spent-tick{
@@ -614,6 +632,68 @@ function sell(id, e){
   spawnTick('+'+fmtShort(item.price), e, '#2ecc71');
 }
 
+// Diff-apply a typed count to the item. Tries to reach `newCount` exactly;
+// on a buy that would overdraw, clamps to the most you can actually afford.
+function setCount(id, newCount, e){
+  const item = ITEMS.find(i=>i.id===id);
+  if(!item) return;
+  newCount = Math.max(0, Math.floor(Number(newCount) || 0));
+  const cur = counts[id];
+  if(newCount === cur) return;
+  if(newCount > cur){
+    const wanted = newCount - cur;
+    const affordable = item.price > 0 ? Math.floor(money / item.price) : wanted;
+    const delta = Math.min(wanted, affordable);
+    if(delta <= 0) return;
+    money    -= delta * item.price;
+    counts[id] += delta;
+    spawnTick('-'+fmtShort(delta * item.price), e, '#e74c3c');
+  } else {
+    const delta = cur - newCount;
+    money    += delta * item.price;
+    counts[id] = newCount;
+    spawnTick('+'+fmtShort(delta * item.price), e, '#2ecc71');
+  }
+  refreshCard(id);
+  updateHUD();
+  if(money <= 0) setTimeout(()=>document.getElementById('winBanner').classList.add('show'), 500);
+}
+
+function editCount(id){
+  const span = document.getElementById('count-'+id);
+  if(!span || span.dataset.editing === '1') return;
+  span.dataset.editing = '1';
+  const input = document.createElement('input');
+  input.type = 'number'; input.min = '0'; input.step = '1';
+  input.className = 'ctrl-count-input';
+  input.id = 'count-input-' + id;
+  input.value = counts[id];
+  span.replaceWith(input);
+  input.focus(); input.select();
+
+  function finish(commit){
+    if(input.dataset.done === '1') return;
+    input.dataset.done = '1';
+    if(commit){
+      const n = Number(input.value);
+      if(Number.isFinite(n)) setCount(id, n, null);
+    }
+    // refreshCard already swaps span back; if it didn't (no change), restore manually.
+    if(document.body.contains(input)){
+      const fresh = document.createElement('span');
+      fresh.className = 'ctrl-count';
+      fresh.id = 'count-' + id;
+      fresh.textContent = counts[id];
+      input.replaceWith(fresh);
+    }
+  }
+  input.addEventListener('blur',    () => finish(true));
+  input.addEventListener('keydown', e => {
+    if(e.key === 'Enter')  { e.preventDefault(); finish(true); }
+    if(e.key === 'Escape') { e.preventDefault(); finish(false); }
+  });
+}
+
 function spawnTick(text, e, color){
   const el = document.createElement('div');
   el.className = 'spent-tick';
@@ -633,8 +713,14 @@ function spawnTick(text, e, color){
 document.getElementById('itemGrid').addEventListener('click', e=>{
   const buy_btn  = e.target.closest('.ctrl-btn.buy');
   const sell_btn = e.target.closest('.ctrl-btn.sell');
+  const count    = e.target.closest('.ctrl-count');
   if(buy_btn  && !buy_btn.disabled)  buy(buy_btn.dataset.id, e);
   if(sell_btn && !sell_btn.disabled) sell(sell_btn.dataset.id, e);
+  if(count){
+    // count span id format: "count-<itemId>"
+    const id = count.id.replace(/^count-/, '');
+    if(id) editCount(id);
+  }
 });
 
 document.getElementById('filters').addEventListener('click', e=>{
